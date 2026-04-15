@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Draw Steel Companion</title>
+
+  <!-- Firebase SDKs (v9 compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+
+  <!-- ── Loading screen ──────────────────────────────────────────────── -->
+  <div id="loading-screen" class="screen active">
+    <div class="loading-logo">
+      <span class="logo-main">DRAW STEEL</span>
+      <span class="logo-sub">Companion</span>
+    </div>
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- ── Sign-in screen ──────────────────────────────────────────────── -->
+  <div id="signin-screen" class="screen">
+    <div class="signin-container">
+      <div class="signin-logo">
+        <span class="logo-main">DRAW STEEL</span>
+        <span class="logo-sub">Companion</span>
+      </div>
+      <p class="signin-tagline">Character creator & combat tracker</p>
+      <button id="google-signin-btn" class="btn btn-primary btn-large">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Sign in with Google
+      </button>
+      <p class="signin-legal">
+        Draw Steel Companion is an independent product published under the
+        DRAW STEEL Creator License and is not affiliated with MCDM Productions, LLC.
+        DRAW STEEL © 2024 MCDM Productions, LLC.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Character select screen ─────────────────────────────────────── -->
+  <div id="character-select-screen" class="screen">
+    <header class="app-header">
+      <span class="header-title">My Heroes</span>
+      <div class="header-actions">
+        <button id="signout-btn" class="btn btn-ghost btn-small">Sign Out</button>
+      </div>
+    </header>
+    <main class="character-list-container">
+      <div id="character-list" class="character-list">
+        <!-- Populated by character.js -->
+      </div>
+      <button id="new-character-btn" class="btn btn-primary btn-fab">
+        + New Hero
+      </button>
+    </main>
+  </div>
+
+  <!-- ── Character sheet screen ──────────────────────────────────────── -->
+  <div id="character-sheet-screen" class="screen">
+    <!-- Pinned header — always visible -->
+    <header class="sheet-header" id="sheet-header">
+      <div class="sheet-header-left">
+        <button id="back-to-list-btn" class="btn btn-ghost btn-icon">←</button>
+        <div class="sheet-identity">
+          <span id="sheet-char-name" class="sheet-name">Hero Name</span>
+          <span id="sheet-char-class" class="sheet-class">Class</span>
+        </div>
+      </div>
+      <div class="sheet-header-center">
+        <div class="hp-display" id="hp-display">
+          <span id="hp-current">0</span>
+          <span class="hp-sep">/</span>
+          <span id="hp-max">0</span>
+          <span class="hp-label">HP</span>
+        </div>
+      </div>
+      <div class="sheet-header-right">
+        <div class="resource-display" id="resource-display">
+          <button class="resource-btn" id="resource-minus">−</button>
+          <div class="resource-count">
+            <span id="resource-current">0</span>
+            <span class="resource-name" id="resource-name">Resource</span>
+          </div>
+          <button class="resource-btn" id="resource-plus">+</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Session indicator (hidden until in session) -->
+    <div class="session-indicator hidden" id="session-indicator">
+      <span class="session-pulse"></span>
+      <span>IN SESSION</span>
+    </div>
+
+    <!-- Action economy tracker (hidden until in session) -->
+    <div class="action-economy hidden" id="action-economy">
+      <div class="bucket" id="bucket-action" data-bucket="action">
+        <span class="bucket-icon">⚔</span>
+        <span class="bucket-label">Action</span>
+      </div>
+      <div class="bucket" id="bucket-maneuver" data-bucket="maneuver">
+        <span class="bucket-icon">◈</span>
+        <span class="bucket-label">Maneuver</span>
+      </div>
+      <div class="bucket" id="bucket-triggered" data-bucket="triggered">
+        <span class="bucket-icon">⟳</span>
+        <span class="bucket-label">Triggered</span>
+      </div>
+      <div class="bucket" id="bucket-free-triggered" data-bucket="free-triggered">
+        <span class="bucket-icon">◎</span>
+        <span class="bucket-label">Free Trig.</span>
+      </div>
+      <div class="bucket" id="bucket-free-strike" data-bucket="free-strike">
+        <span class="bucket-icon">✦</span>
+        <span class="bucket-label">Free Strike</span>
+      </div>
+    </div>
+
+    <!-- Main sheet tabs -->
+    <nav class="sheet-tabs" id="sheet-tabs">
+      <button class="tab-btn active" data-tab="abilities">Abilities</button>
+      <button class="tab-btn" data-tab="stats">Stats</button>
+      <button class="tab-btn" data-tab="details">Details</button>
+    </nav>
+
+    <!-- Tab content -->
+    <main class="sheet-content">
+
+      <!-- Abilities tab -->
+      <div class="tab-panel active" id="tab-abilities">
+        <div id="ability-cards-container" class="ability-cards">
+          <!-- Populated by abilities.js -->
+        </div>
+      </div>
+
+      <!-- Stats tab -->
+      <div class="tab-panel" id="tab-stats">
+        <div class="stats-grid" id="stats-grid">
+          <!-- Populated by character.js -->
+        </div>
+      </div>
+
+      <!-- Details tab -->
+      <div class="tab-panel" id="tab-details">
+        <div id="character-details" class="character-details">
+          <!-- Populated by character.js -->
+        </div>
+      </div>
+    </main>
+
+    <!-- Session controls (shown when in session) -->
+    <div class="session-controls hidden" id="session-controls">
+      <button id="end-turn-btn" class="btn btn-end-turn">End My Turn</button>
+    </div>
+
+    <!-- Join session fab (shown when not in session) -->
+    <div class="join-session-fab" id="join-session-fab">
+      <button id="join-session-btn" class="btn btn-secondary">Join Session</button>
+      <button id="start-session-btn" class="btn btn-ghost btn-small">Start as Director</button>
+    </div>
+
+  </div>
+
+  <!-- ── Creation Wizard screen ───────────────────────────────────────── -->
+  <div id="wizard-screen" class="screen">
+    <header class="wizard-header">
+      <button id="wizard-back-btn" class="btn btn-ghost btn-icon">←</button>
+      <div class="wizard-progress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="wizard-progress-fill"></div>
+        </div>
+        <span class="progress-label" id="wizard-progress-label">Step 1 of 10</span>
+      </div>
+    </header>
+    <main class="wizard-content" id="wizard-content">
+      <!-- Populated by character.js wizard steps -->
+    </main>
+    <footer class="wizard-footer">
+      <button id="wizard-prev-btn" class="btn btn-ghost">Back</button>
+      <button id="wizard-next-btn" class="btn btn-primary">Continue</button>
+    </footer>
+  </div>
+
+  <!-- ── Modal overlay ────────────────────────────────────────────────── -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modal-close">✕</button>
+      <div class="modal-content" id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ── App scripts ──────────────────────────────────────────────────── -->
+  <!-- IMPORTANT: Paste your Firebase config into this file -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/character.js"></script>
+  <script src="js/abilities.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

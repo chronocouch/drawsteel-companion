@@ -1,0 +1,14 @@
+{
+  "name": "draw-steel-scripts",
+  "version": "1.0.0",
+  "description": "Utility scripts for Draw Steel Companion App",
+  "scripts": {
+    "seed": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/application_default_credentials.json node seed-local.js"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

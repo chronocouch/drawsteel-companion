@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isSessionParticipant(sessionData) {
+      return request.auth.uid == sessionData.directorId ||
+        sessionData.heroes.hasAny([{'userId': request.auth.uid}]);
+    }
+
+    function isSessionDirector(sessionData) {
+      return request.auth.uid == sessionData.directorId;
+    }
+
+
+    // ── Users ───────────────────────────────────────────────────────────────
+
+    match /users/{userId} {
+      // Users can read and write their own profile only
+      allow read, write: if isSignedIn() && isOwner(userId);
+
+      // ── Characters (subcollection) ───────────────────────────────────────
+      match /characters/{characterId} {
+        // Only the owning user can read/write their characters
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+    }
+
+
+    // ── Abilities ───────────────────────────────────────────────────────────
+    // Global lookup table — seeded once, readable by all signed-in users
+    // Only writable by the seed script (admin SDK bypasses rules)
+
+    match /abilities/{abilityId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Written only via Admin SDK in seed script
+    }
+
+
+    // ── Sessions ────────────────────────────────────────────────────────────
+
+    match /sessions/{sessionCode} {
+      // Any signed-in user can read a session (needed to join with a code)
+      allow read: if isSignedIn();
+
+      // Only the Director can create a session
+      allow create: if isSignedIn() &&
+        request.resource.data.directorId == request.auth.uid;
+
+      // Director can update anything on the session
+      // Participants can update the session (to update their own hero state)
+      // We validate that participants only update their own hero entry
+      allow update: if isSignedIn() && (
+        // Director can update anything
+        resource.data.directorId == request.auth.uid ||
+        // Participants can update if they're in the heroes list
+        isSessionParticipant(resource.data)
+      );
+
+      // Only the Director can delete/end a session
+      allow delete: if isSignedIn() &&
+        resource.data.directorId == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,32 @@
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Dependencies
+node_modules/
+functions/node_modules/
+scripts/node_modules/
+
+# Environment / secrets
+.env
+.env.local
+*.env
+
+# IMPORTANT: firebase-config.js contains your API keys
+# If this is a public repo, keep this file gitignored
+# For a private repo shared only with friends, you can remove this line
+public/js/firebase-config.js
+
+# Claude Code local settings
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
