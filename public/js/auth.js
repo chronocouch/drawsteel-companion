@@ -11,14 +11,6 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 }
 
-// Handle redirect result on page load (fires after mobile sign-in redirect)
-auth.getRedirectResult().catch(error => {
-  if (error.code !== 'auth/no-auth-event') {
-    console.error('Redirect sign-in error:', error);
-    const btn = document.getElementById('google-signin-btn');
-    if (btn) btn.textContent = 'Sign-in failed — try again';
-  }
-});
 
 document.getElementById('google-signin-btn').addEventListener('click', async () => {
   const btn = document.getElementById('google-signin-btn');

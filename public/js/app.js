@@ -36,24 +36,35 @@ function showScreen(screenId) {
 }
 
 // ── Auth state listener ──────────────────────────────────────────────────────
+// On mobile, signInWithRedirect causes a page reload. Firebase fires
+// onAuthStateChanged with null before it has processed the redirect result,
+// which would incorrectly show the sign-in screen. We resolve the redirect
+// result first and wait for it before deciding to show sign-in.
+
+const redirectResultPromise = auth.getRedirectResult().catch(err => {
+  if (err.code !== 'auth/no-auth-event') {
+    console.error('Redirect sign-in error:', err);
+  }
+  return null;
+});
 
 auth.onAuthStateChanged(async (user) => {
   if (user) {
     AppState.currentUser = user;
-
-    // Navigate immediately — don't block on the Firestore write
     showScreen(SCREENS.CHARACTER_SELECT);
     loadCharacterList(user.uid);
-
-    // Best-effort: ensure user document exists
     db.collection('users').doc(user.uid).set({
       displayName: user.displayName,
       email: user.email,
     }, { merge: true }).catch(e => console.warn('User profile write failed:', e));
   } else {
-    AppState.currentUser = null;
-    AppState.currentCharacter = null;
-    showScreen(SCREENS.SIGNIN);
+    // Wait for any pending redirect before giving up and showing sign-in
+    await redirectResultPromise;
+    if (!auth.currentUser) {
+      AppState.currentUser = null;
+      AppState.currentCharacter = null;
+      showScreen(SCREENS.SIGNIN);
+    }
   }
 });
 
