@@ -76,20 +76,24 @@ function promptJoinSession() {
     </div>
   `);
 
-  // Auto-focus and uppercase
-  setTimeout(() => {
-    const input = document.getElementById('session-code-input');
-    if (input) input.focus();
-  }, 100);
-
-  document.getElementById('join-confirm-btn').addEventListener('click', async () => {
+  const doJoin = async () => {
     const code = document.getElementById('session-code-input').value.trim();
     if (code.length !== 6) {
       showJoinError('Please enter a 6-digit code.');
       return;
     }
     await attemptJoinSession(code);
-  });
+  };
+
+  document.getElementById('join-confirm-btn').addEventListener('click', doJoin);
+
+  setTimeout(() => {
+    const input = document.getElementById('session-code-input');
+    if (input) {
+      input.focus();
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doJoin(); });
+    }
+  }, 100);
 }
 
 function showJoinError(msg) {
@@ -157,6 +161,7 @@ function buildHeroEntry(user, char) {
     currentHP: char.currentHP ?? char.maxHP ?? 0,
     maxHP: char.maxHP ?? 0,
     heroicResource: char.heroicResource ?? { name: 'Resource', current: 0, max: 10 },
+    recoveries: char.recoveries ?? { current: 8, max: 8 },
     conditions: char.conditions ?? [],
     hasActed: false,
     hasManeuvered: false,

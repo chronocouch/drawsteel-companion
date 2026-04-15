@@ -128,6 +128,23 @@
       </div>
     </div>
 
+    <!-- Recovery counter (always visible) -->
+    <div class="recovery-row" id="recovery-row">
+      <div class="recovery-left">
+        <span class="recovery-label">Recoveries</span>
+        <div class="recovery-controls">
+          <button class="recovery-adj" id="recovery-minus">−</button>
+          <span class="recovery-count">
+            <span id="recovery-current">8</span><span class="recovery-sep">/</span><span id="recovery-max">8</span>
+          </span>
+          <button class="recovery-adj" id="recovery-plus">+</button>
+        </div>
+      </div>
+      <button class="btn btn-catch-breath" id="catch-breath-btn">
+        Catch Your Breath <span class="cyb-preview" id="cyb-preview"></span>
+      </button>
+    </div>
+
     <!-- Main sheet tabs -->
     <nav class="sheet-tabs" id="sheet-tabs">
       <button class="tab-btn active" data-tab="abilities">Abilities</button>
@@ -147,6 +164,7 @@
 
       <!-- Stats tab -->
       <div class="tab-panel" id="tab-stats">
+        <div class="class-summary" id="class-summary"></div>
         <div class="stats-grid" id="stats-grid">
           <!-- Populated by character.js -->
         </div>
@@ -192,6 +210,9 @@
       <button id="wizard-next-btn" class="btn btn-primary">Continue</button>
     </footer>
   </div>
+
+  <!-- ── Toast notifications ─────────────────────────────────────────── -->
+  <div id="toast-container" class="toast-container"></div>
 
   <!-- ── Modal overlay ────────────────────────────────────────────────── -->
   <div id="modal-overlay" class="modal-overlay hidden">

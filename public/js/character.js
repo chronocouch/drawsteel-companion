@@ -85,25 +85,356 @@ function openCharacterSheet(char) {
   // Populate header
   document.getElementById('sheet-char-name').textContent = char.name || 'Unnamed Hero';
   document.getElementById('sheet-char-class').textContent = char.class || '';
-  document.getElementById('hp-current').textContent = char.currentHP ?? 0;
-  document.getElementById('hp-max').textContent = char.maxHP ?? 0;
+  const currentHP = char.currentHP ?? 0;
+  const maxHP     = char.maxHP ?? 0;
+  document.getElementById('hp-current').textContent = currentHP;
+  document.getElementById('hp-max').textContent = maxHP;
+
+  // Apply HP danger state on open
+  const hpDisp = document.getElementById('hp-display');
+  if (hpDisp) {
+    const pct = maxHP > 0 ? currentHP / maxHP : 1;
+    hpDisp.classList.toggle('hp-danger',  pct <= 0.25 && currentHP > 0);
+    hpDisp.classList.toggle('hp-warning', pct > 0.25 && pct <= 0.5);
+    hpDisp.classList.toggle('hp-dead',    currentHP <= 0);
+  }
   document.getElementById('resource-current').textContent = char.heroicResource?.current ?? 0;
   document.getElementById('resource-name').textContent = meta.resource;
 
   // Load ability cards
   loadAbilityCards(char);
 
-  // Populate stats tab
+  // Populate stats, details, and recovery
   populateStatsTab(char);
+  populateDetailsTab(char);
+  updateRecoveryDisplay(char);
 
   showScreen(SCREENS.CHARACTER_SHEET);
+}
+
+// ── Details tab ──────────────────────────────────────────────────────────────
+
+function populateDetailsTab(char) {
+  const container = document.getElementById('character-details');
+  if (!container) return;
+
+  const rows = [
+    ['Ancestry',     char.ancestry     || '—'],
+    ['Culture',      char.culture      || '—'],
+    ['Career',       char.career       || '—'],
+    ['Kit',          char.kit          || '—'],
+    ['Complication', char.complication || '—'],
+  ];
+
+  // Auto-derived conditions from HP
+  const maxHP    = char.maxHP ?? 0;
+  const currHP   = char.currentHP ?? 0;
+  const isWinded = maxHP > 0 && currHP <= Math.floor(maxHP / 2) && currHP > 0;
+  const isDying  = currHP <= 0;
+
+  const active = char.conditions ?? [];
+
+  container.innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">Background</div>
+      ${rows.map(([label, val]) => `
+        <div class="detail-row">
+          <span class="detail-label">${label}</span>
+          <span class="detail-val">${val}</span>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Conditions
+        <span class="conditions-hint">tap to toggle</span>
+      </div>
+      <div class="conditions-grid" id="conditions-grid">
+        ${STANDARD_CONDITIONS.map(c => `
+          <button class="condition-chip ${active.includes(c) ? 'active' : ''}"
+                  data-condition="${c}">${c}</button>
+        `).join('')}
+      </div>
+      <div class="auto-conditions">
+        <span class="condition-chip auto-chip ${isWinded ? 'winded-active' : ''}">Winded</span>
+        <span class="condition-chip auto-chip ${isDying ? 'dying-active' : ''}">Dying</span>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Combat Stats</div>
+      <div class="detail-row">
+        <span class="detail-label">Recovery Value</span>
+        <span class="detail-val">${Math.floor(maxHP / 3)}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Winded at</span>
+        <span class="detail-val">${Math.floor(maxHP / 2)} or below</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Max Stamina</span>
+        <span class="detail-val">${maxHP}</span>
+      </div>
+    </div>
+  `;
+
+  // Wire condition toggles
+  container.querySelectorAll('.condition-chip[data-condition]').forEach(btn => {
+    btn.addEventListener('click', () => toggleCondition(btn.dataset.condition));
+  });
+}
+
+// ── Condition management ──────────────────────────────────────────────────────
+
+async function toggleCondition(name) {
+  const char = AppState.currentCharacter;
+  if (!char) return;
+
+  const conditions = [...(char.conditions ?? [])];
+  const idx = conditions.indexOf(name);
+  if (idx >= 0) {
+    conditions.splice(idx, 1);
+  } else {
+    conditions.push(name);
+  }
+
+  char.conditions = conditions;
+
+  await db.collection('users').doc(AppState.currentUser.uid)
+    .collection('characters').doc(char.id)
+    .update({ conditions });
+
+  if (AppState.currentSession) {
+    updateHeroInSession({ conditions });
+  }
+
+  // Re-render conditions section only
+  populateDetailsTab(char);
+}
+
+// ── Recovery + Catch Your Breath ─────────────────────────────────────────────
+
+function updateRecoveryDisplay(char) {
+  const c = char ?? AppState.currentCharacter;
+  if (!c) return;
+
+  const current = c.recoveries?.current ?? CLASS_RECOVERIES[c.class] ?? 8;
+  const max     = c.recoveries?.max     ?? CLASS_RECOVERIES[c.class] ?? 8;
+  const recVal  = Math.floor((c.maxHP ?? 0) / 3);
+
+  const elCurr = document.getElementById('recovery-current');
+  const elMax  = document.getElementById('recovery-max');
+  const elPrev = document.getElementById('cyb-preview');
+  const btn    = document.getElementById('catch-breath-btn');
+
+  if (elCurr) elCurr.textContent = current;
+  if (elMax)  elMax.textContent  = max;
+  if (elPrev) elPrev.textContent = recVal > 0 ? `(+${recVal})` : '';
+
+  // Disable CYB when out of recoveries or dying
+  const isDying = (c.currentHP ?? 0) <= 0;
+  if (btn) {
+    btn.disabled = current === 0 || isDying;
+    btn.title = isDying
+      ? 'Cannot Catch Your Breath while Dying.'
+      : current === 0
+        ? 'No recoveries remaining.'
+        : `Spend a recovery to regain ${recVal} Stamina.`;
+  }
+}
+
+async function catchYourBreath() {
+  const char = AppState.currentCharacter;
+  if (!char) return;
+
+  const isDying = (char.currentHP ?? 0) <= 0;
+  if (isDying) {
+    showToast('Cannot Catch Your Breath while Dying.', 'danger');
+    return;
+  }
+
+  const current = char.recoveries?.current ?? CLASS_RECOVERIES[char.class] ?? 8;
+  const max     = char.recoveries?.max     ?? CLASS_RECOVERIES[char.class] ?? 8;
+  if (current <= 0) {
+    showToast('No recoveries remaining.', 'danger');
+    return;
+  }
+
+  const recVal  = Math.floor((char.maxHP ?? 0) / 3);
+  const newRec  = current - 1;
+
+  char.recoveries = { current: newRec, max };
+  updateRecoveryDisplay(char);
+
+  await adjustHP(recVal);
+
+  showToast(`Caught your breath — regained ${recVal} Stamina. (${newRec}/${max} recoveries left)`, 'success');
+
+  await db.collection('users').doc(AppState.currentUser.uid)
+    .collection('characters').doc(char.id)
+    .update({ recoveries: char.recoveries });
+
+  if (AppState.currentSession) {
+    updateHeroInSession({ recoveries: char.recoveries });
+  }
+
+  // Refresh Details tab Winded/Dying status
+  populateDetailsTab(char);
+}
+
+async function adjustRecoveries(delta) {
+  const char = AppState.currentCharacter;
+  if (!char) return;
+
+  const max     = char.recoveries?.max ?? CLASS_RECOVERIES[char.class] ?? 8;
+  const current = char.recoveries?.current ?? max;
+  const newVal  = Math.max(0, Math.min(max, current + delta));
+
+  char.recoveries = { current: newVal, max };
+  updateRecoveryDisplay(char);
+
+  await db.collection('users').doc(AppState.currentUser.uid)
+    .collection('characters').doc(char.id)
+    .update({ recoveries: char.recoveries });
+}
+
+// ── HP adjustment ─────────────────────────────────────────────────────────────
+
+document.getElementById('hp-display').addEventListener('click', () => {
+  showHPModal();
+});
+
+function showHPModal() {
+  const char = AppState.currentCharacter;
+  if (!char) return;
+
+  showModal(`
+    <div class="hp-modal">
+      <h2>Adjust Stamina</h2>
+      <div class="hp-modal-current">
+        <span class="hp-modal-value">${char.currentHP ?? 0}</span>
+        <span class="hp-modal-sep">/</span>
+        <span class="hp-modal-max">${char.maxHP ?? 0}</span>
+        <span class="hp-modal-label">HP</span>
+      </div>
+      <div class="hp-modal-controls">
+        <input type="number" id="hp-delta-input" class="hp-delta-input"
+          placeholder="Amount" min="1" inputmode="numeric" />
+      </div>
+      <div class="hp-modal-buttons">
+        <button class="btn btn-danger" id="hp-damage-btn">Damage</button>
+        <button class="btn btn-heal" id="hp-heal-btn">Heal</button>
+      </div>
+      <button class="btn btn-ghost hp-modal-set-btn" id="hp-set-btn">Set exact value</button>
+    </div>
+  `);
+
+  setTimeout(() => document.getElementById('hp-delta-input')?.focus(), 100);
+
+  document.getElementById('hp-damage-btn').addEventListener('click', () => {
+    const val = parseInt(document.getElementById('hp-delta-input').value) || 0;
+    if (val > 0) { adjustHP(-val); hideModal(); }
+  });
+
+  document.getElementById('hp-heal-btn').addEventListener('click', () => {
+    const val = parseInt(document.getElementById('hp-delta-input').value) || 0;
+    if (val > 0) { adjustHP(val); hideModal(); }
+  });
+
+  document.getElementById('hp-set-btn').addEventListener('click', () => {
+    const exact = parseInt(document.getElementById('hp-delta-input').value);
+    if (!isNaN(exact)) {
+      const char = AppState.currentCharacter;
+      adjustHP(exact - (char.currentHP ?? 0));
+      hideModal();
+    }
+  });
+
+  document.getElementById('hp-delta-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('hp-heal-btn').click();
+  });
+}
+
+async function adjustHP(delta) {
+  const char = AppState.currentCharacter;
+  if (!char) return;
+
+  const current = char.currentHP ?? char.maxHP ?? 0;
+  const max = char.maxHP ?? 0;
+  // No lower clamp — Stamina can go negative in Draw Steel (hero is dying)
+  const newVal = Math.min(max, current + delta);
+
+  char.currentHP = newVal;
+  document.getElementById('hp-current').textContent = newVal;
+
+  // Visual danger indicator when HP drops low
+  const hpDisplay = document.getElementById('hp-display');
+  if (hpDisplay) {
+    const pct = max > 0 ? newVal / max : 1;
+    hpDisplay.classList.toggle('hp-danger',  pct <= 0.25 && newVal > 0);
+    hpDisplay.classList.toggle('hp-warning', pct > 0.25 && pct <= 0.5);
+    hpDisplay.classList.toggle('hp-dead',    newVal <= 0);
+  }
+
+  await db.collection('users').doc(AppState.currentUser.uid)
+    .collection('characters').doc(char.id)
+    .update({ currentHP: newVal });
+
+  if (AppState.currentSession) {
+    updateHeroInSession({ currentHP: newVal });
+  }
+
+  // Refresh Winded/Dying indicators and CYB availability
+  populateDetailsTab(char);
+  updateRecoveryDisplay(char);
+}
+
+// ── Toast notifications ───────────────────────────────────────────────────────
+
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+
+  // Animate in
+  requestAnimationFrame(() => toast.classList.add('toast-visible'));
+
+  // Auto-remove
+  setTimeout(() => {
+    toast.classList.remove('toast-visible');
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
 }
 
 // ── Stats tab ────────────────────────────────────────────────────────────────
 
 function populateStatsTab(char) {
-  const grid = document.getElementById('stats-grid');
+  const meta  = CLASS_COLORS[char.class] || { accent: '#2980B9', resource: 'Resource' };
   const stats = char.characteristics || {};
+  const recovery = Math.floor((char.maxHP ?? 0) / 3);
+
+  // Class summary strip
+  const summaryEl = document.getElementById('class-summary');
+  if (summaryEl) {
+    summaryEl.style.setProperty('--class-accent', meta.accent);
+    summaryEl.innerHTML = `
+      <div class="class-summary-name" style="color:${meta.accent}">${char.class || ''}</div>
+      <div class="class-summary-desc">${CLASS_DESCRIPTIONS[char.class] || ''}</div>
+      <div class="class-summary-stats">
+        <span>${char.maxHP ?? 0} Stamina</span>
+        <span>·</span>
+        <span>${recovery} Recovery</span>
+        <span>·</span>
+        <span>${meta.resource} (max 10)</span>
+      </div>
+    `;
+  }
+
+  const grid = document.getElementById('stats-grid');
   grid.innerHTML = `
     <div class="stat-block">
       <div class="stat-value">${stats.MGT ?? 0}</div>
@@ -171,9 +502,18 @@ async function adjustResource(delta) {
 // ── Wizard data ──────────────────────────────────────────────────────────────
 
 const ANCESTRIES = [
-  'Devil', 'Dragon Knight', 'Dwarf', 'Hakaan',
-  'High Elf', 'Human', 'Memonek', 'Orc',
-  'Polder', 'Revenant', 'Time Raider', 'Wode Elf',
+  { name: 'Devil',         desc: 'Born of infernal lineage, devils carry innate magic and an unsettling charisma.' },
+  { name: 'Dragon Knight', desc: 'Warriors merged with draconic power through an ancient ritual of bonding.' },
+  { name: 'Dwarf',         desc: 'Ancient and resilient, shaped by stone and forge. Endurance personified.' },
+  { name: 'Hakaan',        desc: 'The great giants of the world — raw power and unshakeable resolve.' },
+  { name: 'High Elf',      desc: 'Ancient and graceful, attuned to magic and the weight of long memory.' },
+  { name: 'Human',         desc: 'Adaptable and driven — defined by ambition and the will to shape the world.' },
+  { name: 'Memonek',       desc: 'Constructed beings of living memory. They blur the line between flesh and thought.' },
+  { name: 'Orc',           desc: 'Fierce and vital, warriors shaped by a world that demands constant strength.' },
+  { name: 'Polder',        desc: 'Small in stature but boundless in cunning — polders thrive by wit and speed.' },
+  { name: 'Revenant',      desc: 'The walking dead with unfinished purpose, clinging to existence by sheer will.' },
+  { name: 'Time Raider',   desc: 'Displaced by chrono-warfare, unstuck from their own era and era\'s rules.' },
+  { name: 'Wode Elf',      desc: 'Wilder kin of the high elves — hunters and wanderers of the deep forest.' },
 ];
 
 const KITS = [
@@ -231,6 +571,28 @@ const COMPLICATIONS = [
   { name: 'Order Member',             desc: 'Part of a secret organization' },
   { name: 'Stalker',                  desc: 'Someone or something pursues you' },
 ];
+
+// Max recoveries per class (refill on Respite — 24hr rest)
+const CLASS_RECOVERIES = {
+  Conduit: 8, Elementalist: 8, Fury: 10,
+  Null: 8, Shadow: 8, Tactician: 8, Talent: 8,
+};
+
+// Standard toggleable conditions
+const STANDARD_CONDITIONS = [
+  'Bleeding', 'Dazed', 'Frightened', 'Grabbed',
+  'Prone', 'Slowed', 'Taunted', 'Weakened',
+];
+
+const CLASS_DESCRIPTIONS = {
+  Fury:         'A berserker who harnesses Rage through violence. More damage dealt means more power unleashed.',
+  Tactician:    'A battlefield commander who uses Focus to grant allies extra actions and dominate the flow of combat.',
+  Shadow:       'A deadly operative who builds Insight through deception and precision. Every secret is a weapon.',
+  Conduit:      'A divine channel who accumulates Piety to heal allies and smite foes with radiant holy power.',
+  Elementalist: 'A wielder of primal forces who converts Essence to unleash devastating fire, ice, and lightning.',
+  Null:         'An anti-psion who accumulates Discipline to resist and redirect supernatural forces against enemies.',
+  Talent:       'A telekinetic who builds Clarity through focus, moving objects and enemies with pure mental force.',
+};
 
 const CLASS_BASE_STAMINA = {
   Conduit: 18, Elementalist: 18, Fury: 24,
@@ -334,10 +696,11 @@ function _step1(body) {
 function _step2(body) {
   const sel = AppState.pendingCharacter.ancestry;
   body.innerHTML = `
-    <div class="wizard-grid wizard-grid-3">
-      ${ANCESTRIES.map(name => `
-        <button class="wizard-pick-btn ${sel === name ? 'selected' : ''}" data-pick="${name}">
-          <span class="pick-name">${name}</span>
+    <div class="wizard-grid wizard-grid-2">
+      ${ANCESTRIES.map(a => `
+        <button class="wizard-pick-btn ${sel === a.name ? 'selected' : ''}" data-pick="${a.name}">
+          <span class="pick-name">${a.name}</span>
+          <span class="pick-desc">${a.desc}</span>
         </button>
       `).join('')}
     </div>
@@ -388,7 +751,8 @@ function _step5(body) {
         <button class="wizard-pick-btn ${sel === cls ? 'selected' : ''}"
                 style="--pick-color: ${meta.accent}" data-pick="${cls}">
           <span class="pick-name">${cls}</span>
-          <span class="pick-desc">${meta.resource}</span>
+          <span class="pick-sub">${meta.resource}</span>
+          <span class="pick-desc">${CLASS_DESCRIPTIONS[cls] || ''}</span>
         </button>
       `).join('')}
     </div>
@@ -625,13 +989,14 @@ async function finishCharacterCreation() {
     complication:    p.complication || 'None',
     characteristics: p.characteristics || { MGT:0, AGL:0, REA:0, INU:0, PRS:0 },
     maxHP,
-    currentHP:       maxHP,
-    heroicResource:  { name: meta.resource, current: 0, max: 10 },
-    abilityIds:      [],
-    conditions:      [],
+    currentHP:        maxHP,
+    heroicResource:   { name: meta.resource, current: 0, max: 10 },
+    recoveries:       { current: CLASS_RECOVERIES[p.class] ?? 8, max: CLASS_RECOVERIES[p.class] ?? 8 },
+    abilityIds:       [],
+    conditions:       [],
     classAccentColor: meta.accent,
-    wizardStep:      10,
-    createdAt:       firebase.firestore.FieldValue.serverTimestamp(),
+    wizardStep:       10,
+    createdAt:        firebase.firestore.FieldValue.serverTimestamp(),
   };
 
   try {
@@ -651,7 +1016,16 @@ document.getElementById('wizard-next-btn').addEventListener('click', advanceWiza
 document.getElementById('wizard-prev-btn').addEventListener('click', retreatWizard);
 document.getElementById('wizard-back-btn').addEventListener('click', retreatWizard);
 
+// ── Recovery row button wiring ────────────────────────────────────────────────
+
+document.getElementById('catch-breath-btn').addEventListener('click', catchYourBreath);
+document.getElementById('recovery-minus').addEventListener('click', () => adjustRecoveries(-1));
+document.getElementById('recovery-plus').addEventListener('click',  () => adjustRecoveries(1));
+
 // ── Expose globals ───────────────────────────────────────────────────────────
 window.loadCharacterList = loadCharacterList;
 window.openCharacterSheet = openCharacterSheet;
 window.CLASS_COLORS = CLASS_COLORS;
+window.showToast = showToast;
+window.updateRecoveryDisplay = updateRecoveryDisplay;
+window.toggleCondition = toggleCondition;

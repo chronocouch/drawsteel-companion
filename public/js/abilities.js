@@ -165,13 +165,9 @@ function buildCard(ability, char, currentResource) {
         </div>
       `).join('') : ''}
 
-      ${ability.kitModifiers?.length ? `
-        <div class="kit-modifiers">
-          ${ability.kitModifiers.map(km => `<p class="kit-mod"><strong>${km.kitName}:</strong> ${km.modification}</p>`).join('')}
-        </div>
-      ` : ''}
+      ${buildKitModifier(ability, char)}
 
-      ${!spent && AppState.currentSession ? `
+      ${!spent ? `
         <button class="btn btn-use-ability" data-ability-id="${ability.id}">
           Use This Ability
         </button>
@@ -247,6 +243,34 @@ function buildResourcePips(ability, currentResource, accentColor) {
   return `<span class="resource-pips">${pips.join('')}</span>`;
 }
 
+// ── Kit modifier (filtered to character's equipped kit) ───────────────────────
+
+function buildKitModifier(ability, char) {
+  if (!ability.kitModifiers?.length) return '';
+
+  // Show only the modifier for the character's current kit
+  const kitMod = char.kit
+    ? ability.kitModifiers.find(km => km.kitName === char.kit)
+    : null;
+
+  if (kitMod) {
+    return `
+      <div class="kit-modifiers">
+        <p class="kit-mod kit-mod-active">
+          <strong>${kitMod.kitName} Kit:</strong> ${kitMod.modification}
+        </p>
+      </div>
+    `;
+  }
+
+  // No modifier for this kit — show a neutral hint
+  return `
+    <div class="kit-modifiers">
+      <p class="kit-mod kit-mod-none">No modifier for ${char.kit || 'your kit'}.</p>
+    </div>
+  `;
+}
+
 // ── Use ability ───────────────────────────────────────────────────────────────
 
 async function useAbility(ability, char) {
@@ -279,6 +303,17 @@ async function useAbility(ability, char) {
 
   // Update action economy buckets UI
   updateActionEconomyUI();
+
+  // Bleeding damage — triggers on main actions and triggered actions
+  if (['action', 'triggered', 'free-triggered'].includes(ability.type)) {
+    const conditions = char.conditions ?? [];
+    if (conditions.includes('Bleeding')) {
+      const roll = Math.floor(Math.random() * 6) + 1;
+      const dmg  = roll;  // 1d6 (level added by player if tracking)
+      await adjustHP(-dmg);
+      showToast(`Bleeding! Rolled ${roll} on 1d6 — took ${dmg} damage (add your level).`, 'danger');
+    }
+  }
 
   // Sync to session if active
   if (AppState.currentSession) {
