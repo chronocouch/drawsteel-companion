@@ -1,13 +1,13 @@
 /**
  * auth.js — Google Sign-In
  *
- * Uses signInWithRedirect on all platforms. signInWithPopup is blocked by
- * COOP headers on modern browsers and fails entirely on mobile Safari.
- * Redirect result is handled in app.js via getRedirectResult().
+ * Sets a localStorage flag before redirecting so app.js knows to wait
+ * for getRedirectResult() rather than immediately showing sign-in.
  */
 
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
 document.getElementById('google-signin-btn').addEventListener('click', () => {
+  localStorage.setItem('ds:pendingRedirect', '1');
   auth.signInWithRedirect(googleProvider);
 });

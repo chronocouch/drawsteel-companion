@@ -36,20 +36,25 @@ function showScreen(screenId) {
 }
 
 // ── Auth state listener ──────────────────────────────────────────────────────
-// On mobile, signInWithRedirect causes a page reload. Firebase fires
-// onAuthStateChanged with null before it has processed the redirect result,
-// which would incorrectly show the sign-in screen. We resolve the redirect
-// result first and wait for it before deciding to show sign-in.
+// signInWithRedirect causes a page reload. Firebase can fire onAuthStateChanged
+// with null BEFORE it finishes processing the redirect result — which would
+// incorrectly show the sign-in screen. We write a localStorage flag in auth.js
+// before the redirect so we know to wait here on the way back.
 
-const redirectResultPromise = auth.getRedirectResult().catch(err => {
-  if (err.code !== 'auth/no-auth-event') {
-    console.error('Redirect sign-in error:', err);
-  }
-  return null;
-});
+const pendingRedirect = localStorage.getItem('ds:pendingRedirect') === '1';
+
+// Only call getRedirectResult when we know a redirect was initiated.
+// Always resolves (errors are swallowed) so awaiting it is always safe.
+const redirectResultPromise = pendingRedirect
+  ? auth.getRedirectResult()
+      .then(r  => { localStorage.removeItem('ds:pendingRedirect'); return r; })
+      .catch(() => { localStorage.removeItem('ds:pendingRedirect'); return null; })
+  : Promise.resolve(null);
 
 auth.onAuthStateChanged(async (user) => {
   if (user) {
+    // Signed in — clear any stale flag and navigate
+    localStorage.removeItem('ds:pendingRedirect');
     AppState.currentUser = user;
     showScreen(SCREENS.CHARACTER_SELECT);
     loadCharacterList(user.uid);
@@ -58,13 +63,16 @@ auth.onAuthStateChanged(async (user) => {
       email: user.email,
     }, { merge: true }).catch(e => console.warn('User profile write failed:', e));
   } else {
-    // Wait for any pending redirect before giving up and showing sign-in
-    await redirectResultPromise;
-    if (!auth.currentUser) {
-      AppState.currentUser = null;
-      AppState.currentCharacter = null;
-      showScreen(SCREENS.SIGNIN);
+    if (pendingRedirect) {
+      // A redirect was in flight — wait for it to complete before deciding
+      await redirectResultPromise;
+      // If redirect succeeded, Firebase already fired onAuthStateChanged(user)
+      // and handled navigation above. Only show sign-in if still no user.
+      if (auth.currentUser) return;
     }
+    AppState.currentUser = null;
+    AppState.currentCharacter = null;
+    showScreen(SCREENS.SIGNIN);
   }
 });
 
