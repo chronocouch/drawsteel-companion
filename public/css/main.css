@@ -4,66 +4,97 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Fonts ──────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Barlow+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 
 /* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
-  /* Base palette */
-  --bg-base:        #0F1117;
-  --bg-card:        #181C26;
-  --bg-card-hover:  #1E2333;
-  --bg-surface:     #141820;
-  --bg-elevated:    #1A1F2E;
+  /* ── Backgrounds ──────────────────────────────────────────────── */
+  --bg-base:          #0D0F14;   /* Deepest background — deep charcoal ink */
+  --bg-card:          #161A24;   /* Card surfaces */
+  --bg-card-hover:    #1C2130;
+  --bg-surface:       #12151E;   /* Sheet header, tab bar */
+  --bg-elevated:      #1E2435;   /* Modals, expanded card panels */
+  --bg-callout:       #1A1608;   /* Warm dark — book callout box */
+  --bg-parchment:     #F5EDD8;   /* Sparingly — critical callout highlights only */
 
-  /* Text */
-  --text-primary:   #E8EAF0;
-  --text-secondary: #8B91A8;
-  --text-dim:       #555C73;
-  --text-inverse:   #0F1117;
+  /* ── Text ─────────────────────────────────────────────────────── */
+  --text-primary:     #E8E0CF;   /* Warm off-white — not pure white */
+  --text-secondary:   #9A9080;   /* Dimmed secondary info */
+  --text-dim:         #5A5448;   /* Very dim — labels, decorative */
+  --text-inverse:     #0D0F14;   /* On light backgrounds */
+  --text-gold:        #C8A84B;   /* Warm gold — signature, key highlights */
+  --text-parchment:   #1A1108;   /* Dark text on parchment bg */
 
-  /* Borders */
-  --border-subtle:  #252A3A;
-  --border-visible: #333A50;
+  /* ── Borders ──────────────────────────────────────────────────── */
+  --border-hairline:  #222838;   /* Barely visible structural lines */
+  --border-subtle:    #2A3045;   /* Standard card borders */
+  --border-visible:   #3A4060;   /* Emphasized borders */
+  --border-gold:      #8A6A28;   /* Gold border for signature elements */
+  --border-warm:      #6B5A38;   /* Warm brown — book callout borders */
 
-  /* Semantic colors */
+  /* ── Semantic / Action ────────────────────────────────────────── */
   --color-available:   #1ABC9C;
   --color-available-bg:#0D2A26;
-  --color-spent:       #555C73;
+  --color-spent:       #3A4050;
   --color-spent-bg:    #161A24;
-  --color-danger:      #E74C3C;
+  --color-danger:      #C0392B;
   --color-danger-bg:   #2A1217;
-  --color-warning:     #F39C12;
-  --color-gold:        #D4AC0D;
+  --color-heal:        #27AE60;
+  --color-warning:     #E67E22;
+  --color-gold:        #C8A84B;
   --color-gold-bg:     #2A2208;
-  --color-purple:      #9B59B6;
+  --color-purple:      #8E44AD;
   --color-purple-bg:   #1E1228;
 
-  /* Action economy badge colors */
+  /* ── Action economy badge colors ─────────────────────────────── */
   --badge-action:       #1ABC9C;
   --badge-action-bg:    #0D2A26;
   --badge-maneuver:     #3498DB;
   --badge-maneuver-bg:  #0D1E30;
-  --badge-triggered:    #9B59B6;
+  --badge-triggered:    #8E44AD;
   --badge-triggered-bg: #1E1228;
-  --badge-spent:        #444C63;
+  --badge-spent:        #3A4050;
   --badge-spent-bg:     #151820;
 
-  /* Class accent — overridden per character */
+  /* ── Class accent — overridden per character ──────────────────── */
   --class-accent: #2980B9;
 
-  /* Layout */
+  /* ── Layout ───────────────────────────────────────────────────── */
   --header-height:    64px;
   --session-bar:      40px;
   --economy-bar:      52px;
   --tabs-height:      44px;
-  --radius-sm:        4px;
-  --radius-md:        8px;
-  --radius-lg:        12px;
 
-  /* Typography */
-  --font-display:  'Barlow Condensed', sans-serif;
-  --font-body:     'Barlow', sans-serif;
-  --font-mono:     'JetBrains Mono', monospace;
+  /* ── Radius — slightly squared, book-inspired ─────────────────── */
+  --radius-sm:        3px;
+  --radius-md:        6px;
+  --radius-lg:        10px;
+
+  /* ── Shadows ──────────────────────────────────────────────────── */
+  --shadow-card:   0 2px 8px rgba(0,0,0,0.4);
+  --shadow-modal:  0 8px 32px rgba(0,0,0,0.6);
+  --shadow-gold:   0 0 12px rgba(200,168,75,0.2);
+
+  /* ── Motion ───────────────────────────────────────────────────── */
+  --transition-fast:   0.12s ease;
+  --transition-base:   0.2s ease;
+  --transition-slow:   0.35s ease;
+
+  /* ── Typography ───────────────────────────────────────────────── */
+  --font-display:    'Cinzel', serif;               /* Headings, card/hero names */
+  --font-serif:      'EB Garamond', Georgia, serif; /* Tier text, flavor, descriptions */
+  --font-condensed:  'Barlow Condensed', sans-serif;/* Badges, labels, UI chrome */
+  --font-body:       'Barlow Condensed', sans-serif;/* UI body (default for app chrome) */
+  --font-mono:       'JetBrains Mono', monospace;   /* Numbers, HP, dice */
+
+  /* ── Type scale ───────────────────────────────────────────────── */
+  --text-display:  clamp(22px, 4vw, 32px);
+  --text-heading:  clamp(16px, 2.5vw, 22px);
+  --text-body:     15px;
+  --text-small:    13px;
+  --text-label:    11px;
+  --text-mono:     14px;
+  --text-mono-lg:  20px;
 }
 
 /* ── Reset ──────────────────────────────────────────────────────────────── */
@@ -107,16 +138,17 @@ html, body {
 
 .logo-main {
   font-family: var(--font-display);
-  font-size: 42px;
-  font-weight: 800;
+  font-size: 38px;
+  font-weight: 900;
   letter-spacing: 0.12em;
   color: var(--text-primary);
 }
 
 .logo-sub {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 600;
+  font-family: var(--font-condensed);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
   letter-spacing: 0.2em;
   color: var(--class-accent);
   text-transform: uppercase;
@@ -162,8 +194,10 @@ html, body {
 }
 
 .signin-tagline {
+  font-family: var(--font-serif);
+  font-style: italic;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 15px;
   text-align: center;
 }
 
@@ -184,7 +218,7 @@ html, body {
   padding: 10px 20px;
   border: none;
   border-radius: var(--radius-sm);
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -253,7 +287,7 @@ html, body {
 }
 
 .header-title {
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -302,7 +336,7 @@ html, body {
 
 .char-card-name {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -371,7 +405,7 @@ html, body {
 
 .sheet-name {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -395,6 +429,14 @@ html, body {
 
 .hp-display {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 120px;
+}
+
+.hp-numbers {
+  display: flex;
   align-items: baseline;
   gap: 2px;
   font-family: var(--font-mono);
@@ -403,7 +445,33 @@ html, body {
 }
 
 .hp-sep { color: var(--text-dim); font-size: 16px; }
-.hp-label { font-size: 11px; color: var(--text-secondary); margin-left: 4px; }
+.hp-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; margin-left: 4px; font-family: var(--font-condensed); font-weight: 700; }
+
+/* Sheet header HP bar */
+.sheet-header .hp-bar-track {
+  width: 100%;
+  height: 4px;
+  background: var(--border-subtle);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sheet-header .hp-bar-fill {
+  height: 100%;
+  background: var(--color-available);
+  border-radius: 2px;
+  transition: width 0.4s ease, background 0.3s ease;
+  width: 100%;
+}
+
+/* HP states affect the bar fill color and number color */
+.hp-display.hp-warning .hp-numbers #hp-current { color: var(--color-warning); }
+.hp-display.hp-warning .sheet-header .hp-bar-fill { background: var(--color-warning); }
+.hp-display.hp-danger  .hp-numbers #hp-current { color: var(--color-danger); animation: hp-pulse 1.5s ease-in-out infinite; }
+.hp-display.hp-danger  .sheet-header .hp-bar-fill { background: var(--color-danger); }
+.hp-display.hp-dead    .hp-numbers #hp-current { color: var(--color-danger); animation: hp-pulse 1s ease-in-out infinite; }
+.hp-display.hp-dead    .hp-numbers #hp-max     { color: var(--text-dim); }
+.hp-display.hp-dead    .sheet-header .hp-bar-fill { background: var(--color-danger); width: 0% !important; }
 
 .sheet-header-right {
   display: flex;
@@ -541,7 +609,7 @@ html, body {
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-secondary);
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -567,12 +635,90 @@ html, body {
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
+/* ── Ability filter bar ─────────────────────────────────────────────────── */
+.ability-filter-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 8px 0;
+  flex-wrap: wrap;
+}
+
+.filter-pill {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border-visible);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.filter-pill.active {
+  background: var(--color-available);
+  border-color: var(--color-available);
+  color: var(--text-inverse);
+}
+
+/* ── Power Roll banner ──────────────────────────────────────────────────── */
+.power-roll-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.prb-label {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.prb-dice {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--class-accent);
+}
+
+.prb-sep { color: var(--border-visible); }
+
+.prb-tier {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.prb-t1 { background: rgba(85,92,115,0.25); color: var(--text-secondary); }
+.prb-t2 { background: rgba(52,152,219,0.18); color: #5dade2; }
+.prb-t3 { background: rgba(26,188,156,0.18); color: var(--color-available); }
+
 /* ── Ability cards ──────────────────────────────────────────────────────── */
 .ability-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 6px;
   padding: 8px;
+  align-items: start; /* cards don't stretch to equal row height */
 }
 
 .ability-card {
@@ -619,12 +765,10 @@ html, body {
 
 .card-name {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .card-distance {
@@ -635,8 +779,11 @@ html, body {
 .card-header-right {
   display: flex;
   align-items: center;
-  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
   flex-shrink: 0;
+  max-width: 50%;
 }
 
 .card-body {
@@ -697,9 +844,10 @@ html, body {
 .tier2 .tier-label { color: var(--class-accent); }
 
 .tier-text {
-  font-size: 12px;
+  font-family: var(--font-serif);
+  font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.7;
 }
 
 /* ── Card effect / spend sections ───────────────────────────────────────── */
@@ -730,9 +878,10 @@ html, body {
 }
 
 .card-effect-text {
-  font-size: 12px;
+  font-family: var(--font-serif);
+  font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.65;
   margin: 0;
 }
 
@@ -741,11 +890,12 @@ html, body {
 .kit-mod strong { color: var(--color-gold); }
 
 .card-flavor {
-  font-size: 12px;
+  font-family: var(--font-serif);
+  font-size: 13px;
   color: var(--text-dim);
   font-style: italic;
   margin-top: 10px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .btn-use-ability {
@@ -756,7 +906,7 @@ html, body {
   border: none;
   border-radius: var(--radius-sm);
   padding: 10px;
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -772,7 +922,7 @@ html, body {
   align-items: center;
   padding: 2px 6px;
   border-radius: 3px;
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -789,6 +939,8 @@ html, body {
 .badge-encounter     { background: rgba(230, 126, 34, 0.12);  color: #E67E22;                border: 1px solid #E67E22; }
 .badge-turn          { background: rgba(52, 152, 219, 0.12);  color: #3498DB;                border: 1px solid #3498DB; }
 .badge-used          { opacity: 0.5; }
+.badge-ancestry      { background: rgba(200,168,75,0.08);     color: var(--text-gold);       border: 1px dashed var(--border-warm); }
+.badge-kit           { background: rgba(90,84,72,0.2);        color: var(--text-dim);        border: 1px dashed var(--border-warm); }
 
 /* ── Resource pips ──────────────────────────────────────────────────────── */
 .resource-pips {
@@ -812,12 +964,511 @@ html, body {
 
 /* ── Stats grid ─────────────────────────────────────────────────────────── */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 16px 16px;
 }
 
+.stats-section-title {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 12px 0 6px;
+}
+
+/* ── Combat Profile ──────────────────────────────────────────────────────── */
+.combat-profile-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.combat-profile-block > .stats-section-title {
+  padding: 8px 12px;
+  margin: 0;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--class-accent);
+}
+
+.combat-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px;
+  border-right: 1px solid var(--border-subtle);
+}
+.cp-stat:last-child { border-right: none; }
+
+.cp-value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.cp-value.cp-dmg {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-gold);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.cp-label {
+  font-family: var(--font-condensed);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.cp-sig {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cp-sig-label {
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cp-sig-text {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cp-kit-equipment {
+  display: flex;
+  gap: 16px;
+  padding: 6px 12px;
+}
+
+.cp-equip-item {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cp-equip-label {
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-right: 4px;
+}
+
+/* ── Power Roll hint ─────────────────────────────────────────────────────── */
+.power-roll-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 0;
+}
+
+.pr-icon {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--class-accent);
+  background: rgba(var(--class-accent-rgb, 41, 128, 185), 0.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.pr-tier {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.pr-t1 { background: rgba(85,92,115,0.3); color: var(--text-secondary); }
+.pr-t2 { background: rgba(52,152,219,0.2); color: #5dade2; }
+.pr-t3 { background: rgba(26,188,156,0.2); color: var(--color-available); }
+
+/* ── Characteristics grid ────────────────────────────────────────────────── */
+.characteristics-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+@media (max-width: 480px) {
+  .characteristics-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.char-stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 8px 10px;
+}
+
+.char-stat-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.char-stat-value {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--class-accent);
+  line-height: 1;
+}
+
+.char-stat-name {
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.char-stat-desc {
+  font-family: var(--font-serif);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Desktop stats: two-column layout */
+@media (min-width: 768px) {
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: auto; /* let ancestry traits add rows naturally */
+    gap: 0 24px;
+    align-items: start;
+  }
+  /* Left column: combat profile spans 3 data rows */
+  .combat-profile-block {
+    grid-column: 1;
+    grid-row: 1 / 4;
+  }
+  /* Right column: characteristics header, power roll, grid */
+  .stats-grid > .stats-section-title:not(.ancestry-traits-title) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .power-roll-hint {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .characteristics-grid {
+    grid-column: 2;
+    grid-row: 3;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  /* Ancestry traits block spans both columns below the two-column section */
+  .ancestry-traits-block {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+  }
+}
+
+/* ── Subclass panel (A3) ─────────────────────────────────────────────────── */
+
+.subclass-panel {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border-left: 3px solid var(--class-accent, var(--border-visible));
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.subclass-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.subclass-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+}
+
+.subclass-skill-badge {
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+}
+
+.subclass-feature {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.subclass-desc {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  font-style: italic;
+}
+
+/* ── Resistances panel (Phase D) ─────────────────────────────────────────── */
+
+.resistance-block {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+
+.resistance-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.res-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-condensed);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.res-immunity {
+  background: rgba(39, 174, 96, 0.12);
+  border: 1px solid rgba(39, 174, 96, 0.35);
+  color: var(--color-heal);
+}
+
+.res-weakness {
+  background: rgba(192, 57, 43, 0.12);
+  border: 1px solid rgba(192, 57, 43, 0.35);
+  color: var(--color-danger);
+}
+
+.res-type {
+  color: var(--text-primary);
+}
+
+.res-conditional {
+  font-family: var(--font-serif);
+  font-size: 10px;
+  font-style: italic;
+  opacity: 0.7;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Wyrmplate damage type selector (wizard step 2) ──────────────────────── */
+
+.wyrmplate-selector {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-md);
+}
+
+.wyrmplate-label {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-gold);
+  margin-bottom: 8px;
+}
+
+.wyrmplate-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.wyrmplate-type-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--border-visible);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-condensed);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: all var(--transition-fast);
+}
+
+.wyrmplate-type-btn:hover {
+  border-color: var(--border-warm);
+  color: var(--text-primary);
+}
+
+.wyrmplate-type-btn.selected {
+  background: rgba(200, 168, 75, 0.15);
+  border-color: var(--border-gold);
+  color: var(--text-gold);
+}
+
+.wyrmplate-hint {
+  font-family: var(--font-serif);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ── Damage type selector in HP modal ────────────────────────────────────── */
+
+.hp-damage-type-row {
+  margin-top: 10px;
+}
+
+.hp-damage-type-label {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.hp-damage-type-select {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-visible);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-condensed);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ── Ancestry traits block (A1) ──────────────────────────────────────────── */
+
+.ancestry-traits-block {
+  margin-top: 4px;
+}
+
+.ancestry-traits-title {
+  /* Inherits .stats-section-title styles; no additional overrides needed */
+}
+
+.ancestry-traits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.ancestry-trait-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+
+.ancestry-trait-sig {
+  border-color: var(--border-gold);
+  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(138,106,40,0.08) 100%);
+  box-shadow: var(--shadow-gold);
+}
+
+.ancestry-trait-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ancestry-trait-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+}
+
+.ancestry-trait-sig .ancestry-trait-name {
+  color: var(--text-gold);
+}
+
+.ancestry-trait-badges {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ancestry-trait-desc {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+/* Old stat-block retained for backwards compat */
 .stat-block {
   display: flex;
   flex-direction: column;
@@ -888,6 +1539,9 @@ html, body {
   overflow-y: auto;
   padding: 24px 16px;
 }
+@media (min-width: 700px) {
+  .wizard-content { padding: 24px 32px; }
+}
 
 .wizard-footer {
   display: flex;
@@ -906,7 +1560,7 @@ html, body {
   color: var(--text-secondary);
 }
 .wizard-placeholder h2 {
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 24px;
   margin-bottom: 12px;
   color: var(--text-primary);
@@ -918,19 +1572,333 @@ html, body {
   margin: 0 auto;
 }
 
+/* On desktop, widen to fit two columns */
+@media (min-width: 700px) {
+  .wizard-step { max-width: 960px; }
+}
+@media (min-width: 1100px) {
+  .wizard-step { max-width: 1160px; }
+}
+
+/* ── Two-column wizard layout ───────────────────────────────────────────── */
+.wizard-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1.55fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 699px) {
+  .wizard-two-col { grid-template-columns: 1fr; }
+}
+
+.wizard-col-left {
+  /* picker list — natural height on mobile, capped + scrollable on desktop */
+}
+@media (min-width: 700px) {
+  .wizard-col-left {
+    max-height: calc(100vh - 240px);
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+}
+
+.wizard-col-right {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  min-height: 160px;
+}
+
+.col-right-placeholder {
+  color: var(--text-dim);
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+  padding: 32px 0;
+}
+
+/* ── Ability pick cards (wizard step 7) ─────────────────────────────────── */
+.ability-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+}
+
+.ability-pick-card {
+  background: var(--bg-surface);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+}
+.ability-pick-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-visible);
+}
+.ability-pick-card.selected {
+  border-color: var(--color-available);
+  background: var(--color-available-bg);
+}
+.ability-pick-card.at-limit:not(.selected) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pick-card-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+  display: block;
+}
+.pick-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.pick-card-summary {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.ability-pool-header {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 12px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ability-pool-header:first-child { margin-top: 0; }
+
+.pool-quota {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+.pool-quota.quota-met {
+  background: rgba(26,188,156,0.2);
+  color: var(--color-available);
+}
+
+.ability-selection-summary {
+  font-size: 13px;
+}
+.selection-group-label {
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 12px 0 5px;
+}
+.selection-group-label:first-child { margin-top: 0; }
+.selected-ability-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.selected-ability-row:last-child { border-bottom: none; }
+.selection-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* ── Ability pick card internals ─────────────────────────────────────────── */
+.ability-pool {
+  margin-bottom: 12px;
+}
+.pool-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.ability-pick-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.ability-pick-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.ability-pick-meta {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.ability-pick-type {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  background: var(--bg-elevated);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.ability-pick-cost {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-available);
+  background: rgba(26,188,156,0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.ability-pick-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ── Ability selection summary panel ─────────────────────────────────────── */
+.summary-section-title {
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.summary-check {
+  color: var(--color-available);
+}
+.summary-ability {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.summary-ability:last-of-type { border-bottom: none; }
+.summary-ability-name {
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.summary-ability-type {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.summary-empty {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* ── Career detail panel (step 4 right col) ─────────────────────────────── */
+.career-detail-panel {}
+.career-detail-name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.career-detail-desc {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin-bottom: 12px;
+  font-style: italic;
+}
+.career-detail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.career-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.career-detail-row:last-child { border-bottom: none; }
+.career-detail-label {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.career-detail-val {
+  color: var(--text-primary);
+  font-size: 12px;
+  text-align: right;
+}
+
+/* ── Class step right panel extras ──────────────────────────────────────── */
+.subclass-resource {
+  font-size: 12px;
+  font-weight: 600;
+}
+.class-right-desc {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 8px 0 12px;
+  font-style: italic;
+}
+
 .wizard-step-title {
   font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
   color: var(--text-primary);
   margin-bottom: 6px;
 }
 
 .wizard-step-sub {
-  font-size: 14px;
+  font-family: var(--font-serif);
+  font-size: 15px;
   color: var(--text-secondary);
   margin-bottom: 24px;
+  line-height: 1.6;
+  font-style: italic;
 }
 
 .wizard-text-input {
@@ -939,7 +1907,7 @@ html, body {
   border: 1px solid var(--border-visible);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 22px;
   font-weight: 600;
   padding: 14px 16px;
@@ -999,7 +1967,7 @@ html, body {
 
 .pick-name {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.03em;
   color: var(--text-primary);
@@ -1021,10 +1989,11 @@ html, body {
 }
 
 .pick-desc {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-top: 2px;
-  line-height: 1.3;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+  line-height: 1.5;
 }
 
 /* ── Wizard hint ─────────────────────────────────────────────────────────── */
@@ -1033,6 +2002,325 @@ html, body {
   font-size: 12px;
   color: var(--text-dim);
   text-align: center;
+}
+
+/* ── Ancestry detail panel ───────────────────────────────────────────────── */
+.ancestry-detail {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ancestry-detail.hidden { display: none; }
+
+.sig-trait-box {
+  background: color-mix(in srgb, var(--class-accent) 10%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--class-accent) 40%, transparent);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+.sig-trait-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.sig-trait-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--class-accent);
+  background: color-mix(in srgb, var(--class-accent) 15%, transparent);
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.sig-trait-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.sig-trait-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.trait-budget {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.trait-budget-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  flex: 1;
+}
+.trait-budget-count {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--class-accent);
+}
+.trait-budget-count.spent { color: var(--text-dim); }
+.trait-budget-total {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.trait-list { display: flex; flex-direction: column; gap: 6px; }
+
+.trait-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  user-select: none;
+}
+.trait-item:hover { background: var(--bg-card-hover); }
+.trait-item.selected {
+  background: var(--bg-elevated);
+  border-color: var(--class-accent);
+}
+.trait-item.unaffordable { opacity: 0.4; pointer-events: none; }
+.trait-check {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border-visible);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--class-accent);
+  background: var(--bg-surface);
+  margin-top: 1px;
+}
+.trait-item.selected .trait-check {
+  background: var(--class-accent);
+  border-color: var(--class-accent);
+  color: #000;
+  font-weight: 700;
+}
+.trait-info { flex: 1; min-width: 0; }
+.trait-name-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.trait-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.trait-cost {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--class-accent);
+  white-space: nowrap;
+}
+.trait-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.35;
+}
+
+/* ── Culture sections ─────────────────────────────────────────────────────── */
+.culture-section { margin-bottom: 18px; }
+.culture-section:last-child { margin-bottom: 0; }
+
+.culture-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.culture-section-title {
+  font-family: var(--font-condensed);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--class-accent);
+}
+.culture-section-hint {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.wizard-grid-culture {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+}
+
+/* ── Career cards ────────────────────────────────────────────────────────── */
+.career-btn {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  text-align: left;
+}
+.career-main { display: flex; flex-direction: column; gap: 2px; }
+.career-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+}
+.career-detail {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.3;
+}
+.career-detail-label {
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-right: 4px;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+/* ── Subclass picker ─────────────────────────────────────────────────────── */
+.subclass-panel { margin-top: 16px; }
+.subclass-panel.hidden { display: none; }
+.subclass-header {
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  border-left: 3px solid var(--class-accent);
+  background: var(--bg-card);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.subclass-title {
+  font-family: var(--font-condensed);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+/* ── Kit stats panel ─────────────────────────────────────────────────────── */
+.kit-stats-panel { margin-top: 16px; }
+.kit-stats-panel.hidden { display: none; }
+.kit-stats-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-top: 2px solid var(--class-accent);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.kit-stats-title {
+  font-family: var(--font-condensed);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 10px 14px 6px;
+  color: var(--class-accent);
+}
+.kit-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.kit-stat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 8px;
+}
+.kit-stat-row:nth-child(even) { background: var(--bg-elevated); }
+.kit-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+.kit-stat-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--class-accent);
+}
+.kit-sig-ability {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 14px 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+.kit-sig-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.kit-sig-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+/* ── Complication buttons ────────────────────────────────────────────────── */
+.complication-btn {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  text-align: left;
+}
+.complication-header { display: flex; flex-direction: column; gap: 2px; }
+.complication-perks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+.complication-perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.perk-label {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-top: 1px;
+}
+.perk-bonus { background: color-mix(in srgb, #27ae60 20%, transparent); color: #27ae60; }
+.perk-draw  { background: color-mix(in srgb, var(--color-danger) 20%, transparent); color: var(--color-danger); }
+.perk-text {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.35;
 }
 
 /* ── Characteristics adjuster ────────────────────────────────────────────── */
@@ -1078,7 +2366,7 @@ html, body {
 }
 
 .char-label {
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -1150,7 +2438,7 @@ html, body {
 }
 
 .stamina-label {
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1192,11 +2480,157 @@ html, body {
 }
 
 .review-val {
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
 }
+
+/* ── Victory counter (legacy class names unused but kept for safety) ─────── */
+
+/* ── Danger zone + confirm modal ─────────────────────────────────────────── */
+.detail-section-danger {
+  border-top: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
+}
+.detail-danger-actions {
+  padding: 12px 14px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.confirm-modal { text-align: center; padding: 4px 0; }
+.confirm-modal h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.confirm-modal-body {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 10px 0 16px;
+  line-height: 1.4;
+}
+.confirm-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.confirm-modal .wizard-text-input { margin: 10px 0 0; }
+
+/* ── Respite modal ───────────────────────────────────────────────────────── */
+.respite-effects {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin: 12px 0;
+  text-align: left;
+}
+.respite-effect-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.respite-effect-row:last-child { border-bottom: none; }
+.respite-effect-label { font-size: 13px; color: var(--text-secondary); }
+.respite-effect-val { font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); }
+.respite-note { font-size: 12px; color: var(--text-dim); margin: 4px 0 0; }
+
+/* ── Level badge ─────────────────────────────────────────────────────────── */
+.class-summary-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.level-badge {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--class-accent);
+  border: 1px solid var(--class-accent);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+}
+.level-max {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.char-victories {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* ── Level Up modal ──────────────────────────────────────────────────────── */
+.levelup-modal { text-align: center; }
+.levelup-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--class-accent);
+}
+.levelup-subtitle {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--text-secondary);
+}
+.levelup-number {
+  font-family: var(--font-display);
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--class-accent);
+}
+.levelup-changes {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 12px;
+  text-align: left;
+}
+.levelup-change-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.levelup-change-row:last-child { border-bottom: none; }
+.levelup-change-label { font-size: 13px; color: var(--text-secondary); }
+.levelup-change-val { font-family: var(--font-mono); font-size: 13px; }
+.levelup-val-up { color: var(--color-available, #1abc9c); }
+.levelup-chars { margin-bottom: 16px; text-align: left; }
+.levelup-chars-title {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.levelup-stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.levelup-stat-changed { color: var(--text-primary); }
+.levelup-stat-changed .levelup-stat-val { color: var(--color-available, #1abc9c); }
 
 /* ── Session controls ───────────────────────────────────────────────────── */
 .session-controls {
@@ -1235,7 +2669,7 @@ html, body {
 }
 
 .round-label {
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 16px;
   font-weight: 700;
   color: var(--class-accent);
@@ -1262,7 +2696,7 @@ html, body {
 
 .roster-name {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   margin-bottom: 6px;
   white-space: nowrap;
@@ -1374,7 +2808,7 @@ html, body {
 .session-created { text-align: center; }
 .session-created h2 {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 22px;
   margin-bottom: 12px;
 }
 
@@ -1393,7 +2827,7 @@ html, body {
 
 .join-session-modal h2 {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 20px;
   margin-bottom: 12px;
 }
 
@@ -1458,12 +2892,44 @@ html, body {
   border-bottom: 1px solid var(--border-subtle);
   gap: 12px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
-.recovery-left {
+.recovery-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+.recovery-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* Recovery pip dots */
+.recovery-pips {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.recovery-pip {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.recovery-pip.pip-full {
+  background: var(--color-available);
+}
+
+.recovery-pip.pip-empty {
+  background: var(--border-visible);
+  opacity: 0.4;
 }
 
 .recovery-label {
@@ -1512,7 +2978,7 @@ html, body {
   background: var(--bg-elevated);
   border: 1px solid var(--border-visible);
   color: var(--color-available);
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1675,18 +3141,20 @@ button.condition-chip:hover {
 
 .class-summary-name {
   font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   margin-bottom: 6px;
 }
 
 .class-summary-desc {
-  font-size: 13px;
+  font-family: var(--font-serif);
+  font-size: 14px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.6;
   margin-bottom: 10px;
+  font-style: italic;
 }
 
 .class-summary-stats {
@@ -1697,13 +3165,49 @@ button.condition-chip:hover {
   color: var(--text-dim);
   flex-wrap: wrap;
 }
+.resource-gain-hint {
+  color: var(--class-accent, var(--color-available));
+  font-weight: 600;
+}
+
+.resource-gain-section {
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--class-accent, var(--color-available));
+}
+.resource-gain-label {
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.resource-gain-icon {
+  font-size: 8px;
+}
+.resource-gain-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.resource-gain-row {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.resource-gain-row.base-gain {
+  font-weight: 600;
+  color: var(--text-primary);
+}
 
 /* ── HP health states ────────────────────────────────────────────────────── */
-
-.hp-display.hp-warning #hp-current { color: var(--color-warning); }
-.hp-display.hp-danger  #hp-current { color: var(--color-danger); animation: hp-pulse 1.5s ease-in-out infinite; }
-.hp-display.hp-dead    #hp-current { color: var(--color-danger); animation: hp-pulse 1s ease-in-out infinite; }
-.hp-display.hp-dead    #hp-max     { color: var(--text-dim); }
 
 @keyframes hp-pulse {
   0%, 100% { opacity: 1; }
@@ -1732,7 +3236,7 @@ button.condition-chip:hover {
 }
 
 .detail-section-title {
-  font-family: var(--font-display);
+  font-family: var(--font-condensed);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -1766,6 +3270,51 @@ button.condition-chip:hover {
 
 .condition-active { color: var(--color-danger); }
 
+/* ── Condition descriptions ──────────────────────────────────────────────── */
+.condition-descriptions {
+  border-top: 1px solid var(--border-subtle);
+  padding: 6px 0;
+}
+
+.cond-desc-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s;
+}
+.cond-desc-row:last-child { border-bottom: none; }
+
+.cond-desc-row.cond-active {
+  background: rgba(231, 76, 60, 0.08);
+}
+
+.cond-desc-name {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.cond-desc-row.cond-active .cond-desc-name {
+  color: var(--color-danger);
+}
+
+.cond-desc-effect {
+  font-family: var(--font-serif);
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.cond-desc-row.cond-active .cond-desc-effect {
+  color: var(--text-secondary);
+}
+
 /* ── HP adjustment modal ─────────────────────────────────────────────────── */
 
 .hp-display { cursor: pointer; }
@@ -1774,7 +3323,7 @@ button.condition-chip:hover {
 .hp-modal { text-align: center; }
 .hp-modal h2 {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 20px;
   margin-bottom: 16px;
 }
 
@@ -1841,30 +3390,578 @@ button.condition-chip:hover {
 
   /* Header */
   .sheet-name { font-size: 16px; }
-  .hp-display { font-size: 17px; }
+  .hp-numbers { font-size: 17px; }
+  .hp-display { min-width: 90px; }
 
   /* Wizard */
   .wizard-grid-2 { grid-template-columns: 1fr; }
   .wizard-grid-3 { grid-template-columns: 1fr 1fr; }
   .wizard-pick-btn { padding: 14px; }
 
-  /* Ability cards — bigger tap targets */
-  .card-header { padding: 14px 12px; min-height: 54px; }
+  /* Ability cards — single column on small phones, bigger tap targets */
+  .ability-cards { grid-template-columns: 1fr; }
+  .card-header { padding: 12px 10px; min-height: 50px; }
 
   /* Class summary */
   .class-summary-stats { gap: 6px; }
 
   /* Recovery row */
-  .recovery-row { padding: 6px 8px; }
+  .recovery-row { padding: 6px 8px; gap: 8px; }
   .btn-catch-breath { font-size: 11px; padding: 6px 8px; }
   .recovery-label { display: none; }
+  .recovery-pips { display: none; }
 
   /* Toasts sit above bottom FAB */
   .toast-container { bottom: 90px; }
+}
+
+/* ── Diamond section divider ────────────────────────────────────────────── */
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--border-gold);
+  font-family: var(--font-condensed);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-gold);
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+
+.section-divider::before {
+  background: linear-gradient(to right, transparent, var(--border-warm));
+}
+
+.section-divider::after {
+  background: linear-gradient(to left, transparent, var(--border-warm));
+}
+
+/* ── Callout box (book-style) ───────────────────────────────────────────── */
+
+.callout-book {
+  border-top: 2px solid var(--border-warm);
+  border-bottom: 2px solid var(--border-warm);
+  padding: 16px 20px;
+  background: var(--bg-callout);
+  margin: 16px 0;
+}
+
+.callout-book-title {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: center;
+  color: var(--text-gold);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.callout-book-body {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* Tier result brackets — power roll outcome ranges */
+.tier-range {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 2px 6px;
+  border: 1px solid var(--border-visible);
+  background: var(--bg-elevated);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 /* ── Scrollbar styling ──────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-visible); border-radius: 2px; }
+
+/* ══════════════════════════════════════════════════════════════
+   Phase 7 — Combat Enhancement
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Ability section headers ────────────────────────────────────────────── */
+.ability-section-header {
+  grid-column: 1 / -1; /* span all grid columns */
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  padding: 8px 4px 4px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+.ability-section-header:first-child {
+  border-top: none;
+  margin-top: 0;
+}
+.ability-section-anytime {
+  color: #9B59B6;
+}
+.ability-section-spent {
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
+/* ── Hero Tokens bar ────────────────────────────────────────────────────── */
+.hero-tokens-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  background: #1A1F2E;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.hero-tokens-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--color-available);
+  flex: 1;
+}
+#hero-token-count {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 28px;
+  text-align: center;
+}
+
+/* ── Active side banner ─────────────────────────────────────────────────── */
+.active-side-banner {
+  text-align: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 6px 16px;
+}
+.banner-heroes {
+  background: rgba(26,188,156,0.15);
+  color: var(--color-available);
+  animation: sidePulse 1.5s ease-in-out infinite;
+}
+.banner-villains {
+  background: rgba(192,57,43,0.15);
+  color: #e74c3c;
+}
+@keyframes sidePulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* ── Director board ─────────────────────────────────────────────────────── */
+.director-board {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 0;
+}
+
+.director-board-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+.director-header-stats {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+.malice-pill {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(192,57,43,0.2);
+  color: #e74c3c;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.token-pill {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(26,188,156,0.15);
+  color: var(--color-available);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.director-header-btns {
+  display: flex;
+  gap: 6px;
+}
+
+/* ── Zipper board ───────────────────────────────────────────────────────── */
+.zipper-board {
+  display: flex;
+  gap: 0;
+  min-height: 120px;
+}
+.zipper-side {
+  flex: 1;
+  padding: 8px;
+  overflow-x: auto;
+}
+.zipper-side + .zipper-side {
+  border-left: 1px solid var(--border-subtle);
+}
+.zipper-side-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.zipper-heroes .zipper-side-label { color: var(--color-available); }
+.zipper-villains .zipper-side-label { color: #e74c3c; }
+
+.hero-roster,
+.enemy-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Hero roster card ───────────────────────────────────────────────────── */
+.hero-roster-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-width: 110px;
+  max-width: 140px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.hero-roster-card.is-active {
+  border-color: var(--color-available);
+  box-shadow: 0 0 8px rgba(26,188,156,0.3);
+}
+.hero-roster-card.done {
+  opacity: 0.6;
+}
+/* ── NEXT badge ─────────────────────────────────────────────────────────── */
+.next-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-condensed);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(26, 188, 156, 0.2);
+  border: 1px solid var(--color-available);
+  color: var(--color-available);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.next-badge-enemy {
+  background: rgba(231, 76, 60, 0.18);
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+/* ── Roster name row (name + NEXT + order controls) ─────────────────────── */
+.roster-name-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-condensed);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.enemy-name-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Up/down order buttons ───────────────────────────────────────────────── */
+.roster-order-btns {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+}
+.roster-order-btns-sm {
+  margin-right: 2px;
+}
+.order-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: 1px solid var(--border-visible);
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-size: 8px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.order-btn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-warm);
+}
+.order-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+.order-pos {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  min-width: 12px;
+  text-align: center;
+}
+
+/* ── Roster name row layout update ──────────────────────────────────────── */
+.roster-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.roster-state-badges {
+  min-height: 14px;
+  margin-bottom: 3px;
+}
+
+.activation-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.badge-active {
+  background: rgba(26,188,156,0.25);
+  color: var(--color-available);
+}
+.badge-done {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-dim);
+}
+
+/* ── Enemy roster card ──────────────────────────────────────────────────── */
+.enemy-roster-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-width: 120px;
+  max-width: 160px;
+  border-left: 2px solid #e74c3c;
+}
+.enemy-roster-card.enemy-done {
+  opacity: 0.55;
+}
+.enemy-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.enemy-card-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.enemy-card-btns {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.enemy-card-hp {
+  margin-bottom: 4px;
+}
+.hp-text-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  padding: 0;
+}
+.hp-text-btn:hover { color: var(--text-primary); }
+
+/* ── Villain action buttons ─────────────────────────────────────────────── */
+.villain-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 5px;
+}
+.va-btn {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--color-danger);
+  background: transparent;
+  color: var(--color-danger);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.va-btn:hover { background: rgba(192,57,43,0.2); }
+.va-btn.used {
+  background: rgba(192,57,43,0.15);
+  color: var(--text-dim);
+  border-color: var(--border-subtle);
+  text-decoration: line-through;
+  cursor: default;
+}
+
+/* ── Director board footer ──────────────────────────────────────────────── */
+.director-board-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+.side-toggle {
+  display: flex;
+  gap: 6px;
+}
+.malice-tracker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.malice-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #e74c3c;
+}
+.malice-value {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #e74c3c;
+  min-width: 28px;
+  text-align: center;
+}
+.malice-gain-preview {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* ── Bucket filter — active state ───────────────────────────────────────── */
+.bucket {
+  cursor: pointer;
+  user-select: none;
+}
+.bucket.filter-active {
+  outline: 2px solid var(--color-available);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.bucket.filter-active .bucket-label {
+  color: var(--color-available);
+}
+
+/* ── Collapsible director board ─────────────────────────────────────────── */
+.director-board.collapsed .zipper-board,
+.director-board.collapsed .director-board-footer {
+  display: none;
+}
+.board-collapse-btn {
+  font-size: 12px;
+  padding: 0 6px;
+  line-height: 22px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ── btn-xs (extra small) ────────────────────────────────────────────────── */
+.btn-xs {
+  font-size: 9px;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.btn-danger-ghost {
+  color: var(--color-danger);
+  border-color: transparent;
+}
+.btn-danger-ghost:hover { background: rgba(192,57,43,0.15); }
+
+/* ── Add enemy modal ─────────────────────────────────────────────────────── */
+.add-enemy-modal,
+.enemy-hp-modal {
+  padding: 4px;
+}
+.enemy-boss-row {
+  margin: 12px 0;
+}
+.enemy-boss-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.enemy-boss-label input { width: 16px; height: 16px; }
+.enemy-hp-current {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  margin: 8px 0;
+}
+.enemy-hp-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.enemy-hp-btns { display: flex; gap: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }

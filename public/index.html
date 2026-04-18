@@ -80,10 +80,15 @@
       </div>
       <div class="sheet-header-center">
         <div class="hp-display" id="hp-display">
-          <span id="hp-current">0</span>
-          <span class="hp-sep">/</span>
-          <span id="hp-max">0</span>
-          <span class="hp-label">HP</span>
+          <div class="hp-numbers">
+            <span id="hp-current">0</span>
+            <span class="hp-sep">/</span>
+            <span id="hp-max">0</span>
+            <span class="hp-label">STAMINA</span>
+          </div>
+          <div class="hp-bar-track">
+            <div class="hp-bar-fill" id="hp-bar-fill"></div>
+          </div>
         </div>
       </div>
       <div class="sheet-header-right">
@@ -130,8 +135,9 @@
 
     <!-- Recovery counter (always visible) -->
     <div class="recovery-row" id="recovery-row">
-      <div class="recovery-left">
+      <div class="recovery-group">
         <span class="recovery-label">Recoveries</span>
+        <div class="recovery-pips" id="recovery-pips"></div>
         <div class="recovery-controls">
           <button class="recovery-adj" id="recovery-minus">−</button>
           <span class="recovery-count">
@@ -140,9 +146,20 @@
           <button class="recovery-adj" id="recovery-plus">+</button>
         </div>
       </div>
-      <button class="btn btn-catch-breath" id="catch-breath-btn">
-        Catch Your Breath <span class="cyb-preview" id="cyb-preview"></span>
-      </button>
+      <div class="recovery-group">
+        <span class="recovery-label">Victories</span>
+        <div class="recovery-controls">
+          <button class="recovery-adj" id="victory-minus">−</button>
+          <span class="recovery-count" id="victory-count">0</span>
+          <button class="recovery-adj" id="victory-plus">+</button>
+        </div>
+      </div>
+      <div class="recovery-actions">
+        <button class="btn btn-catch-breath" id="catch-breath-btn">
+          Catch Your Breath <span class="cyb-preview" id="cyb-preview"></span>
+        </button>
+        <button class="btn btn-ghost btn-small" id="respite-btn">Respite</button>
+      </div>
     </div>
 
     <!-- Main sheet tabs -->
@@ -157,6 +174,22 @@
 
       <!-- Abilities tab -->
       <div class="tab-panel active" id="tab-abilities">
+        <div class="ability-filter-bar" id="ability-filter-bar">
+          <button class="filter-pill active" data-type="">All</button>
+          <button class="filter-pill" data-type="action">Action</button>
+          <button class="filter-pill" data-type="maneuver">Maneuver</button>
+          <button class="filter-pill" data-type="anytime">Triggered</button>
+          <button class="filter-pill" data-type="free">Free</button>
+        </div>
+        <div class="power-roll-banner" id="power-roll-banner">
+          <span class="prb-label">Power Roll</span>
+          <span class="prb-sep">·</span>
+          <span class="prb-dice">2d10 + characteristic</span>
+          <span class="prb-sep">·</span>
+          <span class="prb-tier prb-t1">≤11 Tier 1</span>
+          <span class="prb-tier prb-t2">12–16 Tier 2</span>
+          <span class="prb-tier prb-t3">17+ Tier 3</span>
+        </div>
         <div id="ability-cards-container" class="ability-cards">
           <!-- Populated by abilities.js -->
         </div>
@@ -178,9 +211,18 @@
       </div>
     </main>
 
+    <!-- Hero Tokens bar (shown when in session) -->
+    <div class="hero-tokens-bar hidden" id="hero-tokens-bar">
+      <span class="hero-tokens-label">HERO TOKENS</span>
+      <button class="recovery-adj" id="token-minus">−</button>
+      <span id="hero-token-count">0</span>
+      <button class="recovery-adj" id="token-plus">+</button>
+    </div>
+
     <!-- Session controls (shown when in session) -->
     <div class="session-controls hidden" id="session-controls">
-      <button id="end-turn-btn" class="btn btn-end-turn">End My Turn</button>
+      <button id="take-turn-btn" class="btn btn-primary btn-end-turn">Take My Turn</button>
+      <button id="end-turn-btn" class="btn btn-end-turn hidden">End My Turn</button>
     </div>
 
     <!-- Join session fab (shown when not in session) -->
@@ -226,6 +268,7 @@
   <!-- IMPORTANT: Paste your Firebase config into this file -->
   <script src="js/firebase-config.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/wizard-data.js"></script>
   <script src="js/character.js"></script>
   <script src="js/abilities.js"></script>
   <script src="js/session.js"></script>
