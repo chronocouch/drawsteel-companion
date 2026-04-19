@@ -54,6 +54,7 @@
     <header class="app-header">
       <span class="header-title">My Heroes</span>
       <div class="header-actions">
+        <button id="director-mode-btn" class="btn btn-ghost btn-small hidden">Director</button>
         <button id="signout-btn" class="btn btn-ghost btn-small">Sign Out</button>
       </div>
     </header>
@@ -264,6 +265,120 @@
     </div>
   </div>
 
+  <!-- ── Campaign Manager screen ─────────────────────────────────────────── -->
+  <div id="campaign-screen" class="screen">
+    <header class="campaign-header">
+      <button id="campaign-back-btn" class="btn btn-ghost btn-icon">←</button>
+      <span class="campaign-header-title" id="campaign-header-title">Campaign</span>
+      <button id="campaign-respite-btn" class="btn btn-ghost btn-small">⛺ Respite</button>
+    </header>
+
+    <!-- Party status bar -->
+    <div class="campaign-party-bar" id="campaign-party-bar">
+      <span class="party-bar-empty">Loading party…</span>
+    </div>
+
+    <!-- Three-panel layout -->
+    <div class="campaign-panels">
+
+      <!-- Panel 1: Hero Roster -->
+      <div class="campaign-panel panel-heroes">
+        <div class="panel-header">
+          <span class="panel-title">Party</span>
+          <button id="add-hero-btn" class="btn btn-ghost btn-small">+ Hero</button>
+        </div>
+        <div id="hero-roster-list" class="hero-roster-list">
+          <p class="panel-empty">Loading…</p>
+        </div>
+      </div>
+
+      <!-- Panel 2: Encounters -->
+      <div class="campaign-panel panel-encounters">
+        <div class="panel-header">
+          <span class="panel-title">Encounters</span>
+          <button id="add-encounter-btn" class="btn btn-ghost btn-small">+ Encounter</button>
+        </div>
+        <div id="encounter-list" class="encounter-list">
+          <p class="panel-empty">Loading…</p>
+        </div>
+      </div>
+
+      <!-- Panel 3: Campaign Info -->
+      <div class="campaign-panel panel-info">
+        <div id="campaign-info-content">
+          <p class="panel-empty">Loading…</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Encounter Runner screen ──────────────────────────────────────── -->
+  <div id="encounter-runner-screen" class="screen">
+    <header class="runner-header">
+      <button id="runner-back-btn" class="btn btn-ghost btn-icon">←</button>
+      <span class="runner-title" id="runner-title">Encounter</span>
+      <div class="runner-header-center">
+        <span class="runner-round-badge" id="runner-round">Round 1</span>
+        <span class="runner-code-badge" id="runner-session-code"></span>
+      </div>
+      <button id="runner-end-encounter-btn" class="btn btn-danger btn-small">End Encounter</button>
+    </header>
+
+    <div class="runner-body">
+
+      <!-- Left: Hero board -->
+      <div class="runner-panel runner-panel-heroes">
+        <div class="runner-panel-header">
+          <span class="runner-panel-title">HEROES</span>
+        </div>
+        <div id="runner-hero-list" class="runner-hero-list"></div>
+      </div>
+
+      <!-- Center: Turn order + controls -->
+      <div class="runner-panel runner-panel-center">
+        <div class="runner-panel-header">
+          <span class="runner-panel-title">TURN ORDER</span>
+          <button class="btn btn-ghost btn-small" id="runner-next-round-btn">Next Round →</button>
+        </div>
+        <div class="runner-side-toggle">
+          <button class="btn btn-sm btn-ghost" id="runner-heroes-go-btn">◀ Heroes Go</button>
+          <span class="runner-active-label" id="runner-active-label">—</span>
+          <button class="btn btn-sm btn-ghost" id="runner-villains-go-btn">Enemies Go ▶</button>
+        </div>
+        <div id="runner-turn-order" class="runner-turn-order"></div>
+      </div>
+
+      <!-- Right: Enemy board -->
+      <div class="runner-panel runner-panel-enemies">
+        <div class="runner-panel-header">
+          <span class="runner-panel-title">ENEMIES</span>
+          <button class="btn btn-ghost btn-small" id="runner-add-enemy-btn">+ Add</button>
+        </div>
+        <div id="runner-enemy-list" class="runner-enemy-list"></div>
+        <div class="runner-malice-bar">
+          <span class="runner-malice-label">MALICE</span>
+          <button class="recovery-adj" id="runner-malice-minus">−</button>
+          <span class="runner-malice-value" id="runner-malice-value">0</span>
+          <button class="recovery-adj" id="runner-malice-plus">+</button>
+          <span class="runner-malice-next" id="runner-malice-next"></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="runner-bottom-bar">
+      <div class="runner-tokens">
+        <span class="runner-tokens-label">HERO TOKENS</span>
+        <button class="recovery-adj" id="runner-token-minus">−</button>
+        <span id="runner-token-count">0</span>
+        <button class="recovery-adj" id="runner-token-plus">+</button>
+      </div>
+      <button class="btn btn-ghost btn-small" id="runner-set-malice-btn">Set Malice Start</button>
+    </div>
+  </div>
+
   <!-- ── App scripts ──────────────────────────────────────────────────── -->
   <!-- IMPORTANT: Paste your Firebase config into this file -->
   <script src="js/firebase-config.js"></script>
@@ -272,6 +387,8 @@
   <script src="js/character.js"></script>
   <script src="js/abilities.js"></script>
   <script src="js/session.js"></script>
+  <script src="js/monster-search.js"></script>
+  <script src="js/campaign.js"></script>
   <script src="js/app.js"></script>
 
 </body>

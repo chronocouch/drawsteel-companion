@@ -12,6 +12,8 @@ const SCREENS = {
   CHARACTER_SELECT: 'character-select-screen',
   CHARACTER_SHEET: 'character-sheet-screen',
   WIZARD: 'wizard-screen',
+  CAMPAIGN: 'campaign-screen',
+  ENCOUNTER_RUNNER: 'encounter-runner-screen',
 };
 
 // ── Current app state ────────────────────────────────────────────────────────
@@ -58,6 +60,7 @@ auth.onAuthStateChanged(async (user) => {
     AppState.currentUser = user;
     showScreen(SCREENS.CHARACTER_SELECT);
     loadCharacterList(user.uid);
+    checkDirectorMode(user.uid);
     db.collection('users').doc(user.uid).set({
       displayName: user.displayName,
       email: user.email,
@@ -110,6 +113,14 @@ document.getElementById('back-to-list-btn').addEventListener('click', () => {
   AppState.currentCharacter = null;
   showScreen(SCREENS.CHARACTER_SELECT);
   loadCharacterList(AppState.currentUser.uid);
+});
+
+document.getElementById('campaign-back-btn')?.addEventListener('click', () => {
+  showScreen(SCREENS.CHARACTER_SELECT);
+});
+
+document.getElementById('runner-back-btn')?.addEventListener('click', () => {
+  showScreen(SCREENS.CAMPAIGN);
 });
 
 document.getElementById('signout-btn').addEventListener('click', () => {

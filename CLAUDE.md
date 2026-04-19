@@ -89,6 +89,8 @@ drawsteel/
 ```
 {
   directorId, active, round, createdAt,
+  campaignId: string,           // NEW — links to /campaigns
+  encounterId: string,          // NEW — links to /campaigns/.../encounters
   heroes: [{
     userId, characterId, displayName,
     currentHP, maxHP,
@@ -100,6 +102,130 @@ drawsteel/
     // Per-encounter (persists until session ends):
     usedOncePerEncounterAbilities: string[]
   }]
+}
+```
+
+### /monsters/{monsterId}  [global, seeded from SteelCompendium/data-bestiary-json]
+```
+{
+  name: string,
+  level: number,
+  ev: number,                   // encounter value for budget math
+  role: string,                 // 'brute'|'controller'|'defender'|'hexer'|
+                                //   'artillery'|'ambusher'|'leader'|'solo'
+  keywords: string[],           // e.g. ['Humanoid', 'Goblin']
+  stamina: number,
+  speed: number,
+  size: string,                 // '1M', '1S', '2', etc.
+  stability: number,
+  freeStrike: number,
+  characteristics: { MGT, AGL, REA, INU, PRS },
+  immunities: [{ type, value }],
+  weaknesses: [{ type, value }],
+  movementTypes: string[],      // ['fly', 'teleport', etc.]
+  isMinion: boolean,
+  isSolo: boolean,
+  faction: string,              // 'Goblins', 'Demons', etc.
+  abilities: string[],          // ability names (text only for now)
+  maliceFeatures: string[]      // faction malice feature names
+}
+```
+
+### /campaigns/{campaignId}
+```
+{
+  name: string,                 // 'The Shattered Isles Campaign'
+  directorId: string,           // uid of the GM
+  advancementMode:              // 'xp' | 'milestone' | 'director'
+    'xp' | 'milestone' | 'director',
+  createdAt: timestamp,
+  isActive: boolean,            // only one active campaign per director
+
+  // Hero roster — manually managed by GM
+  heroes: [{
+    heroId: string,             // optional: links to /users/.../characters
+    userId: string,             // optional: the player's uid
+    displayName: string,        // shown in encounter builder
+    class: string,
+    ancestry: string,
+    level: number,
+    xp: number,                 // cumulative, permanent
+    currentVictories: number,   // resets at Respite
+    recoveries: { current, max },  // resets at Respite
+    notes: string,              // GM background notes on this hero
+    isLinked: boolean           // true if heroId points to a live character
+  }],
+
+  // Session history
+  sessionLog: [{
+    date: timestamp,
+    summary: string,            // GM freetext
+    victoriesEarned: number,
+    respiteTaken: boolean
+  }]
+}
+```
+
+### /campaigns/{campaignId}/encounters/{encounterId}
+```
+{
+  name: string,                 // 'Goblin Ambush at the Bridge'
+  status: 'draft'|'ready'|'active'|'complete',
+  type: 'combat'|'negotiation'|'montage'|'custom',
+  order: number,                // GM-set ordering within campaign
+  createdAt: timestamp,
+  completedAt: timestamp,
+
+  // Combat encounter fields
+  difficulty: 'trivial'|'easy'|'standard'|'hard'|'extreme',
+  goalType: string,             // 'defeat_all'|'protect'|'survive'|'escape'|'custom'
+  goalDescription: string,      // freetext
+  expectedVictories: number,    // 0, 1, or 2
+  encounterBudget: number,      // computed from party ES + difficulty
+  budgetSpent: number,          // sum of all monster EVs
+
+  // Monster roster
+  groups: [{
+    groupId: string,
+    monsterId: string,          // references /monsters collection
+    monsterName: string,        // denormalized for display
+    count: number,
+    ev: number,                 // encounter value per monster
+    totalEV: number,            // count × ev
+    isSquad: boolean,
+    squadStamina: number,       // if squad: pooled HP
+    isBoss: boolean,
+    notes: string
+  }],
+
+  // Custom NPCs (GM-created, not from compendium)
+  customNPCs: [{
+    name: string,
+    stamina: number,
+    ev: number,
+    isBoss: boolean,
+    notes: string
+  }],
+
+  // Negotiation fields (when type === 'negotiation')
+  negotiation: {
+    npcName: string,
+    patience: number,           // rounds before NPC gives up
+    startingInterest: number,   // 1–5
+    currentInterest: number,
+    motivations: string[],
+    pitfalls: string[],
+    outcome: string
+  },
+
+  // Terrain / environment notes
+  terrain: string,
+  mapNotes: string,
+
+  // Live session link
+  sessionCode: string,          // populated when 'Start Encounter' is tapped
+  victoriesAwarded: number,     // recorded after completion
+  gmNotes: string
 }
 ```
 

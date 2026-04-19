@@ -250,8 +250,10 @@ function joinSessionListeners(code) {
         }
       }
 
-      // Director board
-      if (AppState.currentSession?.isDirector) {
+      // Director board — runner screen or classic overlay
+      if (AppState.currentSession?.isRunnerMode) {
+        updateEncounterRunner(data);
+      } else if (AppState.currentSession?.isDirector) {
         updateDirectorBattleBoard(data);
       }
     }, (error) => {
@@ -889,7 +891,14 @@ async function endSession() {
   leaveSession();
 }
 
+let _leavingSession = false;
+
 function leaveSession() {
+  if (_leavingSession) return;
+  _leavingSession = true;
+
+  const wasRunnerMode = AppState.currentSession?.isRunnerMode;
+
   if (sessionUnsubscribe) {
     sessionUnsubscribe();
     sessionUnsubscribe = null;
@@ -904,12 +913,22 @@ function leaveSession() {
   document.getElementById('director-battle-board')?.remove();
   document.getElementById('active-side-banner')?.remove();
   document.getElementById('join-session-fab')?.classList.remove('hidden');
-
-  // Reset take/end turn buttons to default state
   document.getElementById('take-turn-btn')?.classList.remove('hidden');
   document.getElementById('end-turn-btn')?.classList.add('hidden');
 
   resetTurnState();
+
+  // Runner mode: navigate back to campaign screen
+  if (wasRunnerMode) {
+    AppState.currentRunnerCampaign  = null;
+    AppState.currentRunnerEncounter = null;
+    if (typeof showScreen === 'function' && typeof SCREENS !== 'undefined') {
+      showScreen(SCREENS.CAMPAIGN);
+      if (typeof renderCampaignScreen === 'function') renderCampaignScreen();
+    }
+  }
+
+  _leavingSession = false;
 }
 
 // ── Round display ─────────────────────────────────────────────────────────────
@@ -1024,6 +1043,267 @@ function resetJoinSessionFab() {
   `;
   document.getElementById('join-session-btn')?.addEventListener('click', promptJoinSession);
   document.getElementById('start-session-btn')?.addEventListener('click', createSession);
+}
+
+// ── J2: Encounter Runner ──────────────────────────────────────────────────────
+
+function updateEncounterRunner(sessionData) {
+  const heroes  = sessionData.heroes  || [];
+  const enemies = sessionData.enemies || [];
+  const round   = sessionData.round   ?? 1;
+  const malice  = sessionData.malice  ?? 0;
+  const tokens  = sessionData.heroTokens ?? 0;
+
+  // Header stats
+  const roundEl = document.getElementById('runner-round');
+  if (roundEl) roundEl.textContent = `Round ${round}`;
+
+  // Malice
+  const maliceEl = document.getElementById('runner-malice-value');
+  if (maliceEl) maliceEl.textContent = malice;
+  const maliceNextEl = document.getElementById('runner-malice-next');
+  if (maliceNextEl) maliceNextEl.textContent = `+${heroes.length + round + 1} next rnd`;
+
+  // Tokens
+  const tokenEl = document.getElementById('runner-token-count');
+  if (tokenEl) tokenEl.textContent = tokens;
+
+  // Active side
+  const activeLabel    = document.getElementById('runner-active-label');
+  const heroesGoBtn    = document.getElementById('runner-heroes-go-btn');
+  const villainsGoBtn  = document.getElementById('runner-villains-go-btn');
+  if (activeLabel) {
+    activeLabel.textContent = sessionData.activeSide === 'heroes' ? '⚔ HEROES GO'
+      : sessionData.activeSide === 'villains' ? '☠ ENEMIES GO' : '—';
+  }
+  if (heroesGoBtn)   heroesGoBtn.className   = `btn btn-sm ${sessionData.activeSide === 'heroes'   ? 'btn-primary' : 'btn-ghost'}`;
+  if (villainsGoBtn) villainsGoBtn.className = `btn btn-sm ${sessionData.activeSide === 'villains' ? 'btn-primary' : 'btn-ghost'}`;
+
+  // Hero list
+  const nextHeroIdx  = heroes.findIndex(h => !h.hasActed && !h.isActivated);
+  const heroListEl   = document.getElementById('runner-hero-list');
+  if (heroListEl) heroListEl.innerHTML = heroes.map((h, i) => buildRunnerHeroCard(h, i, i === nextHeroIdx)).join('') || '<p class="panel-empty">No heroes yet.</p>';
+
+  // Enemy list
+  const nextEnemyIdx = enemies.findIndex(e => !e.isActivated);
+  const enemyListEl  = document.getElementById('runner-enemy-list');
+  if (enemyListEl) enemyListEl.innerHTML = enemies.map((e, i) => buildRunnerEnemyCard(e, i, enemies.length, i === nextEnemyIdx)).join('') || '<p class="panel-empty">No enemies.</p>';
+
+  // Turn order (center)
+  const turnOrderEl = document.getElementById('runner-turn-order');
+  if (turnOrderEl) {
+    turnOrderEl.innerHTML = `
+      <div class="runner-turn-section">
+        <div class="runner-turn-section-label">⚔ HEROES</div>
+        ${heroes.map((h, i) => buildRunnerTurnRow(h.displayName, 'hero', h.isActivated, h.hasActed, i === nextHeroIdx)).join('') || '<div class="runner-turn-empty">None</div>'}
+      </div>
+      <div class="runner-turn-section">
+        <div class="runner-turn-section-label">☠ ENEMIES</div>
+        ${enemies.map((e, i) => buildRunnerTurnRow(e.name, 'enemy', e.isActivated, false, i === nextEnemyIdx)).join('') || '<div class="runner-turn-empty">None</div>'}
+        <button class="btn btn-ghost btn-small runner-add-enemy-turn" id="runner-add-enemy-turn-btn" style="margin-top:8px">+ Add Enemy</button>
+      </div>
+    `;
+  }
+
+  wireRunnerButtons(sessionData);
+}
+
+function buildRunnerHeroCard(hero, idx, isNext) {
+  const hpPct   = hero.maxHP > 0 ? Math.max(0, Math.round((hero.currentHP / hero.maxHP) * 100)) : 0;
+  const hpColor = hpPct > 60 ? 'var(--color-available)' : hpPct > 30 ? '#f39c12' : 'var(--color-danger)';
+  const accent  = (typeof CLASS_COLORS !== 'undefined' && CLASS_COLORS?.[hero.class]?.accent) || '#2980B9';
+  const stateClass = hero.isActivated ? 'runner-hero-active' : hero.hasActed ? 'runner-hero-done' : '';
+
+  return `
+    <div class="runner-hero-card ${stateClass}" style="border-left-color:${accent}">
+      <div class="runner-hero-header">
+        <div class="runner-hero-name-row">
+          ${isNext      ? '<span class="runner-next-badge">NEXT</span>' : ''}
+          ${hero.isActivated ? '<span class="runner-state-badge runner-badge-active">ACTIVE</span>'
+            : hero.hasActed ? '<span class="runner-state-badge runner-badge-done">DONE</span>' : ''}
+          <span class="runner-hero-name">${hero.displayName}</span>
+          ${hero.class  ? `<span class="runner-hero-class">${hero.class}</span>` : ''}
+        </div>
+        <button class="runner-hero-edit-btn" data-hero-idx="${idx}" title="Adjust">✎</button>
+      </div>
+      <div class="runner-hero-hp-row">
+        <div class="hp-bar-track runner-hp-track">
+          <div class="hp-bar-fill" style="width:${hpPct}%;background:${hpColor}"></div>
+        </div>
+        <span class="runner-hero-hp-text">${hero.currentHP}/${hero.maxHP}</span>
+      </div>
+      <div class="runner-hero-resource-row">
+        <span class="runner-resource-name">${hero.heroicResource?.name || 'Resource'}</span>
+        <span class="runner-resource-value">${hero.heroicResource?.current ?? 0}/${hero.heroicResource?.max ?? 0}</span>
+      </div>
+      ${hero.conditions?.length ? `<div class="roster-conditions">${hero.conditions.map(c => `<span class="condition-badge">${c}</span>`).join('')}</div>` : ''}
+      <div class="runner-buckets">
+        <span class="runner-bucket ${hero.hasActed        ? 'rbucket-spent' : 'rbucket-ready'}" title="Action">⚔</span>
+        <span class="runner-bucket ${hero.hasManeuvered   ? 'rbucket-spent' : 'rbucket-ready'}" title="Maneuver">◈</span>
+        <span class="runner-bucket ${hero.hasUsedTriggered? 'rbucket-spent' : 'rbucket-ready'}" title="Triggered">⟳</span>
+      </div>
+    </div>
+  `;
+}
+
+function buildRunnerEnemyCard(enemy, idx, total, isNext) {
+  const hpPct   = enemy.maxHP > 0 ? Math.max(0, Math.round((enemy.currentHP / enemy.maxHP) * 100)) : 0;
+  const hpColor = hpPct > 60 ? 'var(--color-available)' : hpPct > 30 ? '#f39c12' : 'var(--color-danger)';
+  const vaUsed  = enemy.villainActionsUsed || [];
+
+  return `
+    <div class="runner-enemy-card ${enemy.isActivated ? 'runner-enemy-done' : ''}">
+      <div class="runner-enemy-header">
+        <div class="runner-enemy-name-row">
+          ${isNext ? '<span class="runner-next-badge runner-next-enemy">NEXT</span>' : ''}
+          <span class="runner-enemy-name">${enemy.name}${enemy.isBoss ? ' 👑' : ''}</span>
+        </div>
+        <div class="runner-enemy-ctrl">
+          <button class="runner-enemy-activate-btn ${enemy.isActivated ? 'is-done' : ''}" data-enemy-id="${enemy.id}">
+            ${enemy.isActivated ? '✓ Done' : 'Activate'}
+          </button>
+          <button class="runner-enemy-hp-btn" data-enemy-id="${enemy.id}" title="Edit HP">✎</button>
+          <button class="runner-enemy-remove-btn" data-enemy-id="${enemy.id}" title="Remove">✕</button>
+        </div>
+      </div>
+      <div class="runner-enemy-hp-row">
+        <div class="hp-bar-track runner-hp-track">
+          <div class="hp-bar-fill" style="width:${hpPct}%;background:${hpColor}"></div>
+        </div>
+        <span class="runner-enemy-hp-text">${enemy.currentHP}/${enemy.maxHP}</span>
+      </div>
+      ${enemy.conditions?.length ? `<div class="roster-conditions">${enemy.conditions.map(c => `<span class="condition-badge">${c}</span>`).join('')}</div>` : ''}
+      ${enemy.isBoss ? `
+        <div class="villain-actions">
+          ${[1,2,3].map(n => `
+            <button class="va-btn ${vaUsed.includes(n) ? 'used' : ''}" data-enemy-id="${enemy.id}" data-va="${n}">
+              VA ${n}${vaUsed.includes(n) ? ' ✓' : ''}
+            </button>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function buildRunnerTurnRow(name, type, isActivated, hasActed, isNext) {
+  return `
+    <div class="runner-turn-row turn-row-${type} ${isActivated || hasActed ? 'turn-row-done' : ''}">
+      <span class="runner-turn-indicator">${isNext ? '▶' : ''}</span>
+      <span class="runner-turn-name">${name}</span>
+      ${isActivated || hasActed ? '<span class="runner-turn-check">✓</span>' : ''}
+    </div>
+  `;
+}
+
+function wireRunnerButtons(sessionData) {
+  const heroes  = sessionData.heroes  || [];
+  const enemies = sessionData.enemies || [];
+
+  document.getElementById('runner-next-round-btn')  ?.addEventListener('click', advanceRound);
+  document.getElementById('runner-heroes-go-btn')   ?.addEventListener('click', () => setActiveSide('heroes'));
+  document.getElementById('runner-villains-go-btn') ?.addEventListener('click', () => setActiveSide('villains'));
+  document.getElementById('runner-malice-minus')    ?.addEventListener('click', () => adjustMalice(-1));
+  document.getElementById('runner-malice-plus')     ?.addEventListener('click', () => adjustMalice(1));
+  document.getElementById('runner-token-minus')     ?.addEventListener('click', () => adjustHeroTokens(-1));
+  document.getElementById('runner-token-plus')      ?.addEventListener('click', () => adjustHeroTokens(1));
+  document.getElementById('runner-set-malice-btn')  ?.addEventListener('click', startCombat);
+  document.getElementById('runner-add-enemy-btn')   ?.addEventListener('click', showAddEnemyModal);
+  document.getElementById('runner-add-enemy-turn-btn')?.addEventListener('click', showAddEnemyModal);
+
+  document.getElementById('runner-end-encounter-btn')?.addEventListener('click', () => {
+    const campaign = AppState.currentRunnerCampaign;
+    const enc      = AppState.currentRunnerEncounter;
+    const code     = AppState.currentSession?.code;
+    if (typeof showEndEncounterModal === 'function' && campaign && enc) {
+      showEndEncounterModal(campaign, enc, code);
+    } else {
+      endSession();
+    }
+  });
+
+  // Hero edit buttons
+  document.querySelectorAll('#runner-hero-list .runner-hero-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx  = parseInt(btn.dataset.heroIdx, 10);
+      if (!isNaN(idx) && heroes[idx]) showRunnerHeroEditModal(heroes[idx]);
+    });
+  });
+
+  // Enemy: activate
+  document.querySelectorAll('#runner-enemy-list .runner-enemy-activate-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const enemy = enemies.find(e => e.id === btn.dataset.enemyId);
+      if (enemy) markEnemyActivated(enemy.id, !enemy.isActivated);
+    });
+  });
+  // Enemy: HP edit
+  document.querySelectorAll('#runner-enemy-list .runner-enemy-hp-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const enemy = enemies.find(e => e.id === btn.dataset.enemyId);
+      if (enemy) showEnemyHPModal(enemy);
+    });
+  });
+  // Enemy: remove
+  document.querySelectorAll('#runner-enemy-list .runner-enemy-remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const enemy = enemies.find(e => e.id === btn.dataset.enemyId);
+      if (enemy && confirm(`Remove ${enemy.name}?`)) removeEnemy(enemy.id);
+    });
+  });
+  // Villain actions
+  document.querySelectorAll('#runner-enemy-list .va-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleVillainAction(btn.dataset.enemyId, parseInt(btn.dataset.va, 10)));
+  });
+}
+
+function showRunnerHeroEditModal(hero) {
+  showModal(`
+    <div class="runner-hero-edit-modal">
+      <h2>${hero.displayName}</h2>
+      <div class="enc-field-row" style="gap:16px;margin-top:8px">
+        <div class="enc-field">
+          <label class="enc-label">Stamina</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" id="runner-hp-in" class="wizard-text-input"
+              value="${hero.currentHP}" min="0" max="${hero.maxHP || 9999}" style="width:80px" />
+            <span style="color:var(--text-dim);font-size:13px">/ ${hero.maxHP}</span>
+          </div>
+        </div>
+        <div class="enc-field">
+          <label class="enc-label">${hero.heroicResource?.name || 'Resource'}</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" id="runner-res-in" class="wizard-text-input"
+              value="${hero.heroicResource?.current ?? 0}" min="0" max="${hero.heroicResource?.max ?? 99}" style="width:80px" />
+            <span style="color:var(--text-dim);font-size:13px">/ ${hero.heroicResource?.max ?? 10}</span>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="runner-hero-save-btn" style="width:100%;margin-top:12px">Save</button>
+    </div>
+  `);
+
+  document.getElementById('runner-hero-save-btn')?.addEventListener('click', async () => {
+    const newHP  = parseInt(document.getElementById('runner-hp-in')?.value, 10);
+    const newRes = parseInt(document.getElementById('runner-res-in')?.value, 10);
+    if (isNaN(newHP) || isNaN(newRes)) return;
+
+    const session = AppState.currentSession;
+    if (!session) return;
+    try {
+      const snap = await db.collection('sessions').doc(session.code).get();
+      if (!snap.exists) return;
+      const heroes = [...(snap.data().heroes || [])];
+      const idx = heroes.findIndex(h => h.displayName === hero.displayName && h.userId === hero.userId);
+      if (idx < 0) return;
+      heroes[idx] = { ...heroes[idx], currentHP: newHP, heroicResource: { ...heroes[idx].heroicResource, current: newRes } };
+      await db.collection('sessions').doc(session.code).update({ heroes });
+      hideModal();
+    } catch (e) {
+      console.error('Hero edit error:', e);
+      showToast('Could not save.', 'danger');
+    }
+  });
 }
 
 // ── Wire up join/start buttons ────────────────────────────────────────────────
