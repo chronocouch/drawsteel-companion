@@ -1048,6 +1048,16 @@ function resetJoinSessionFab() {
 // ── J2: Encounter Runner ──────────────────────────────────────────────────────
 
 function updateEncounterRunner(sessionData) {
+  // Non-combat encounter types get their own trackers
+  if (sessionData.encounterType === 'negotiation') {
+    renderNegotiationRunner(sessionData);
+    return;
+  }
+  if (sessionData.encounterType === 'montage') {
+    renderMontageRunner(sessionData);
+    return;
+  }
+
   const heroes  = sessionData.heroes  || [];
   const enemies = sessionData.enemies || [];
   const round   = sessionData.round   ?? 1;
@@ -1106,6 +1116,573 @@ function updateEncounterRunner(sessionData) {
   }
 
   wireRunnerButtons(sessionData);
+}
+
+// ── K2: Negotiation Runner ────────────────────────────────────────────────────
+
+function negInterestLabel(n) {
+  return ['', 'Hostile', 'Suspicious', 'Neutral', 'Friendly', 'Allied'][n] || '';
+}
+
+function renderNegotiationRunner(sessionData) {
+  const neg     = sessionData.negotiation || {};
+  const round   = sessionData.round   ?? 1;
+  const heroes  = sessionData.heroes  || [];
+  const interest = neg.currentInterest ?? 3;
+  const patience = neg.currentPatience ?? 3;
+  const npcName  = neg.npcName || 'Unknown NPC';
+  const motivations = neg.motivations || [];
+  const pitfalls    = neg.pitfalls    || [];
+
+  // Header round
+  const roundEl = document.getElementById('runner-round');
+  if (roundEl) roundEl.textContent = `Round ${round}`;
+
+  const INTEREST_COLORS = ['', '#c0392b', '#e67e22', '#d4ac0d', 'var(--color-available)', 'var(--color-gold)'];
+  const patienceColor = patience <= 1 ? 'var(--color-danger)' : patience <= 2 ? '#e67e22' : 'var(--color-available)';
+
+  // Replace body with negotiation layout
+  const body = document.querySelector('#encounter-runner-screen .runner-body');
+  if (body) {
+    body.innerHTML = `
+      <!-- Left: NPC reference -->
+      <div class="runner-panel runner-panel-neg-ref">
+        <div class="runner-panel-header">
+          <span class="runner-panel-title">NPC REFERENCE</span>
+        </div>
+        <div class="neg-runner-npc-name">${npcName}</div>
+        ${neg.npcDescription ? `<p class="neg-runner-npc-desc">${neg.npcDescription}</p>` : ''}
+
+        ${motivations.length ? `
+          <div class="neg-runner-section">
+            <div class="neg-runner-section-title neg-section-motivation">MOTIVATIONS</div>
+            <ul class="neg-runner-list">
+              ${motivations.filter(Boolean).map(m => `<li>${m}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        ${pitfalls.length ? `
+          <div class="neg-runner-section">
+            <div class="neg-runner-section-title neg-section-pitfall">PITFALLS</div>
+            <ul class="neg-runner-list neg-runner-list-pitfall">
+              ${pitfalls.filter(Boolean).map(p => `<li>${p}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        ${neg.successOutcome || neg.failureOutcome ? `
+          <div class="neg-runner-section">
+            <div class="neg-runner-section-title">OUTCOMES</div>
+            ${neg.successOutcome ? `<div class="neg-outcome-row neg-outcome-success"><span class="neg-outcome-label">Success:</span> ${neg.successOutcome}</div>` : ''}
+            ${neg.failureOutcome ? `<div class="neg-outcome-row neg-outcome-failure"><span class="neg-outcome-label">Failure:</span> ${neg.failureOutcome}</div>` : ''}
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Center: Interest tracker -->
+      <div class="runner-panel runner-panel-neg-tracker">
+        <div class="runner-panel-header">
+          <span class="runner-panel-title">INTEREST TRACKER</span>
+        </div>
+        <div class="neg-runner-interest-block">
+          <div class="neg-runner-pips">
+            ${[1,2,3,4,5].map(n => `
+              <div class="neg-runner-pip ${n <= interest ? 'neg-runner-pip-filled' : ''}"
+                style="${n <= interest ? `background:${INTEREST_COLORS[n]};border-color:${INTEREST_COLORS[n]}` : ''}">
+                ${n}
+              </div>
+            `).join('')}
+          </div>
+          <div class="neg-runner-interest-text" style="color:${INTEREST_COLORS[interest]}">
+            ${negInterestLabel(interest).toUpperCase()}
+          </div>
+          <div class="neg-runner-interest-controls">
+            <button class="btn btn-large neg-interest-change-btn" id="neg-minus-btn"
+              ${interest <= 1 ? 'disabled' : ''}>−</button>
+            <span class="neg-runner-interest-value" style="color:${INTEREST_COLORS[interest]}">${interest}</span>
+            <button class="btn btn-large neg-interest-change-btn" id="neg-plus-btn"
+              ${interest >= 5 ? 'disabled' : ''}>+</button>
+          </div>
+        </div>
+
+        <div class="neg-runner-patience-block">
+          <div class="neg-runner-patience-label">PATIENCE REMAINING</div>
+          <div class="neg-runner-patience-value" style="color:${patienceColor}">${patience}</div>
+          <div class="neg-runner-patience-hint">${patience === 0 ? 'Patience exhausted!' : patience === 1 ? 'Last round!' : `rounds left`}</div>
+        </div>
+      </div>
+
+      <!-- Right: Heroes -->
+      <div class="runner-panel runner-panel-neg-heroes">
+        <div class="runner-panel-header">
+          <span class="runner-panel-title">HEROES</span>
+        </div>
+        <div class="neg-runner-hero-list">
+          ${heroes.map(h => {
+            const accent = (typeof CLASS_COLORS !== 'undefined' && CLASS_COLORS?.[h.class]?.accent) || '#2980B9';
+            return `
+              <div class="neg-runner-hero-row" style="border-left-color:${accent}">
+                <span class="neg-runner-hero-name">${h.displayName}</span>
+                <span class="neg-runner-hero-class">${h.class || ''}</span>
+              </div>
+            `;
+          }).join('') || '<p class="panel-empty">No heroes yet.</p>'}
+        </div>
+      </div>
+    `;
+  }
+
+  // Replace bottom bar
+  const bottomBar = document.querySelector('#encounter-runner-screen .runner-bottom-bar');
+  if (bottomBar) {
+    bottomBar.innerHTML = `
+      <div class="neg-runner-bottom">
+        <span class="neg-runner-round-label">Round ${round}</span>
+        <button class="btn btn-secondary" id="neg-next-round-btn"
+          ${patience === 0 ? 'disabled' : ''}>Next Round →</button>
+        <button class="btn btn-danger btn-small" id="neg-end-btn">End Negotiation</button>
+      </div>
+    `;
+  }
+
+  wireNegotiationButtons(sessionData);
+
+  // Auto-detect end conditions
+  if (interest >= 5) {
+    setTimeout(() => showNegotiationEndModal('success', sessionData), 200);
+  } else if (interest <= 1) {
+    setTimeout(() => showNegotiationEndModal('failure', sessionData), 200);
+  } else if (patience === 0) {
+    setTimeout(() => showNegotiationEndModal('patience', sessionData), 200);
+  }
+}
+
+function wireNegotiationButtons(sessionData) {
+  const code = AppState.currentSession?.code;
+  if (!code) return;
+
+  document.getElementById('neg-minus-btn')?.addEventListener('click', () => {
+    changeNegotiationInterest(-1, sessionData, code);
+  });
+  document.getElementById('neg-plus-btn')?.addEventListener('click', () => {
+    changeNegotiationInterest(+1, sessionData, code);
+  });
+  document.getElementById('neg-next-round-btn')?.addEventListener('click', () => {
+    advanceNegotiationRound(sessionData, code);
+  });
+  document.getElementById('neg-end-btn')?.addEventListener('click', () => {
+    const neg = sessionData.negotiation || {};
+    const interest = neg.currentInterest ?? 3;
+    const outcome = interest >= 5 ? 'success' : interest <= 1 ? 'failure' : 'patience';
+    showNegotiationEndModal(outcome, sessionData);
+  });
+}
+
+async function changeNegotiationInterest(delta, sessionData, code) {
+  const neg     = sessionData.negotiation || {};
+  const current = neg.currentInterest ?? 3;
+  const newVal  = Math.max(1, Math.min(5, current + delta));
+  if (newVal === current) return;
+  try {
+    await db.collection('sessions').doc(code).update({
+      'negotiation.currentInterest': newVal,
+    });
+  } catch (e) {
+    console.error('changeNegotiationInterest:', e);
+    showToast('Could not update interest.', 'danger');
+  }
+}
+
+async function advanceNegotiationRound(sessionData, code) {
+  const neg        = sessionData.negotiation || {};
+  const patience   = neg.currentPatience ?? 1;
+  const newPatience = Math.max(0, patience - 1);
+  const newRound   = (sessionData.round ?? 1) + 1;
+  try {
+    await db.collection('sessions').doc(code).update({
+      round: newRound,
+      'negotiation.currentPatience': newPatience,
+    });
+  } catch (e) {
+    console.error('advanceNegotiationRound:', e);
+    showToast('Could not advance round.', 'danger');
+  }
+}
+
+function showNegotiationEndModal(outcome, sessionData) {
+  const neg     = sessionData.negotiation || {};
+  const npcName = neg.npcName || 'the NPC';
+
+  const OUTCOME_CONFIG = {
+    success: {
+      title:   'Negotiation Succeeded!',
+      icon:    '◆',
+      color:   'var(--color-gold)',
+      desc:    `${npcName} has been won over. Interest reached 5.`,
+      outcome: neg.successOutcome || '',
+      vicCount: 1,
+    },
+    failure: {
+      title:   'Negotiation Failed',
+      icon:    '✕',
+      color:   'var(--color-danger)',
+      desc:    `${npcName} has turned hostile. Interest fell to 1.`,
+      outcome: neg.failureOutcome || '',
+      vicCount: 0,
+    },
+    patience: {
+      title:   'Patience Exhausted',
+      icon:    '⧗',
+      color:   '#e67e22',
+      desc:    `${npcName} has ended the negotiation. Patience ran out.`,
+      outcome: neg.failureOutcome || '',
+      vicCount: 0,
+    },
+  };
+
+  const cfg = OUTCOME_CONFIG[outcome] || OUTCOME_CONFIG.failure;
+
+  showModal(`
+    <div class="neg-end-modal">
+      <div class="neg-end-icon" style="color:${cfg.color}">${cfg.icon}</div>
+      <h2 class="neg-end-title" style="color:${cfg.color}">${cfg.title}</h2>
+      <p class="neg-end-desc">${cfg.desc}</p>
+      ${cfg.outcome ? `<p class="neg-end-outcome-text">${cfg.outcome}</p>` : ''}
+
+      ${cfg.vicCount > 0 ? `
+        <div class="neg-end-victory-row">
+          <span class="neg-end-victory-label">Victory Awarded:</span>
+          <span class="neg-end-victory-value">1V per hero</span>
+        </div>
+        <button class="btn btn-primary" id="neg-award-victory-btn"
+          style="width:100%;margin-top:12px">
+          Award Victory &amp; End
+        </button>
+        <button class="btn btn-ghost btn-small" id="neg-no-victory-btn"
+          style="width:100%;margin-top:6px">
+          End Without Victory
+        </button>
+      ` : `
+        <button class="btn btn-primary" id="neg-no-victory-btn"
+          style="width:100%;margin-top:12px">
+          End Negotiation
+        </button>
+      `}
+    </div>
+  `);
+
+  const campaign = AppState.currentRunnerCampaign;
+  const enc      = AppState.currentRunnerEncounter;
+  const code     = AppState.currentSession?.code;
+
+  document.getElementById('neg-award-victory-btn')?.addEventListener('click', () => {
+    if (typeof performEndEncounter === 'function') {
+      performEndEncounter(campaign, enc, code, cfg.vicCount);
+    }
+  });
+  document.getElementById('neg-no-victory-btn')?.addEventListener('click', () => {
+    if (typeof performEndEncounter === 'function') {
+      performEndEncounter(campaign, enc, code, 0);
+    }
+  });
+}
+
+// ── L2: Montage Runner ────────────────────────────────────────────────────────
+
+function renderMontageRunner(sessionData) {
+  const m        = sessionData.montage || {};
+  const round    = sessionData.round ?? 1;
+  const heroes   = sessionData.heroes || [];
+  const needed   = m.successesNeeded ?? 4;
+  const limit    = m.roundLimit      ?? 4;
+  const total    = m.totalSuccesses  ?? 0;
+  const heroResults = m.heroResults  || heroes.map(() => null);
+  const challenges  = m.challenges   || [];
+  const pct      = Math.min(100, Math.round((total / needed) * 100));
+  const barColor = total >= needed ? 'var(--color-gold)'
+    : pct >= 60 ? 'var(--color-available)' : '#2980B9';
+  const roundsLeft = limit - round + 1;
+  const roundColor = roundsLeft <= 1 ? 'var(--color-danger)' : roundsLeft <= 2 ? '#e67e22' : 'var(--color-available)';
+
+  // Update round header
+  const roundEl = document.getElementById('runner-round');
+  if (roundEl) roundEl.textContent = `Round ${round}`;
+
+  const RESULT_CFG = {
+    success: { label: 'Success',   pts: 2, color: 'var(--color-available)', icon: '◆' },
+    partial: { label: 'Partial',   pts: 1, color: '#e67e22',                icon: '◈' },
+    failure: { label: 'Failure',   pts: 0, color: 'var(--color-danger)',    icon: '✕' },
+  };
+
+  const body = document.querySelector('#encounter-runner-screen .runner-body');
+  if (body) {
+    body.innerHTML = `
+      <!-- Left: Challenge reference -->
+      <div class="runner-panel runner-panel-montage-ref">
+        <div class="runner-panel-header">
+          <span class="runner-panel-title">CHALLENGES</span>
+        </div>
+        ${m.description ? `<p class="montage-runner-desc">${m.description}</p>` : ''}
+        ${challenges.length ? `
+          <div class="montage-challenge-list">
+            ${challenges.filter(Boolean).map(ch => `
+              <div class="montage-runner-challenge">
+                <div class="montage-runner-ch-name">${ch.name || 'Unnamed'}
+                  <span class="montage-runner-ch-tier montage-tier-${ch.tier || 'medium'}">${(ch.tier || 'medium').toUpperCase()}</span>
+                </div>
+                ${ch.desc ? `<div class="montage-runner-ch-desc">${ch.desc}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : '<p class="panel-empty">No challenges defined.</p>'}
+        ${m.successOutcome || m.failureOutcome ? `
+          <div class="montage-outcomes-section">
+            ${m.successOutcome ? `<div class="montage-outcome-row montage-outcome-success"><span class="neg-outcome-label">Success:</span> ${m.successOutcome}</div>` : ''}
+            ${m.failureOutcome ? `<div class="montage-outcome-row montage-outcome-failure"><span class="neg-outcome-label">Failure:</span> ${m.failureOutcome}</div>` : ''}
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Center: Per-hero test recording -->
+      <div class="runner-panel runner-panel-montage-heroes">
+        <div class="runner-panel-header">
+          <span class="runner-panel-title">ROUND ${round} TESTS</span>
+        </div>
+        <div class="montage-hero-tests">
+          ${heroes.map((h, i) => {
+            const accent  = (typeof CLASS_COLORS !== 'undefined' && CLASS_COLORS?.[h.class]?.accent) || '#2980B9';
+            const result  = heroResults[i];
+            const resCfg  = result ? RESULT_CFG[result] : null;
+            return `
+              <div class="montage-hero-row" style="border-left-color:${accent}">
+                <div class="montage-hero-name-row">
+                  <span class="montage-hero-name">${h.displayName}</span>
+                  <span class="montage-hero-class">${h.class || ''}</span>
+                </div>
+                <div class="montage-result-btns">
+                  ${Object.entries(RESULT_CFG).map(([key, cfg]) => `
+                    <button class="montage-result-btn ${result === key ? 'montage-result-active' : ''}"
+                      data-hero-idx="${i}" data-result="${key}"
+                      style="${result === key ? `background:${cfg.color};border-color:${cfg.color};color:#fff` : ''}">
+                      ${cfg.icon} ${cfg.label}
+                    </button>
+                  `).join('')}
+                </div>
+                ${resCfg ? `<div class="montage-hero-result-label" style="color:${resCfg.color}">${resCfg.icon} ${resCfg.label} (+${resCfg.pts})</div>` : '<div class="montage-hero-result-label" style="color:var(--text-dim)">No result yet</div>'}
+              </div>
+            `;
+          }).join('') || '<p class="panel-empty">No heroes.</p>'}
+        </div>
+      </div>
+
+      <!-- Right: Progress tracker -->
+      <div class="runner-panel runner-panel-montage-progress">
+        <div class="runner-panel-header">
+          <span class="runner-panel-title">PROGRESS</span>
+        </div>
+
+        <div class="montage-progress-block">
+          <div class="montage-progress-label">SUCCESSES</div>
+          <div class="montage-progress-fraction">
+            <span class="montage-progress-current" style="color:${barColor}">${total}</span>
+            <span class="montage-progress-sep">/</span>
+            <span class="montage-progress-needed">${needed}</span>
+          </div>
+          <div class="montage-progress-bar-track">
+            <div class="montage-progress-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+          </div>
+          <div class="montage-progress-pct">${pct}%</div>
+        </div>
+
+        <div class="montage-rounds-block">
+          <div class="montage-rounds-label">ROUNDS REMAINING</div>
+          <div class="montage-rounds-value" style="color:${roundColor}">${roundsLeft}</div>
+          <div class="montage-rounds-hint">${roundsLeft <= 0 ? 'Time is up!' : roundsLeft === 1 ? 'Final round!' : `of ${limit} total`}</div>
+        </div>
+
+        <div class="montage-this-round-block">
+          <div class="montage-this-round-label">THIS ROUND</div>
+          ${heroes.map((h, i) => {
+            const r = heroResults[i];
+            const cfg = r ? RESULT_CFG[r] : null;
+            return `
+              <div class="montage-round-hero-row">
+                <span class="montage-round-hero-name">${h.displayName}</span>
+                <span class="montage-round-hero-result" style="color:${cfg ? cfg.color : 'var(--text-dim)'}">
+                  ${cfg ? `${cfg.icon} +${cfg.pts}` : '—'}
+                </span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Bottom bar
+  const bottomBar = document.querySelector('#encounter-runner-screen .runner-bottom-bar');
+  if (bottomBar) {
+    const allRecorded = heroes.length > 0 && heroResults.every(r => r !== null && r !== undefined);
+    bottomBar.innerHTML = `
+      <div class="neg-runner-bottom">
+        <span class="neg-runner-round-label">Round ${round} / ${limit}</span>
+        <button class="btn btn-secondary" id="montage-end-round-btn"
+          ${!allRecorded || roundsLeft <= 0 ? 'disabled' : ''}
+          title="${!allRecorded ? 'Record all hero results first' : ''}">
+          End Round →
+        </button>
+        <button class="btn btn-danger btn-small" id="montage-end-btn">End Montage</button>
+      </div>
+    `;
+  }
+
+  wireMontageButtons(sessionData);
+
+  // Auto-detect end conditions
+  if (total >= needed) {
+    setTimeout(() => showMontageEndModal('success', sessionData), 200);
+  } else if (roundsLeft <= 0) {
+    setTimeout(() => showMontageEndModal('failure', sessionData), 200);
+  }
+}
+
+function wireMontageButtons(sessionData) {
+  const code = AppState.currentSession?.code;
+  if (!code) return;
+
+  document.querySelectorAll('.montage-result-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const heroIdx = parseInt(btn.dataset.heroIdx, 10);
+      const result  = btn.dataset.result;
+      recordMontageResult(heroIdx, result, sessionData, code);
+    });
+  });
+
+  document.getElementById('montage-end-round-btn')?.addEventListener('click', () => {
+    advanceMontageRound(sessionData, code);
+  });
+
+  document.getElementById('montage-end-btn')?.addEventListener('click', () => {
+    const m      = sessionData.montage || {};
+    const total  = m.totalSuccesses ?? 0;
+    const needed = m.successesNeeded ?? 4;
+    const outcome = total >= needed ? 'success' : 'failure';
+    showMontageEndModal(outcome, sessionData);
+  });
+}
+
+async function recordMontageResult(heroIdx, result, sessionData, code) {
+  const m           = sessionData.montage || {};
+  const heroResults = [...(m.heroResults || (sessionData.heroes || []).map(() => null))];
+  heroResults[heroIdx] = result;
+  try {
+    await db.collection('sessions').doc(code).update({
+      'montage.heroResults': heroResults,
+    });
+  } catch (e) {
+    console.error('recordMontageResult:', e);
+    showToast('Could not record result.', 'danger');
+  }
+}
+
+async function advanceMontageRound(sessionData, code) {
+  const m           = sessionData.montage || {};
+  const heroResults = m.heroResults || [];
+  const RESULT_PTS  = { success: 2, partial: 1, failure: 0 };
+  const roundPts    = heroResults.reduce((sum, r) => sum + (RESULT_PTS[r] ?? 0), 0);
+  const newTotal    = (m.totalSuccesses ?? 0) + roundPts;
+  const newRound    = (sessionData.round ?? 1) + 1;
+  // Reset heroResults for the new round
+  const clearedResults = (sessionData.heroes || []).map(() => null);
+  // Append to testLog
+  const newLog = [...(m.testLog || []), {
+    round: sessionData.round ?? 1,
+    results: [...heroResults],
+    pointsEarned: roundPts,
+  }];
+  try {
+    await db.collection('sessions').doc(code).update({
+      round:                   newRound,
+      'montage.totalSuccesses': newTotal,
+      'montage.heroResults':    clearedResults,
+      'montage.testLog':        newLog,
+    });
+  } catch (e) {
+    console.error('advanceMontageRound:', e);
+    showToast('Could not advance round.', 'danger');
+  }
+}
+
+function showMontageEndModal(outcome, sessionData) {
+  const m       = sessionData.montage || {};
+  const total   = m.totalSuccesses ?? 0;
+  const needed  = m.successesNeeded ?? 4;
+
+  const OUTCOME_CONFIG = {
+    success: {
+      title:    'Montage Complete!',
+      icon:     '◆',
+      color:    'var(--color-gold)',
+      desc:     `The heroes succeeded! ${total} successes — goal of ${needed} reached.`,
+      outcome:  m.successOutcome || '',
+      vicCount: 1,
+    },
+    failure: {
+      title:    'Time Ran Out',
+      icon:     '⧗',
+      color:    'var(--color-danger)',
+      desc:     `The heroes fell short. Only ${total} of ${needed} successes were achieved.`,
+      outcome:  m.failureOutcome || '',
+      vicCount: 0,
+    },
+  };
+
+  const cfg = OUTCOME_CONFIG[outcome] || OUTCOME_CONFIG.failure;
+
+  showModal(`
+    <div class="neg-end-modal">
+      <div class="neg-end-icon" style="color:${cfg.color}">${cfg.icon}</div>
+      <h2 class="neg-end-title" style="color:${cfg.color}">${cfg.title}</h2>
+      <p class="neg-end-desc">${cfg.desc}</p>
+      ${cfg.outcome ? `<p class="neg-end-outcome-text">${cfg.outcome}</p>` : ''}
+
+      ${cfg.vicCount > 0 ? `
+        <div class="neg-end-victory-row">
+          <span class="neg-end-victory-label">Victory Awarded:</span>
+          <span class="neg-end-victory-value">1V per hero</span>
+        </div>
+        <button class="btn btn-primary" id="montage-award-victory-btn"
+          style="width:100%;margin-top:12px">
+          Award Victory &amp; End
+        </button>
+        <button class="btn btn-ghost btn-small" id="montage-no-victory-btn"
+          style="width:100%;margin-top:6px">
+          End Without Victory
+        </button>
+      ` : `
+        <button class="btn btn-primary" id="montage-no-victory-btn"
+          style="width:100%;margin-top:12px">
+          End Montage
+        </button>
+      `}
+    </div>
+  `);
+
+  const campaign = AppState.currentRunnerCampaign;
+  const enc      = AppState.currentRunnerEncounter;
+  const code     = AppState.currentSession?.code;
+
+  document.getElementById('montage-award-victory-btn')?.addEventListener('click', () => {
+    if (typeof performEndEncounter === 'function') {
+      performEndEncounter(campaign, enc, code, cfg.vicCount);
+    }
+  });
+  document.getElementById('montage-no-victory-btn')?.addEventListener('click', () => {
+    if (typeof performEndEncounter === 'function') {
+      performEndEncounter(campaign, enc, code, 0);
+    }
+  });
 }
 
 function buildRunnerHeroCard(hero, idx, isNext) {

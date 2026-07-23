@@ -9,15 +9,29 @@
  *   H5  updatePartyBar — avg level, victories, malice preview
  */
 
-// ── XP thresholds (XP = cumulative victories in XP mode) ─────────────────────
-// Index n = total XP required to reach level n (levels 2–10 only)
-const LEVEL_XP_THRESHOLDS = [0, 0, 10, 25, 45, 70, 100, 135, 175, 220, 270];
+// ── XP thresholds — cumulative XP to reach each level ────────────────────────
+// [0]=unused, [1]=Lv1(0), [2]=Lv2(10), ... [10]=Lv10(130)
+const LEVEL_XP_THRESHOLDS = [0, 0, 10, 25, 40, 55, 70, 85, 100, 115, 130];
 
 function xpToLevel(xp) {
   for (let n = LEVEL_XP_THRESHOLDS.length - 1; n >= 2; n--) {
     if (xp >= LEVEL_XP_THRESHOLDS[n]) return n;
   }
   return 1;
+}
+
+// ── L2: XP progress within current level ─────────────────────────────────────
+
+function computeXPProgress(hero) {
+  const level   = hero.level || 1;
+  const current = hero.xp || 0;
+  if (level >= 10) return { current, nextLevelXP: null, pct: 100, remaining: 0 };
+  const thisFloor  = LEVEL_XP_THRESHOLDS[level]     ?? 0;
+  const nextFloor  = LEVEL_XP_THRESHOLDS[level + 1] ?? thisFloor;
+  const band = Math.max(1, nextFloor - thisFloor);
+  const earned = Math.max(0, current - thisFloor);
+  const pct = Math.min(100, Math.round((earned / band) * 100));
+  return { current, thisFloor, nextLevelXP: nextFloor, pct, remaining: nextFloor - current };
 }
 
 // ── Check for existing campaign — called from app.js after auth ──────────────
@@ -184,6 +198,12 @@ function renderCampaignScreen() {
   const titleEl = document.getElementById('campaign-header-title');
   if (titleEl) titleEl.textContent = campaign.name || 'Campaign';
 
+  // L3: Show Level Up button only in milestone mode
+  const lvlBtn = document.getElementById('levelup-party-btn');
+  if (lvlBtn) {
+    lvlBtn.classList.toggle('hidden', campaign.advancementMode !== 'milestone');
+  }
+
   updatePartyBar(campaign);
   renderHeroRoster(campaign);
   renderEncounterList(campaign);
@@ -247,7 +267,9 @@ function renderHeroRoster(campaign) {
   }
 
   container.innerHTML = heroes.map((hero, idx) => {
-    const accent = CLASS_COLORS[hero.class]?.accent || '#2980B9';
+    const accent  = CLASS_COLORS[hero.class]?.accent || '#2980B9';
+    const xpProg  = computeXPProgress(hero);
+    const isXPMode = campaign.advancementMode === 'xp';
     return `
       <div class="campaign-hero-card" data-hero-idx="${idx}">
         <div class="hero-card-accent" style="background:${accent}"></div>
@@ -273,6 +295,14 @@ function renderHeroRoster(campaign) {
               <span class="hero-stat-value">${hero.recoveries?.current ?? '?'}/${hero.recoveries?.max ?? '?'}</span>
             </span>
           </div>
+          ${isXPMode && (hero.level || 1) < 10 ? `
+            <div class="hero-xp-bar-row">
+              <div class="hero-xp-bar-track">
+                <div class="hero-xp-bar-fill" style="width:${xpProg.pct}%;background:${accent}80"></div>
+              </div>
+              <span class="hero-xp-bar-label">${xpProg.remaining} XP to Lv ${(hero.level || 1) + 1}</span>
+            </div>
+          ` : ''}
         </div>
         <button class="hero-card-detail-btn" title="Details">›</button>
       </div>
@@ -345,6 +375,354 @@ function esc(str) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
 }
 
+// ── K1: Negotiation helpers ───────────────────────────────────────────────────
+
+function interestLabel(n) {
+  return ['', 'Hostile', 'Suspicious', 'Neutral', 'Friendly', 'Allied'][n] || '';
+}
+
+function buildNegListItemHTML(type, text, idx) {
+  return `
+    <div class="neg-list-item" data-type="${type}" data-idx="${idx}">
+      <input type="text" class="wizard-text-input neg-list-input"
+        data-type="${type}" data-idx="${idx}"
+        value="${esc(text)}" placeholder="Enter text…" />
+      <button class="neg-list-remove" data-type="${type}" data-idx="${idx}" title="Remove">✕</button>
+    </div>
+  `;
+}
+
+function buildNegotiationConfigHTML(enc) {
+  const neg      = enc.negotiation || {};
+  const interest = neg.startingInterest ?? 3;
+  const patience = neg.patience ?? 3;
+  const motivations = neg.motivations || [];
+  const pitfalls    = neg.pitfalls    || [];
+
+  return `
+    <div class="neg-config-panel">
+      <div class="enc-field">
+        <label class="enc-label">NPC Name</label>
+        <input type="text" id="neg-npc-name" class="wizard-text-input"
+          value="${esc(neg.npcName || '')}" placeholder="Lord Stormcrow…" maxlength="60" autocomplete="off" />
+      </div>
+      <div class="enc-field">
+        <label class="enc-label">Description</label>
+        <textarea id="neg-npc-desc" class="campaign-textarea" rows="2"
+          placeholder="Brief description of this NPC…">${esc(neg.npcDescription || '')}</textarea>
+      </div>
+      <div class="enc-field-row">
+        <div class="enc-field">
+          <label class="enc-label">Starting Interest</label>
+          <div class="neg-interest-selector" id="neg-interest-selector">
+            ${[1,2,3,4,5].map(n => `
+              <button class="neg-interest-pip ${n <= interest ? 'neg-pip-filled neg-pip-filled-${n}' : ''}"
+                data-value="${n}" title="${interestLabel(n)}">${n <= interest ? '◆' : '◇'}</button>
+            `).join('')}
+          </div>
+          <span class="neg-interest-label-text" id="neg-interest-label">${interestLabel(interest)}</span>
+        </div>
+        <div class="enc-field">
+          <label class="enc-label">Patience (rounds)</label>
+          <input type="number" id="neg-patience-input" class="wizard-text-input"
+            value="${patience}" min="1" max="20" />
+        </div>
+      </div>
+      <div class="enc-field">
+        <label class="enc-label">Motivations <span class="neg-list-hint">— arguments that raise Interest</span></label>
+        <div class="neg-list" id="neg-motivations-list">
+          ${motivations.map((m, i) => buildNegListItemHTML('motivation', m, i)).join('')}
+        </div>
+        <button class="btn btn-ghost btn-small" id="neg-add-motivation-btn">+ Add Motivation</button>
+      </div>
+      <div class="enc-field">
+        <label class="enc-label">Pitfalls <span class="neg-list-hint">— arguments that lower Interest</span></label>
+        <div class="neg-list" id="neg-pitfalls-list">
+          ${pitfalls.map((p, i) => buildNegListItemHTML('pitfall', p, i)).join('')}
+        </div>
+        <button class="btn btn-ghost btn-small" id="neg-add-pitfall-btn">+ Add Pitfall</button>
+      </div>
+      <div class="enc-field">
+        <label class="enc-label">Success Outcome</label>
+        <textarea id="neg-success-outcome" class="campaign-textarea" rows="2"
+          placeholder="What happens if heroes win the negotiation…">${esc(neg.successOutcome || '')}</textarea>
+      </div>
+      <div class="enc-field">
+        <label class="enc-label">Failure Outcome</label>
+        <textarea id="neg-failure-outcome" class="campaign-textarea" rows="2"
+          placeholder="What happens if negotiation fails or patience runs out…">${esc(neg.failureOutcome || '')}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+function wireNegotiationConfig(campaign, enc) {
+  if (!enc.negotiation) enc.negotiation = {};
+  const neg = enc.negotiation;
+
+  // NPC name / description
+  document.getElementById('neg-npc-name')?.addEventListener('input', e => {
+    neg.npcName = e.target.value; queueSave(campaign, enc);
+  });
+  document.getElementById('neg-npc-desc')?.addEventListener('input', e => {
+    neg.npcDescription = e.target.value; queueSave(campaign, enc);
+  });
+  document.getElementById('neg-success-outcome')?.addEventListener('input', e => {
+    neg.successOutcome = e.target.value; queueSave(campaign, enc);
+  });
+  document.getElementById('neg-failure-outcome')?.addEventListener('input', e => {
+    neg.failureOutcome = e.target.value; queueSave(campaign, enc);
+  });
+
+  // Patience
+  document.getElementById('neg-patience-input')?.addEventListener('change', e => {
+    neg.patience = parseInt(e.target.value, 10) || 3; queueSave(campaign, enc);
+  });
+
+  // Interest pips
+  document.querySelectorAll('#neg-interest-selector .neg-interest-pip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = parseInt(btn.dataset.value, 10);
+      neg.startingInterest = val;
+      document.querySelectorAll('#neg-interest-selector .neg-interest-pip').forEach((b, i) => {
+        const filled = i + 1 <= val;
+        b.className = `neg-interest-pip ${filled ? `neg-pip-filled neg-pip-filled-${i+1}` : ''}`;
+        b.textContent = filled ? '◆' : '◇';
+      });
+      const labelEl = document.getElementById('neg-interest-label');
+      if (labelEl) labelEl.textContent = interestLabel(val);
+      queueSave(campaign, enc);
+    });
+  });
+
+  // Motivations
+  document.getElementById('neg-add-motivation-btn')?.addEventListener('click', () => {
+    if (!neg.motivations) neg.motivations = [];
+    neg.motivations.push('');
+    rerenderNegList('motivation', campaign, enc);
+  });
+
+  // Pitfalls
+  document.getElementById('neg-add-pitfall-btn')?.addEventListener('click', () => {
+    if (!neg.pitfalls) neg.pitfalls = [];
+    neg.pitfalls.push('');
+    rerenderNegList('pitfall', campaign, enc);
+  });
+
+  wireNegListItems(campaign, enc);
+}
+
+function rerenderNegList(type, campaign, enc) {
+  const neg     = enc.negotiation || {};
+  const items   = type === 'motivation' ? (neg.motivations || []) : (neg.pitfalls || []);
+  const listId  = type === 'motivation' ? 'neg-motivations-list' : 'neg-pitfalls-list';
+  const listEl  = document.getElementById(listId);
+  if (listEl) {
+    listEl.innerHTML = items.map((item, i) => buildNegListItemHTML(type, item, i)).join('');
+  }
+  wireNegListItems(campaign, enc);
+}
+
+function wireNegListItems(campaign, enc) {
+  const neg = enc.negotiation || {};
+
+  document.querySelectorAll('.neg-list-input').forEach(input => {
+    input.addEventListener('input', e => {
+      const type = e.target.dataset.type;
+      const idx  = parseInt(e.target.dataset.idx, 10);
+      if (type === 'motivation') {
+        if (!neg.motivations) neg.motivations = [];
+        neg.motivations[idx] = e.target.value;
+      } else {
+        if (!neg.pitfalls) neg.pitfalls = [];
+        neg.pitfalls[idx] = e.target.value;
+      }
+      queueSave(campaign, enc);
+    });
+  });
+
+  document.querySelectorAll('.neg-list-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.type;
+      const idx  = parseInt(btn.dataset.idx, 10);
+      if (type === 'motivation') {
+        (neg.motivations || []).splice(idx, 1);
+      } else {
+        (neg.pitfalls || []).splice(idx, 1);
+      }
+      rerenderNegList(type, campaign, enc);
+      queueSave(campaign, enc);
+    });
+  });
+}
+
+// ── K2: Montage helpers ───────────────────────────────────────────────────────
+
+function montageLimits(difficulty, heroCount) {
+  const n = Math.max(1, heroCount);
+  const base = {
+    trivial:  { successes: n * 2, rounds: n + 1 },
+    easy:     { successes: n * 3, rounds: n + 2 },
+    standard: { successes: n * 4, rounds: n + 3 },
+    hard:     { successes: n * 5, rounds: n + 4 },
+    extreme:  { successes: n * 6, rounds: n + 5 },
+  };
+  return base[difficulty] || base.standard;
+}
+
+function buildMontageChallengeItemHTML(ch, idx) {
+  return `
+    <div class="montage-challenge-item" data-idx="${idx}">
+      <div class="montage-challenge-item-row">
+        <input type="text" class="wizard-text-input montage-ch-name" data-idx="${idx}"
+          value="${esc(ch.name || '')}" placeholder="Challenge name…" />
+        <select class="hp-damage-type-select montage-ch-tier" data-idx="${idx}">
+          <option value="easy"     ${ch.tier === 'easy'     ? 'selected' : ''}>Easy</option>
+          <option value="medium"   ${ch.tier === 'medium'   ? 'selected' : ''}>Medium</option>
+          <option value="hard"     ${ch.tier === 'hard'     ? 'selected' : ''}>Hard</option>
+        </select>
+        <button class="neg-list-remove montage-ch-remove" data-idx="${idx}" title="Remove">✕</button>
+      </div>
+      <input type="text" class="wizard-text-input montage-ch-desc" data-idx="${idx}"
+        value="${esc(ch.desc || '')}" placeholder="Brief description of the test…" style="margin-top:4px" />
+    </div>
+  `;
+}
+
+function buildMontageConfigHTML(enc, heroCount) {
+  const m          = enc.montageConfig || {};
+  const challenges = m.challenges || [];
+  const diff       = enc.difficulty || 'standard';
+  const limits     = montageLimits(diff, heroCount);
+  const successesNeeded = m.successesNeeded ?? limits.successes;
+  const roundLimit      = m.roundLimit      ?? limits.rounds;
+
+  return `
+    <div class="montage-config-panel">
+      <div class="enc-field">
+        <label class="enc-label">Montage Description</label>
+        <textarea id="montage-desc-input" class="campaign-textarea" rows="2"
+          placeholder="Describe the situation heroes must overcome…">${esc(m.description || '')}</textarea>
+      </div>
+
+      <div class="enc-field-row">
+        <div class="enc-field">
+          <label class="enc-label">Successes Needed</label>
+          <input type="number" id="montage-successes-input" class="wizard-text-input"
+            value="${successesNeeded}" min="1" max="60" />
+          <span class="neg-list-hint" style="font-size:11px;margin-top:2px;display:block">Auto: ${limits.successes} for ${diff}/${heroCount} heroes</span>
+        </div>
+        <div class="enc-field">
+          <label class="enc-label">Round Limit</label>
+          <input type="number" id="montage-rounds-input" class="wizard-text-input"
+            value="${roundLimit}" min="1" max="30" />
+          <span class="neg-list-hint" style="font-size:11px;margin-top:2px;display:block">Auto: ${limits.rounds} rounds</span>
+        </div>
+      </div>
+
+      <div class="enc-field">
+        <label class="enc-label">Challenges <span class="neg-list-hint">— tests heroes can attempt each round</span></label>
+        <div id="montage-challenges-list">
+          ${challenges.map((ch, i) => buildMontageChallengeItemHTML(ch, i)).join('') || '<p class="panel-empty" style="padding:6px 0;font-size:12px">No challenges yet.</p>'}
+        </div>
+        <button class="btn btn-ghost btn-small" id="montage-add-challenge-btn">+ Add Challenge</button>
+      </div>
+
+      <div class="enc-field">
+        <label class="enc-label">Success Outcome</label>
+        <textarea id="montage-success-outcome" class="campaign-textarea" rows="2"
+          placeholder="What happens if the heroes succeed…">${esc(m.successOutcome || '')}</textarea>
+      </div>
+      <div class="enc-field">
+        <label class="enc-label">Failure Outcome</label>
+        <textarea id="montage-failure-outcome" class="campaign-textarea" rows="2"
+          placeholder="What happens if time runs out…">${esc(m.failureOutcome || '')}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+function wireMontageConfig(campaign, enc) {
+  if (!enc.montageConfig) enc.montageConfig = {};
+  const m = enc.montageConfig;
+
+  document.getElementById('montage-desc-input')?.addEventListener('input', e => {
+    m.description = e.target.value; queueSave(campaign, enc);
+  });
+  document.getElementById('montage-success-outcome')?.addEventListener('input', e => {
+    m.successOutcome = e.target.value; queueSave(campaign, enc);
+  });
+  document.getElementById('montage-failure-outcome')?.addEventListener('input', e => {
+    m.failureOutcome = e.target.value; queueSave(campaign, enc);
+  });
+  document.getElementById('montage-successes-input')?.addEventListener('change', e => {
+    m.successesNeeded = parseInt(e.target.value, 10) || 4; queueSave(campaign, enc);
+  });
+  document.getElementById('montage-rounds-input')?.addEventListener('change', e => {
+    m.roundLimit = parseInt(e.target.value, 10) || 4; queueSave(campaign, enc);
+  });
+
+  document.getElementById('montage-add-challenge-btn')?.addEventListener('click', () => {
+    if (!m.challenges) m.challenges = [];
+    m.challenges.push({ name: '', tier: 'medium', desc: '' });
+    rerenderMontageChallengeList(campaign, enc);
+  });
+
+  wireMontageChallengeItems(campaign, enc);
+}
+
+function rerenderMontageChallengeList(campaign, enc) {
+  const m        = enc.montageConfig || {};
+  const items    = m.challenges || [];
+  const listEl   = document.getElementById('montage-challenges-list');
+  if (listEl) {
+    listEl.innerHTML = items.length
+      ? items.map((ch, i) => buildMontageChallengeItemHTML(ch, i)).join('')
+      : '<p class="panel-empty" style="padding:6px 0;font-size:12px">No challenges yet.</p>';
+  }
+  wireMontageChallengeItems(campaign, enc);
+}
+
+function wireMontageChallengeItems(campaign, enc) {
+  const m = enc.montageConfig || {};
+
+  document.querySelectorAll('.montage-ch-name').forEach(input => {
+    input.addEventListener('input', e => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      if (!m.challenges) m.challenges = [];
+      if (m.challenges[idx]) m.challenges[idx].name = e.target.value;
+      queueSave(campaign, enc);
+    });
+  });
+
+  document.querySelectorAll('.montage-ch-tier').forEach(sel => {
+    sel.addEventListener('change', e => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      if (!m.challenges) m.challenges = [];
+      if (m.challenges[idx]) m.challenges[idx].tier = e.target.value;
+      queueSave(campaign, enc);
+    });
+  });
+
+  document.querySelectorAll('.montage-ch-desc').forEach(input => {
+    input.addEventListener('input', e => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      if (!m.challenges) m.challenges = [];
+      if (m.challenges[idx]) m.challenges[idx].desc = e.target.value;
+      queueSave(campaign, enc);
+    });
+  });
+
+  document.querySelectorAll('.montage-ch-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx, 10);
+      (m.challenges || []).splice(idx, 1);
+      rerenderMontageChallengeList(campaign, enc);
+      queueSave(campaign, enc);
+    });
+  });
+}
+
 // ── Encounter list ────────────────────────────────────────────────────────────
 
 function renderEncounterList(campaign) {
@@ -366,6 +744,25 @@ function renderEncounterList(campaign) {
     const diff       = enc.difficulty || 'standard';
     const diffColor  = DIFFICULTY_COLOR[diff] || DIFFICULTY_COLOR.standard;
     const groupCount = (enc.groups || []).length + (enc.customNPCs || []).length;
+    const isMontage = enc.type === 'montage';
+    const isNeg     = enc.type === 'negotiation';
+    const row2HTML  = isMontage
+      ? `<span class="enc-meta-stat">${(enc.montageConfig?.challenges || []).length} challenge${(enc.montageConfig?.challenges || []).length !== 1 ? 's' : ''}</span>
+         <span class="enc-meta-sep">·</span>
+         <span class="enc-meta-stat">${enc.montageConfig?.successesNeeded ?? '?'} successes needed</span>
+         <span class="enc-meta-sep">·</span>
+         <span class="enc-meta-stat">${enc.expectedVictories ?? 1}V expected</span>`
+      : isNeg
+      ? `<span class="enc-meta-stat">${enc.negotiation?.npcName || 'NPC'}</span>
+         <span class="enc-meta-sep">·</span>
+         <span class="enc-meta-stat">Patience ${enc.negotiation?.patience ?? 3}</span>
+         <span class="enc-meta-sep">·</span>
+         <span class="enc-meta-stat">${enc.expectedVictories ?? 1}V expected</span>`
+      : `<span class="enc-meta-stat">${groupCount} group${groupCount !== 1 ? 's' : ''}</span>
+         <span class="enc-meta-sep">·</span>
+         <span class="enc-meta-stat">${spent}/${budget > 0 ? budget : '?'} EV</span>
+         <span class="enc-meta-sep">·</span>
+         <span class="enc-meta-stat">${enc.expectedVictories ?? 1}V expected</span>`;
     return `
       <div class="encounter-card" data-enc-idx="${idx}">
         <div class="encounter-card-order">
@@ -382,19 +779,16 @@ function renderEncounterList(campaign) {
               <span class="enc-badge enc-diff-badge" style="color:${diffColor};border-color:${diffColor}">${diff.toUpperCase()}</span>
             </div>
           </div>
-          <div class="encounter-card-row2">
-            <span class="enc-meta-stat">${groupCount} group${groupCount !== 1 ? 's' : ''}</span>
-            <span class="enc-meta-sep">·</span>
-            <span class="enc-meta-stat">${spent}/${budget > 0 ? budget : '?'} EV</span>
-            <span class="enc-meta-sep">·</span>
-            <span class="enc-meta-stat">${enc.expectedVictories ?? 1}V expected</span>
-          </div>
+          <div class="encounter-card-row2">${row2HTML}</div>
         </div>
         <div class="encounter-card-actions">
           ${enc.status === 'ready' ? `
             <button class="btn btn-primary btn-small encounter-start-btn" data-enc-idx="${idx}" data-enc-id="${enc.id}">Start</button>
           ` : ''}
           <button class="encounter-edit-btn" data-enc-idx="${idx}" title="Edit">✏</button>
+          ${enc.status !== 'complete' ? `
+            <button class="btn btn-xs btn-danger-ghost encounter-delete-btn" data-enc-idx="${idx}" data-enc-id="${enc.id}" title="Delete encounter">✕</button>
+          ` : ''}
         </div>
       </div>
     `;
@@ -419,8 +813,41 @@ function renderEncounterList(campaign) {
   container.querySelectorAll('.encounter-card').forEach(card => {
     card.addEventListener('click', e => {
       if (e.target.closest('.encounter-start-btn')) return;
+      if (e.target.closest('.encounter-delete-btn')) return;
       const idx = parseInt(card.dataset.encIdx, 10);
       if (!isNaN(idx)) openEncounterEditor(campaign, campaign._encounters[idx]);
+    });
+  });
+
+  container.querySelectorAll('.encounter-delete-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx   = parseInt(btn.dataset.encIdx, 10);
+      const encId = btn.dataset.encId;
+      const enc   = campaign._encounters[idx];
+      if (!enc) return;
+      const encName = enc.name || 'Unnamed Encounter';
+      showModal(`
+        <div class="confirm-modal">
+          <p class="confirm-modal-text">Delete <strong>${encName}</strong>? This cannot be undone.</p>
+          <div class="confirm-modal-actions">
+            <button class="btn btn-ghost" onclick="hideModal()">Cancel</button>
+            <button class="btn btn-danger" id="enc-delete-confirm-btn">Delete</button>
+          </div>
+        </div>
+      `);
+      document.getElementById('enc-delete-confirm-btn').addEventListener('click', async () => {
+        hideModal();
+        try {
+          await db.collection('campaigns').doc(campaign.id)
+            .collection('encounters').doc(encId).delete();
+          campaign._encounters.splice(idx, 1);
+          renderEncounterList(campaign);
+        } catch (err) {
+          console.error('Failed to delete encounter:', err);
+          showToast('Failed to delete encounter.', 'danger');
+        }
+      });
     });
   });
 }
@@ -448,7 +875,20 @@ function renderCampaignInfo(campaign) {
   const container = document.getElementById('campaign-info-content');
   if (!container) return;
 
-  const log = campaign.sessionLog || [];
+  const log       = campaign.sessionLog || [];
+  const encounters = campaign._encounters || [];
+  const heroes    = campaign.heroes || [];
+
+  // L4: Compute stats
+  const completed    = encounters.filter(e => e.status === 'complete');
+  const totalVic     = completed.reduce((s, e) => s + (e.victoriesAwarded || 0), 0);
+  const totalRespite = log.filter(e => e.respiteTaken).length;
+  const levels       = heroes.map(h => h.level || 1);
+  const levelRange   = heroes.length
+    ? (Math.min(...levels) === Math.max(...levels)
+        ? `Lv ${levels[0]}`
+        : `Lv ${Math.min(...levels)}–${Math.max(...levels)}`)
+    : '—';
 
   container.innerHTML = `
     <div class="info-section">
@@ -466,16 +906,46 @@ function renderCampaignInfo(campaign) {
         </div>
         <div class="info-row">
           <span class="info-label">Heroes</span>
-          <span class="info-value">${(campaign.heroes || []).length}</span>
+          <span class="info-value">${heroes.length}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Encounters</span>
-          <span class="info-value">${(campaign._encounters || []).length}</span>
+          <span class="info-value">${encounters.length}</span>
         </div>
       </div>
     </div>
 
-    <div class="info-section" style="margin-top:20px">
+    <!-- L4: Stats panel -->
+    <div class="info-section campaign-stats-section">
+      <div class="panel-header">
+        <span class="panel-title">Campaign Stats</span>
+      </div>
+      <div class="campaign-stats-grid">
+        <div class="campaign-stat-cell">
+          <span class="campaign-stat-value">${completed.length}</span>
+          <span class="campaign-stat-label">Encounters<br>Completed</span>
+        </div>
+        <div class="campaign-stat-cell">
+          <span class="campaign-stat-value campaign-stat-gold">${totalVic}</span>
+          <span class="campaign-stat-label">Total<br>Victories</span>
+        </div>
+        <div class="campaign-stat-cell">
+          <span class="campaign-stat-value">${log.length}</span>
+          <span class="campaign-stat-label">Sessions<br>Played</span>
+        </div>
+        <div class="campaign-stat-cell">
+          <span class="campaign-stat-value">${totalRespite}</span>
+          <span class="campaign-stat-label">Respites<br>Taken</span>
+        </div>
+        <div class="campaign-stat-cell campaign-stat-cell--wide">
+          <span class="campaign-stat-value">${levelRange}</span>
+          <span class="campaign-stat-label">Party Level</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- L1: Session Log -->
+    <div class="info-section">
       <div class="panel-header">
         <span class="panel-title">Session Log</span>
         <button class="btn btn-ghost btn-small" id="add-log-btn">+ Entry</button>
@@ -985,6 +1455,14 @@ async function performCampaignRespite(campaign, summary) {
     hideModal();
     renderCampaignScreen();
     showToast('Respite complete — recoveries restored!', 'success');
+
+    // L2: Show level-up modal if any heroes advanced
+    const levelUps = summary
+      .filter(r => r.levelsUp > 0)
+      .map(r => ({ name: r.hero.displayName, oldLevel: r.currentLevel, newLevel: r.newLevel }));
+    if (levelUps.length) {
+      setTimeout(() => showLevelUpCelebrationModal(levelUps), 300);
+    }
   } catch (e) {
     console.error('Respite failed:', e);
     showToast('Respite failed. Try again.', 'danger');
@@ -1202,30 +1680,38 @@ function renderEncounterEditor(campaign, enc, overlay) {
       </div>
 
       <div class="enc-editor-col enc-editor-center">
-        <div class="enc-section-title">Monster Roster</div>
-        ${buildBudgetBarHTML(enc, budgets)}
-        <div id="enc-roster-list" class="enc-roster-list">
-          ${buildRosterHTML(enc, heroes)}
-        </div>
-        <div class="enc-roster-actions">
-          <button class="btn btn-ghost btn-small" id="enc-add-monster-btn">+ Add Monster</button>
-          <button class="btn btn-ghost btn-small" id="enc-add-npc-btn">+ Custom NPC</button>
-        </div>
-        <div id="enc-custom-npc-form" class="enc-custom-npc-form hidden">
-          <div class="enc-npc-form-row">
-            <input type="text"   id="npc-name-input"    class="wizard-text-input" placeholder="NPC name" style="flex:1" />
-            <input type="number" id="npc-stamina-input" class="wizard-text-input enc-mini-input" placeholder="HP"  min="1" />
-            <input type="number" id="npc-ev-input"      class="wizard-text-input enc-mini-input" placeholder="EV"  min="0" />
+        ${enc.type === 'negotiation' ? `
+          <div class="enc-section-title">Negotiation Setup</div>
+          ${buildNegotiationConfigHTML(enc)}
+        ` : enc.type === 'montage' ? `
+          <div class="enc-section-title">Montage Setup</div>
+          ${buildMontageConfigHTML(enc, (campaign.heroes || []).length)}
+        ` : `
+          <div class="enc-section-title">Monster Roster</div>
+          ${buildBudgetBarHTML(enc, budgets)}
+          <div id="enc-roster-list" class="enc-roster-list">
+            ${buildRosterHTML(enc, heroes)}
           </div>
-          <div class="enc-npc-form-row">
-            <label class="ms-squad-toggle">
-              <input type="checkbox" id="npc-boss-check" />
-              <span class="ms-squad-label">Boss</span>
-            </label>
-            <button class="btn btn-primary btn-small" id="npc-add-confirm-btn">Add</button>
-            <button class="btn btn-ghost   btn-small" id="npc-add-cancel-btn">Cancel</button>
+          <div class="enc-roster-actions">
+            <button class="btn btn-ghost btn-small" id="enc-add-monster-btn">+ Add Monster</button>
+            <button class="btn btn-ghost btn-small" id="enc-add-npc-btn">+ Custom NPC</button>
           </div>
-        </div>
+          <div id="enc-custom-npc-form" class="enc-custom-npc-form hidden">
+            <div class="enc-npc-form-row">
+              <input type="text"   id="npc-name-input"    class="wizard-text-input" placeholder="NPC name" style="flex:1" />
+              <input type="number" id="npc-stamina-input" class="wizard-text-input enc-mini-input" placeholder="HP"  min="1" />
+              <input type="number" id="npc-ev-input"      class="wizard-text-input enc-mini-input" placeholder="EV"  min="0" />
+            </div>
+            <div class="enc-npc-form-row">
+              <label class="ms-squad-toggle">
+                <input type="checkbox" id="npc-boss-check" />
+                <span class="ms-squad-label">Boss</span>
+              </label>
+              <button class="btn btn-primary btn-small" id="npc-add-confirm-btn">Add</button>
+              <button class="btn btn-ghost   btn-small" id="npc-add-cancel-btn">Cancel</button>
+            </div>
+          </div>
+        `}
       </div>
 
       <div class="enc-editor-col enc-editor-right">
@@ -1431,6 +1917,9 @@ function wireEncounterEditor(campaign, enc, overlay) {
 
   document.getElementById('enc-type-field')?.addEventListener('change', e => {
     enc.type = e.target.value;
+    // Re-render the whole overlay so the center column switches between
+    // monster roster and negotiation config
+    renderEncounterEditor(campaign, enc, overlay);
     queueSave(campaign, enc);
     renderEncounterList(campaign);
   });
@@ -1516,7 +2005,14 @@ function wireEncounterEditor(campaign, enc, overlay) {
     document.getElementById('enc-custom-npc-form')?.classList.add('hidden');
   });
 
-  wireGroupCards(campaign, enc);
+  // Wire negotiation/montage config or monster roster
+  if (enc.type === 'negotiation') {
+    wireNegotiationConfig(campaign, enc);
+  } else if (enc.type === 'montage') {
+    wireMontageConfig(campaign, enc);
+  } else {
+    wireGroupCards(campaign, enc);
+  }
 }
 
 function wireGroupCards(campaign, enc) {
@@ -1697,19 +2193,45 @@ async function startEncounterFromCampaign(campaign, enc) {
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
+    // Build negotiation state for negotiation encounters
+    const isNegotiation = enc.type === 'negotiation';
+    const negData = isNegotiation ? {
+      ...(enc.negotiation || {}),
+      currentInterest: (enc.negotiation?.startingInterest) ?? 3,
+      currentPatience: (enc.negotiation?.patience) ?? 3,
+    } : null;
+
+    // Build montage state for montage encounters
+    const isMontage = enc.type === 'montage';
+    const heroCount = campaign.heroes?.length || 1;
+    const limits    = montageLimits(enc.difficulty || 'standard', heroCount);
+    const montageData = isMontage ? {
+      ...(enc.montageConfig || {}),
+      successesNeeded: (enc.montageConfig?.successesNeeded) ?? limits.successes,
+      roundLimit:      (enc.montageConfig?.roundLimit)      ?? limits.rounds,
+      totalSuccesses:  0,
+      // Per-hero test results: array of { heroIdx, result, round }
+      testLog: [],
+      // Per-hero current-round results (reset each round)
+      heroResults: heroes.map(() => null),
+    } : null;
+
     await db.collection('sessions').doc(code).set({
-      directorId:  user.uid,
-      active:      true,
-      round:       1,
-      heroTokens:  1,
-      malice:      startMalice,
-      activeSide:  null,
+      directorId:    user.uid,
+      active:        true,
+      round:         1,
+      heroTokens:    1,
+      malice:        startMalice,
+      activeSide:    null,
       enemies,
       heroes,
-      userIds:     [user.uid],
-      campaignId:  campaign.id,
-      encounterId: enc.id,
-      createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
+      userIds:       [user.uid],
+      campaignId:    campaign.id,
+      encounterId:   enc.id,
+      encounterType: enc.type || 'combat',
+      ...(negData    ? { negotiation: negData }    : {}),
+      ...(montageData ? { montage: montageData }   : {}),
+      createdAt:     firebase.firestore.FieldValue.serverTimestamp(),
     });
 
     enc.sessionCode = code;
@@ -1868,9 +2390,14 @@ async function performEndEncounter(campaign, enc, sessionCode, vicCount) {
     if (typeof renderCampaignScreen === 'function') renderCampaignScreen();
 
     showToast(`Encounter complete — +${vicCount} victories awarded!`, 'success');
-    if (levelUpNames.length) showToast(`Level Up Available: ${levelUpNames.join(', ')}`, 'success');
+    if (levelUpNames.length) showToast(`Level Up available: ${levelUpNames.join(', ')}`, 'success');
     const needsRespite = updatedHeroes.some(h => (h.currentVictories || 0) >= 6);
     if (needsRespite) showToast('Party may want to consider a Respite soon.', 'info');
+
+    // L1: Prompt for session note after encounter ends
+    if (campaign) {
+      setTimeout(() => showPostEncounterNoteModal(campaign, vicCount), 400);
+    }
 
   } catch (e) {
     console.error('performEndEncounter:', e);
@@ -1878,6 +2405,166 @@ async function performEndEncounter(campaign, enc, sessionCode, vicCount) {
     if (btn) { btn.disabled = false; btn.textContent = 'Confirm & Award'; }
   }
 }
+
+// ── L1: Post-encounter session note ──────────────────────────────────────────
+
+function showPostEncounterNoteModal(campaign, vicCount) {
+  showModal(`
+    <div class="session-note-modal">
+      <h2>Session Note</h2>
+      <p class="respite-desc">Add a note about this encounter for the campaign log.</p>
+      <div class="wizard-field">
+        <label class="wizard-label">Summary <span style="color:var(--text-dim);font-weight:400">(optional)</span></label>
+        <textarea id="session-note-summary" class="campaign-textarea" rows="3"
+          placeholder="What happened? Any memorable moments?"></textarea>
+      </div>
+      <label class="ms-squad-toggle" style="padding-bottom:6px">
+        <input type="checkbox" id="session-note-respite" />
+        <span class="ms-squad-label">Respite was taken after this encounter</span>
+      </label>
+      <div class="session-note-footer">
+        <button class="btn btn-ghost" id="session-note-skip-btn">Skip</button>
+        <button class="btn btn-primary" id="session-note-save-btn">Save Note</button>
+      </div>
+    </div>
+  `);
+
+  setTimeout(() => document.getElementById('session-note-summary')?.focus(), 80);
+
+  async function persistNote(summary, respiteTaken) {
+    const entry = {
+      date: firebase.firestore.FieldValue.serverTimestamp(),
+      summary,
+      victoriesEarned: vicCount,
+      respiteTaken,
+    };
+    const updatedLog = [...(campaign.sessionLog || []), entry];
+    try {
+      await db.collection('campaigns').doc(campaign.id).update({ sessionLog: updatedLog });
+      campaign.sessionLog = updatedLog;
+      renderCampaignInfo(campaign);
+      if (summary) showToast('Session note saved.', 'success');
+    } catch (e) {
+      console.warn('Could not save session note:', e);
+    }
+    hideModal();
+  }
+
+  document.getElementById('session-note-save-btn')?.addEventListener('click', () => {
+    const summary      = document.getElementById('session-note-summary').value.trim();
+    const respiteTaken = document.getElementById('session-note-respite').checked;
+    persistNote(summary, respiteTaken);
+  });
+  document.getElementById('session-note-skip-btn')?.addEventListener('click', () => hideModal());
+}
+
+// ── L2: Level-up celebration modal ───────────────────────────────────────────
+
+function showLevelUpCelebrationModal(levelUps) {
+  showModal(`
+    <div class="levelup-modal">
+      <div class="levelup-celebration-banner">★ LEVEL UP ★</div>
+      <h2 class="levelup-modal-title">Heroes Advance!</h2>
+      <div class="levelup-hero-list">
+        ${levelUps.map(r => `
+          <div class="levelup-hero-row">
+            <span class="levelup-hero-name">${r.name}</span>
+            <span class="levelup-level-change">
+              <span class="levelup-old-level">Lv ${r.oldLevel}</span>
+              <span class="levelup-arrow">→</span>
+              <span class="levelup-new-level">Lv ${r.newLevel}</span>
+            </span>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-primary" onclick="hideModal()" style="width:100%;margin-top:16px">
+        Onward!
+      </button>
+    </div>
+  `);
+}
+
+// ── L3: Milestone level-up ────────────────────────────────────────────────────
+
+function showLevelUpPartyConfirm() {
+  const campaign = AppState.currentCampaign;
+  if (!campaign) return;
+  const heroes = campaign.heroes || [];
+  if (!heroes.length) { showToast('No heroes in party.', 'danger'); return; }
+
+  showModal(`
+    <div class="levelup-modal">
+      <h2>Level Up Party</h2>
+      <p class="respite-desc">All heroes will advance one level.</p>
+      <div class="levelup-hero-list">
+        ${heroes.map(h => `
+          <div class="levelup-hero-row">
+            <span class="levelup-hero-name">${h.displayName}</span>
+            <span class="levelup-level-change">
+              <span class="levelup-old-level">Lv ${h.level || 1}</span>
+              <span class="levelup-arrow">→</span>
+              <span class="levelup-new-level">Lv ${Math.min(10, (h.level || 1) + 1)}</span>
+            </span>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-primary" id="levelup-confirm-btn" style="width:100%;margin-top:16px">
+        Confirm Level Up
+      </button>
+    </div>
+  `);
+
+  document.getElementById('levelup-confirm-btn')?.addEventListener('click', () =>
+    performLevelUpParty(campaign)
+  );
+}
+
+async function performLevelUpParty(campaign) {
+  const btn = document.getElementById('levelup-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Leveling Up…'; }
+
+  try {
+    const updatedHeroes = campaign.heroes.map(h => ({
+      ...h,
+      level: Math.min(10, (h.level || 1) + 1),
+    }));
+
+    await db.collection('campaigns').doc(campaign.id).update({ heroes: updatedHeroes });
+    campaign.heroes = updatedHeroes;
+
+    // Update linked character docs
+    await Promise.all(
+      updatedHeroes
+        .filter(h => h.isLinked && h.userId && h.heroId)
+        .map(h =>
+          db.collection('users').doc(h.userId)
+            .collection('characters').doc(h.heroId)
+            .update({ level: h.level })
+            .catch(e => console.warn(`Could not update ${h.displayName}:`, e))
+        )
+    );
+
+    const levelUps = updatedHeroes.map(h => ({
+      name: h.displayName,
+      oldLevel: Math.max(1, h.level - 1),
+      newLevel: h.level,
+    }));
+
+    hideModal();
+    renderCampaignScreen();
+    setTimeout(() => showLevelUpCelebrationModal(levelUps), 200);
+
+  } catch (e) {
+    console.error('Level up failed:', e);
+    showToast('Level up failed. Try again.', 'danger');
+    if (btn) { btn.disabled = false; btn.textContent = 'Confirm Level Up'; }
+  }
+}
+
+// ── Wire static campaign screen buttons ──────────────────────────────────────
+
+document.getElementById('levelup-party-btn')
+  ?.addEventListener('click', showLevelUpPartyConfirm);
 
 // ── Expose globals ────────────────────────────────────────────────────────────
 window.checkDirectorMode       = checkDirectorMode;

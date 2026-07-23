@@ -155,6 +155,7 @@ function parseActionType(raw) {
   if (t.includes('free triggered') || t.includes('free-triggered')) return 'free-triggered';
   if (t.includes('triggered')) return 'triggered';
   if (t.includes('maneuver')) return 'maneuver';
+  if (t.includes('no action') || t === 'free') return 'free';
   if (t.includes('free')) return 'free';
   return 'action';
 }
@@ -255,6 +256,19 @@ function findMdFiles(dir) {
   return results;
 }
 
+// Extract the minimum level from the ability's containing folder name.
+// Works with any naming: "1", "1st Level", "Level-3", "3rd-Level-Abilities", etc.
+function extractLevelFromPath(filePath, classDir) {
+  const rel = path.relative(classDir, filePath);
+  const parts = rel.split(path.sep);
+  if (parts.length >= 2) {
+    const folderName = parts[0];
+    const match = folderName.match(/\d+/);
+    if (match) return parseInt(match[0], 10);
+  }
+  return 1; // default: assume level 1 if folder doesn't contain a number
+}
+
 function seedClass(className, repoDir) {
   const classDir = path.join(repoDir, 'Abilities', className);
   const mdPaths = findMdFiles(classDir);
@@ -264,7 +278,10 @@ function seedClass(className, repoDir) {
     try {
       const markdown = fs.readFileSync(filePath, 'utf8');
       const parsed = parseAbilityFile(markdown, className);
-      if (parsed) abilities.push(parsed);
+      if (parsed) {
+        parsed.level = extractLevelFromPath(filePath, classDir);
+        abilities.push(parsed);
+      }
     } catch (e) {
       console.log(`  ⚠️  Could not parse ${path.basename(filePath)}: ${e.message}`);
     }
@@ -348,6 +365,13 @@ async function main() {
   }
 
   console.log(`\n📊 Total abilities parsed: ${allAbilities.length}`);
+
+  // Log type distribution so we know what action_type values exist in the source data
+  const typeCounts = {};
+  for (const a of allAbilities) {
+    typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
+  }
+  console.log('   Type distribution:', typeCounts);
 
   if (allAbilities.length === 0) {
     console.error('\n✗ No abilities found. Check your internet connection.');

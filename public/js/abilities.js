@@ -115,13 +115,15 @@ function getKitVirtualAbility(char) {
   const kitStats = typeof KIT_STATS !== 'undefined' ? KIT_STATS[char.kit] : null;
   if (!kitStats?.sigAbility) return null;
 
+  // New format: sigAbility is just the name; sigTiers holds tier text.
+  // Legacy format had "Name: description" in sigAbility — handle both.
   const colonIdx = kitStats.sigAbility.indexOf(':');
   const name = (colonIdx > -1
     ? kitStats.sigAbility.substring(0, colonIdx)
     : kitStats.sigAbility).trim();
-  const desc = colonIdx > -1
-    ? kitStats.sigAbility.substring(colonIdx + 1).trim()
-    : kitStats.sigAbility;
+  const desc = kitStats.sigTiers
+    ? kitStats.sigTiers
+    : (colonIdx > -1 ? kitStats.sigAbility.substring(colonIdx + 1).trim() : kitStats.sigAbility);
 
   return {
     id:          `virtual:kit:${char.kit}`,
@@ -305,14 +307,25 @@ async function loadAbilityCards(char) {
       if (!selected.some(a => a.id === v.id)) selected.push(v);
     }
 
-    // Inject virtual kit signature ability if not already covered by a
-    // Firestore ability with the same name (added in finishCharacterCreation)
-    const kitVirtual = getKitVirtualAbility(char);
-    if (kitVirtual) {
-      const kName = kitVirtual.name.toLowerCase();
-      const alreadyCovered = selected.some(a => a.name?.toLowerCase() === kName);
-      if (!alreadyCovered) selected.push(kitVirtual);
+    // Always inject kit signature ability/abilities as virtual cards built from
+    // KIT_STATS — never depend on Firestore for kit sig display. Remove any
+    // Firestore ability with the same name first (backward compat with chars
+    // that had a real ability ID written by the old A2 lookup).
+    function injectKitVirtual(kitName) {
+      if (!kitName) return;
+      const virtual = getKitVirtualAbility({ ...char, kit: kitName });
+      if (!virtual) return;
+      const kName = virtual.name.toLowerCase();
+      const dupIdx = selected.findIndex(a => !a.isVirtual && a.name?.toLowerCase() === kName);
+      if (dupIdx >= 0) selected.splice(dupIdx, 1);
+      // Avoid double-injecting if both kits share the same sig name (edge case)
+      if (!selected.some(a => a.isVirtual && a.name?.toLowerCase() === kName)) {
+        selected.push(virtual);
+      }
     }
+    injectKitVirtual(char.kit);
+    // Tactician Field Arsenal: inject second kit sig if present
+    if (char.kit2) injectKitVirtual(char.kit2);
 
     const toShow = [...selected, ...BASIC_ACTIONS];
     renderFilterBar(toShow);

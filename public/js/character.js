@@ -7,6 +7,7 @@
 
 // ── Class accent colors ──────────────────────────────────────────────────────
 const CLASS_COLORS = {
+  'Beastheart':   { accent: '#7D5A3C', resource: 'Ferocity' },
   'Conduit':      { accent: '#D4AC0D', resource: 'Piety' },
   'Elementalist': { accent: '#E67E22', resource: 'Essence' },
   'Fury':         { accent: '#C0392B', resource: 'Rage' },
@@ -172,6 +173,52 @@ function populateDetailsTab(char) {
         </div>
       `).join('')}
     </div>
+
+    ${char.skills?.length ? (() => {
+      // Group skills by category
+      const grouped = {};
+      const uncategorized = [];
+      for (const s of char.skills) {
+        const cat = (typeof SKILL_CATEGORIES !== 'undefined' && SKILL_CATEGORIES[s]) || null;
+        if (cat) { (grouped[cat] = grouped[cat] || []).push(s); }
+        else { uncategorized.push(s); }
+      }
+      const order = (typeof SKILL_CATEGORY_ORDER !== 'undefined') ? SKILL_CATEGORY_ORDER : [];
+      const labels = (typeof SKILL_CATEGORY_LABELS !== 'undefined') ? SKILL_CATEGORY_LABELS : {};
+      const rows = order
+        .filter(cat => grouped[cat]?.length)
+        .map(cat => `
+          <div class="skill-category-row">
+            <span class="skill-category-label">${labels[cat] || cat}</span>
+            <div class="skill-category-chips">
+              ${grouped[cat].sort().map(s => `<span class="skill-chip">${s}</span>`).join('')}
+            </div>
+          </div>
+        `).join('');
+      const extraRow = uncategorized.length ? `
+        <div class="skill-category-row">
+          <span class="skill-category-label">Other</span>
+          <div class="skill-category-chips">
+            ${uncategorized.sort().map(s => `<span class="skill-chip">${s}</span>`).join('')}
+          </div>
+        </div>
+      ` : '';
+      return `
+        <div class="detail-section">
+          <div class="detail-section-title">Skills</div>
+          <div class="skills-by-category">${rows}${extraRow}</div>
+        </div>
+      `;
+    })() : ''}
+
+    ${char.perks?.length ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Perks</div>
+      <div class="skills-list">
+        ${char.perks.map(p => `<span class="skill-chip skill-chip-perk">${p}</span>`).join('')}
+      </div>
+    </div>
+    ` : ''}
 
     <div class="detail-section">
       <div class="detail-section-title">Conditions
@@ -434,8 +481,8 @@ async function performRespite() {
 
 function previewLevelUp(char, newLevel) {
   const baseChars = char.baseCharacteristics ?? char.characteristics ?? {};
-  const oldHP     = char.maxHP ?? computeMaxHP(char.class, char.kit, char.level ?? 1);
-  const newHP     = computeMaxHP(char.class, char.kit, newLevel);
+  const oldHP     = char.maxHP ?? computeMaxHP(char.class, char.kit, char.level ?? 1, char.kit2);
+  const newHP     = computeMaxHP(char.class, char.kit, newLevel, char.kit2);
   const oldChars  = char.characteristics ?? {};
   const newChars  = computeCharacteristicsForLevel(baseChars, newLevel);
   const oldResMax = getHeroicResourceMax(char.level ?? 1);
@@ -443,33 +490,136 @@ function previewLevelUp(char, newLevel) {
   return { oldHP, newHP, oldChars, newChars, oldResMax, newResMax };
 }
 
-function buildLevelUpModalHTML(char, currentLevel, newLevel, changes) {
-  const meta    = CLASS_COLORS[char.class] || { accent: '#2980B9' };
+// ── Level-up multi-step flow ──────────────────────────────────────────────────
+// Replaces the single-modal level-up with a step-through selection flow.
+
+let _lvlFlow = null; // active flow state
+
+function showLevelUpFlow() {
+  const char = AppState.currentCharacter;
+  if (!char) return;
+  const currentLevel = char.level ?? 1;
+  if (currentLevel >= 10) { showToast('Your hero has reached the maximum level.', 'info'); return; }
+  const newLevel = currentLevel + 1;
+  const changes  = previewLevelUp(char, newLevel);
+  const features = CLASS_LEVEL_FEATURES?.[char.class]?.[newLevel] ?? { gains: [] };
+
+  // Build ordered step list
+  const steps = [{ type: 'summary' }];
+  for (const gain of features.gains) {
+    if (gain === 'heroic_ability_3') steps.push({ type: 'heroic_ability', cost: 3 });
+    else if (gain === 'heroic_ability_5') steps.push({ type: 'heroic_ability', cost: 5 });
+    else if (gain === 'heroic_ability_7') steps.push({ type: 'heroic_ability', cost: 7 });
+    else if (gain === 'heroic_ability_9') steps.push({ type: 'heroic_ability', cost: 9 });
+    else if (gain === 'perk')             steps.push({ type: 'perk' });
+    else if (gain === 'skill')            steps.push({ type: 'skill' });
+    else if (gain === 'kit_improvement')  steps.push({ type: 'kit_improvement' });
+    else if (gain === 'doctrine_feature') steps.push({ type: 'doctrine_feature' });
+    else if (gain === 'epic_resource')    steps.push({ type: 'epic_resource' });
+  }
+  steps.push({ type: 'confirm' });
+
+  _lvlFlow = {
+    char, newLevel, changes, features,
+    steps,
+    stepIndex: 0,
+    selections: { abilityIds: [], perks: [], skills: [] },
+    // Cached Firestore results for ability steps (keyed by cost)
+    _abilityCache: {},
+  };
+
+  showModal('<div class="lvlup-flow" id="lvlup-flow-root"></div>');
+  _renderLvlStep();
+}
+
+function _lvlFlowNav(direction) {
+  if (!_lvlFlow) return;
+  const { steps } = _lvlFlow;
+  const targetIdx = _lvlFlow.stepIndex + direction;
+  if (targetIdx < 0 || targetIdx >= steps.length) return;
+  _lvlFlow.stepIndex = targetIdx;
+  _renderLvlStep();
+}
+
+function _setLvlFlowContent(html) {
+  const root = document.getElementById('lvlup-flow-root');
+  if (root) root.innerHTML = html;
+}
+
+function _renderLvlStep() {
+  const f = _lvlFlow;
+  if (!f) return;
+  const step = f.steps[f.stepIndex];
+  const isFirst = f.stepIndex === 0;
+  const isLast  = f.stepIndex === f.steps.length - 1;
+  const meta    = CLASS_COLORS[f.char.class] || { accent: '#2980B9' };
+  const accent  = meta.accent;
+
+  const navHTML = (nextLabel = 'Continue', nextDisabled = false) => `
+    <div class="lvlup-nav">
+      ${!isFirst ? `<button class="btn btn-ghost" onclick="_lvlFlowNav(-1)">← Back</button>` : `<button class="btn btn-ghost" onclick="hideModal()">Cancel</button>`}
+      <button class="btn btn-primary" id="lvlup-next-btn" ${nextDisabled ? 'disabled' : ''} onclick="_lvlFlowNav(1)">${nextLabel}</button>
+    </div>
+  `;
+
+  if (step.type === 'summary') {
+    _lvlFlowRenderSummary(f, accent, isLast, navHTML);
+  } else if (step.type === 'heroic_ability') {
+    _lvlFlowRenderAbilityPicker(f, step.cost, accent, navHTML);
+  } else if (step.type === 'perk') {
+    _lvlFlowRenderPerkPicker(f, accent, navHTML);
+  } else if (step.type === 'skill') {
+    _lvlFlowRenderSkillPicker(f, accent, navHTML);
+  } else if (step.type === 'kit_improvement') {
+    _lvlFlowRenderAutoStep(f, accent, navHTML, 'Kit Improvement',
+      `Your kit bonuses scale with your echelon. At level ${f.newLevel} you enter Echelon ${getEchelon(f.newLevel)} — your kit's Stamina bonus increases automatically. No selection needed.`);
+  } else if (step.type === 'doctrine_feature') {
+    _lvlFlowRenderAutoStep(f, accent, navHTML, 'Subclass Feature',
+      `Your ${f.char.subclass || f.char.class} subclass grants a new feature at level ${f.newLevel}. This feature is automatic — no selection needed. Refer to your class book for details.`);
+  } else if (step.type === 'epic_resource') {
+    const resName = meta.resource || 'Resource';
+    _lvlFlowRenderAutoStep(f, accent, navHTML, 'Epic Resource',
+      `At level 10, your ${resName} maximum increases to 12 — the epic tier. This is automatic; your resource bar will update when you confirm.`);
+  } else if (step.type === 'confirm') {
+    _lvlFlowRenderConfirm(f, accent);
+  }
+}
+
+function _lvlFlowRenderSummary(f, accent, isLast, navHTML) {
+  const { changes, newLevel } = f;
   const hpDelta = changes.newHP - changes.oldHP;
-
   const charRows = ['MGT', 'AGL', 'REA', 'INU', 'PRS'].map(stat => {
-    const was     = changes.oldChars[stat] ?? 0;
-    const now     = changes.newChars[stat] ?? 0;
+    const was = changes.oldChars[stat] ?? 0;
+    const now = changes.newChars[stat] ?? 0;
     const changed = now > was;
-    return `
-      <div class="levelup-stat-row ${changed ? 'levelup-stat-changed' : ''}">
-        <span class="levelup-stat-label">${CHAR_LABELS[stat]}</span>
-        <span class="levelup-stat-val">${was}${changed ? ` → ${now}` : ''}</span>
-      </div>`;
+    return `<div class="levelup-stat-row ${changed ? 'levelup-stat-changed' : ''}">
+      <span class="levelup-stat-label">${CHAR_LABELS[stat]}</span>
+      <span class="levelup-stat-val">${was}${changed ? ` → <strong>${now}</strong>` : ''}</span>
+    </div>`;
   }).join('');
+  const resChange = changes.newResMax > changes.oldResMax
+    ? `<div class="levelup-change-row"><span class="levelup-change-label">Resource Max</span><span class="levelup-change-val levelup-val-up">${changes.oldResMax} → ${changes.newResMax}</span></div>`
+    : '';
+  const choiceSteps = f.steps.filter(s => ['heroic_ability','perk','skill'].includes(s.type));
+  const choiceList = choiceSteps.length ? `
+    <div class="lvlup-choices-ahead">
+      <div class="lvlup-choices-label">You'll also choose:</div>
+      ${choiceSteps.map(s => {
+        if (s.type === 'heroic_ability') return `<div class="lvlup-choice-item">⚔ A new ${s.cost}-cost class ability</div>`;
+        if (s.type === 'perk')          return `<div class="lvlup-choice-item">★ A perk</div>`;
+        if (s.type === 'skill')         return `<div class="lvlup-choice-item">◎ A new skill</div>`;
+        return '';
+      }).join('')}
+    </div>
+  ` : '';
 
-  const resChange = changes.newResMax > changes.oldResMax ? `
-    <div class="levelup-change-row">
-      <span class="levelup-change-label">Resource Max</span>
-      <span class="levelup-change-val levelup-val-up">${changes.oldResMax} → ${changes.newResMax}</span>
-    </div>` : '';
-
-  return `
+  _setLvlFlowContent(`
     <div class="levelup-modal">
-      <div class="levelup-header" style="border-bottom-color: ${meta.accent}">
+      <div class="levelup-header" style="border-bottom-color:${accent}">
         <span class="levelup-subtitle">LEVEL UP</span>
-        <span class="levelup-number" style="color:${meta.accent}">${newLevel}</span>
+        <span class="levelup-number" style="color:${accent}">${newLevel}</span>
       </div>
+      <div class="lvlup-section-label">Automatic gains</div>
       <div class="levelup-changes">
         <div class="levelup-change-row">
           <span class="levelup-change-label">Stamina</span>
@@ -481,26 +631,254 @@ function buildLevelUpModalHTML(char, currentLevel, newLevel, changes) {
         <div class="levelup-chars-title">Characteristics</div>
         ${charRows}
       </div>
-      <div class="confirm-modal-actions">
-        <button class="btn btn-ghost" onclick="hideModal()">Cancel</button>
-        <button class="btn btn-primary" id="levelup-confirm-btn">Reach Level ${newLevel}</button>
+      ${choiceList}
+      ${navHTML(choiceSteps.length ? 'Make Selections →' : 'Confirm')}
+    </div>
+  `);
+}
+
+async function _lvlFlowRenderAbilityPicker(f, cost, accent, navHTML) {
+  const meta = CLASS_COLORS[f.char.class] || { resource: 'Resource' };
+  // Show loading state immediately
+  _setLvlFlowContent(`
+    <div class="levelup-modal">
+      <div class="levelup-header" style="border-bottom-color:${accent}">
+        <span class="levelup-subtitle">NEW ABILITY</span>
+        <span class="levelup-number" style="color:${accent}">L${f.newLevel}</span>
+      </div>
+      <p class="loading-text">Loading abilities...</p>
+    </div>
+  `);
+
+  // Use cache if available
+  if (!f._abilityCache[cost]) {
+    try {
+      const snap = await db.collection('abilities')
+        .where('class', '==', f.char.class)
+        .where('cost', '==', cost)
+        .get();
+      f._abilityCache[cost] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      console.error('Error loading abilities for level-up:', e);
+      f._abilityCache[cost] = [];
+    }
+  }
+
+  const pool = f._abilityCache[cost].filter(a =>
+    !f.char.abilityIds?.includes(a.id) &&
+    !f.selections.abilityIds.includes(a.id)
+  );
+
+  // Find any already-selected ability for this cost tier in this flow
+  // (in case user navigated back)
+  const alreadySelected = f.selections.abilityIds.find(id =>
+    f._abilityCache[cost]?.some(a => a.id === id)
+  );
+
+  const cardsHTML = pool.length ? pool.map(a => {
+    const sel = alreadySelected === a.id;
+    const summaryText = a.tier2 || (a.effect ? a.effect.split(/\.\s+/)[0] + '.' : '—');
+    return `
+      <button class="ability-pick-card ${sel ? 'selected' : ''}" data-ability-id="${a.id}">
+        <div class="ability-pick-header">
+          <span class="ability-pick-name">${a.name}</span>
+          <div class="ability-pick-meta">
+            <span class="ability-pick-type">${a.type}</span>
+            <span class="ability-pick-cost">${cost} ${meta.resource}</span>
+          </div>
+        </div>
+        ${summaryText !== '—' ? `<div class="ability-pick-desc">${summaryText}</div>` : ''}
+      </button>`;
+  }).join('') : `<p class="summary-empty">No ${cost}-cost abilities found for ${f.char.class}. They may not be seeded yet.</p>`;
+
+  _setLvlFlowContent(`
+    <div class="levelup-modal">
+      <div class="levelup-header" style="border-bottom-color:${accent}">
+        <span class="levelup-subtitle">NEW ABILITY</span>
+        <span class="levelup-number" style="color:${accent}">L${f.newLevel}</span>
+      </div>
+      <p class="lvlup-step-hint">Choose one new ${cost}-cost ${f.char.class} ability.</p>
+      <div class="lvlup-ability-pool" id="lvlup-ability-pool">
+        ${cardsHTML}
+      </div>
+      ${navHTML('Continue →', !alreadySelected && pool.length > 0)}
+    </div>
+  `);
+
+  // Wire card clicks
+  document.getElementById('lvlup-ability-pool')?.querySelectorAll('[data-ability-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.abilityId;
+      // Remove any previously chosen ability from this tier
+      f.selections.abilityIds = f.selections.abilityIds.filter(sid =>
+        !f._abilityCache[cost]?.some(a => a.id === sid)
+      );
+      f.selections.abilityIds.push(id);
+      // Re-render to show selection + enable next
+      _renderLvlStep();
+    });
+  });
+}
+
+function _lvlFlowRenderPerkPicker(f, accent, navHTML) {
+  const existingPerks = f.char.perks ?? [];
+  const alreadyChosen = f.selections.perks[0]; // at most one perk per level
+
+  const typeOrder = ['exploration', 'interpersonal', 'intrigue', 'lore', 'supernatural', 'crafting'];
+  const grouped = {};
+  for (const p of (PERKS_DATA ?? [])) {
+    if (!grouped[p.type]) grouped[p.type] = [];
+    grouped[p.type].push(p);
+  }
+
+  const listHTML = typeOrder.map(type => {
+    const perks = grouped[type] || [];
+    if (!perks.length) return '';
+    return `
+      <div class="lvlup-perk-group">
+        <div class="lvlup-perk-group-label">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+        ${perks.map(p => {
+          const alreadyHave = existingPerks.includes(p.name);
+          const selected    = alreadyChosen === p.name;
+          return `
+            <button class="lvlup-perk-row ${selected ? 'selected' : ''} ${alreadyHave ? 'at-limit' : ''}"
+                    data-perk="${p.name}" ${alreadyHave ? 'disabled title="Already have this perk"' : ''}>
+              <span class="lvlup-perk-name">${p.name}</span>
+              <span class="lvlup-perk-desc">${p.desc}</span>
+            </button>`;
+        }).join('')}
+      </div>`;
+  }).join('');
+
+  _setLvlFlowContent(`
+    <div class="levelup-modal">
+      <div class="levelup-header" style="border-bottom-color:${accent}">
+        <span class="levelup-subtitle">CHOOSE A PERK</span>
+        <span class="levelup-number" style="color:${accent}">L${f.newLevel}</span>
+      </div>
+      <p class="lvlup-step-hint">Choose one perk. Perks grant a skill and a +2 bonus to tests using it.</p>
+      <div class="lvlup-perk-list" id="lvlup-perk-list">
+        ${listHTML}
+      </div>
+      ${navHTML('Continue →', !alreadyChosen)}
+    </div>
+  `);
+
+  document.getElementById('lvlup-perk-list')?.querySelectorAll('[data-perk]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      f.selections.perks = [btn.dataset.perk];
+      _renderLvlStep();
+    });
+  });
+}
+
+function _lvlFlowRenderSkillPicker(f, accent, navHTML) {
+  const existingSkills = [
+    ...(f.char.skills ?? []),
+    ...(f.selections.skills ?? []),
+  ];
+  const alreadyChosen = f.selections.skills[0];
+
+  const pool = (LEVEL_UP_SKILL_POOL ?? []).filter(s => !existingSkills.includes(s));
+
+  const skillsHTML = pool.length ? pool.map(s => `
+    <button class="skill-pick-btn ${alreadyChosen === s ? 'selected' : ''} ${alreadyChosen && alreadyChosen !== s ? 'at-limit' : ''}"
+            data-skill="${s}">${s}</button>
+  `).join('') : '<p class="summary-empty">No new skills available.</p>';
+
+  _setLvlFlowContent(`
+    <div class="levelup-modal">
+      <div class="levelup-header" style="border-bottom-color:${accent}">
+        <span class="levelup-subtitle">NEW SKILL</span>
+        <span class="levelup-number" style="color:${accent}">L${f.newLevel}</span>
+      </div>
+      <p class="lvlup-step-hint">Choose one new skill to add to your hero.</p>
+      <div class="skill-pick-grid" id="lvlup-skill-grid" style="margin-top:12px">
+        ${skillsHTML}
+      </div>
+      ${navHTML('Continue →', !alreadyChosen && pool.length > 0)}
+    </div>
+  `);
+
+  document.getElementById('lvlup-skill-grid')?.querySelectorAll('[data-skill]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      f.selections.skills = [btn.dataset.skill];
+      _renderLvlStep();
+    });
+  });
+}
+
+function _lvlFlowRenderAutoStep(f, accent, navHTML, title, bodyText) {
+  _setLvlFlowContent(`
+    <div class="levelup-modal">
+      <div class="levelup-header" style="border-bottom-color:${accent}">
+        <span class="levelup-subtitle">${title.toUpperCase()}</span>
+        <span class="levelup-number" style="color:${accent}">L${f.newLevel}</span>
+      </div>
+      <p class="lvlup-auto-text">${bodyText}</p>
+      ${navHTML('Continue')}
+    </div>
+  `);
+}
+
+function _lvlFlowRenderConfirm(f, accent) {
+  const meta = CLASS_COLORS[f.char.class] || { resource: 'Resource' };
+  const { changes, newLevel, selections } = f;
+  const hpDelta = changes.newHP - changes.oldHP;
+
+  const abilityNames = selections.abilityIds.map(id => {
+    for (const cache of Object.values(f._abilityCache)) {
+      const a = cache.find(x => x.id === id);
+      if (a) return a.name;
+    }
+    return id;
+  });
+
+  _setLvlFlowContent(`
+    <div class="levelup-modal">
+      <div class="levelup-header" style="border-bottom-color:${accent}">
+        <span class="levelup-subtitle">READY</span>
+        <span class="levelup-number" style="color:${accent}">${newLevel}</span>
+      </div>
+      <div class="lvlup-confirm-list">
+        <div class="lvlup-confirm-row">
+          <span class="lvlup-confirm-label">Stamina</span>
+          <span class="lvlup-confirm-val lvlup-val-up">+${hpDelta}</span>
+        </div>
+        ${changes.newResMax > changes.oldResMax ? `
+        <div class="lvlup-confirm-row">
+          <span class="lvlup-confirm-label">${meta.resource} Max</span>
+          <span class="lvlup-confirm-val lvlup-val-up">${changes.oldResMax} → ${changes.newResMax}</span>
+        </div>` : ''}
+        ${abilityNames.map(n => `
+        <div class="lvlup-confirm-row">
+          <span class="lvlup-confirm-label">New Ability</span>
+          <span class="lvlup-confirm-val">${n}</span>
+        </div>`).join('')}
+        ${selections.perks.map(p => `
+        <div class="lvlup-confirm-row">
+          <span class="lvlup-confirm-label">Perk</span>
+          <span class="lvlup-confirm-val">${p}</span>
+        </div>`).join('')}
+        ${selections.skills.map(s => `
+        <div class="lvlup-confirm-row">
+          <span class="lvlup-confirm-label">New Skill</span>
+          <span class="lvlup-confirm-val">${s}</span>
+        </div>`).join('')}
+      </div>
+      <div class="lvlup-nav">
+        <button class="btn btn-ghost" onclick="_lvlFlowNav(-1)">← Back</button>
+        <button class="btn btn-primary" id="lvlup-apply-btn">Apply Level Up</button>
       </div>
     </div>
-  `;
+  `);
+
+  document.getElementById('lvlup-apply-btn')?.addEventListener('click', () => {
+    performLevelUp(f.char, f.newLevel, f.changes, f.selections);
+  });
 }
 
-function showLevelUpModal() {
-  const char = AppState.currentCharacter;
-  if (!char) return;
-  const current = char.level ?? 1;
-  if (current >= 10) { showToast('Your hero has reached the maximum level.', 'info'); return; }
-  const newLevel = current + 1;
-  const changes  = previewLevelUp(char, newLevel);
-  showModal(buildLevelUpModalHTML(char, current, newLevel, changes));
-  document.getElementById('levelup-confirm-btn').addEventListener('click', () => performLevelUp(char, newLevel, changes));
-}
-
-async function performLevelUp(char, newLevel, changes) {
+async function performLevelUp(char, newLevel, changes, selections = {}) {
   const hpIncrease   = changes.newHP - (char.maxHP ?? 0);
   const newCurrentHP = Math.min(changes.newHP, (char.currentHP ?? 0) + hpIncrease);
   const newResMax    = changes.newResMax;
@@ -510,6 +888,31 @@ async function performLevelUp(char, newLevel, changes) {
   char.currentHP       = newCurrentHP;
   char.characteristics = changes.newChars;
   char.heroicResource  = { ...char.heroicResource, max: newResMax };
+
+  // Apply selections
+  const newAbilityIds = [...(char.abilityIds ?? [])];
+  for (const id of (selections.abilityIds ?? [])) {
+    if (!newAbilityIds.includes(id)) newAbilityIds.push(id);
+  }
+  char.abilityIds = newAbilityIds;
+
+  const newPerks = [...(char.perks ?? [])];
+  for (const p of (selections.perks ?? [])) {
+    if (!newPerks.includes(p)) newPerks.push(p);
+  }
+  char.perks = newPerks;
+
+  const newSkills = [...(char.skills ?? [])];
+  for (const s of (selections.skills ?? [])) {
+    if (!newSkills.includes(s)) newSkills.push(s);
+  }
+  char.skills = newSkills;
+
+  // Perk skills are also added to char.skills (deduped)
+  for (const perkName of (selections.perks ?? [])) {
+    if (!newSkills.includes(perkName)) newSkills.push(perkName);
+  }
+  char.skills = newSkills;
 
   // Recalculate resistances (Wyrmplate immunity = new level)
   const updatedResistances = computeDamageResistances(char);
@@ -523,6 +926,7 @@ async function performLevelUp(char, newLevel, changes) {
 
   // Refresh tabs and recovery display
   hideModal();
+  _lvlFlow = null;
   populateStatsTab(char);
   populateDetailsTab(char);
   updateRecoveryDisplay(char);
@@ -536,10 +940,16 @@ async function performLevelUp(char, newLevel, changes) {
       'heroicResource.max': newResMax,
       damageImmunities:     char.damageImmunities,
       damageWeaknesses:     char.damageWeaknesses,
+      abilityIds:           char.abilityIds,
+      perks:                char.perks,
+      skills:               char.skills,
     });
 
   showToast(`${char.name} reached Level ${newLevel}!`, 'success');
 }
+
+// Expose nav and apply functions globally (called from inline onclick)
+window._lvlFlowNav = _lvlFlowNav;
 
 // ── Recovery + Catch Your Breath ─────────────────────────────────────────────
 
@@ -946,7 +1356,7 @@ function populateStatsTab(char) {
           : `<span class="level-max">MAX LEVEL</span>`}
       </div>
     `;
-    document.getElementById('levelup-btn')?.addEventListener('click', showLevelUpModal);
+    document.getElementById('levelup-btn')?.addEventListener('click', showLevelUpFlow);
   }
 
   // Ancestry lookup for A1
@@ -1147,32 +1557,47 @@ const ANCESTRIES = [
 ];
 
 const KITS = [
-  { name: 'Cloak and Dagger', role: 'Skirmisher', desc: 'Light armor · Short blades' },
-  { name: 'Dancer',           role: 'Striker',    desc: 'No armor · Unarmed · Acrobatic' },
-  { name: 'Dual Wielder',     role: 'Striker',    desc: 'No armor · Two weapons' },
-  { name: 'Guisarmier',       role: 'Controller', desc: 'Medium armor · Polearms' },
-  { name: 'Mountain',         role: 'Defender',   desc: 'Heavy armor · Two-handed' },
-  { name: 'Panther',          role: 'Skirmisher', desc: 'Light armor · Light weapons' },
-  { name: 'Pugilist',         role: 'Brawler',    desc: 'No armor · Unarmed' },
-  { name: 'Raider',           role: 'Warrior',    desc: 'Medium armor · Versatile' },
-  { name: 'Rapid Fire',       role: 'Ranged',     desc: 'No armor · Bows' },
-  { name: 'Ranger',           role: 'Ranged',     desc: 'Medium armor · Bow and blade' },
-  { name: 'Retiarius',        role: 'Controller', desc: 'Light armor · Net and trident' },
-  { name: 'Shining Armor',    role: 'Defender',   desc: 'Heavy armor · Shield' },
-  { name: 'Sniper',           role: 'Ranged',     desc: 'No armor · Crossbow · Long range' },
-  { name: 'Spellsword',       role: 'Hybrid',     desc: 'Light armor · Weapon and magic' },
-  { name: 'Stormwight',       role: 'Striker',    desc: 'Medium armor · Natural weapons' },
-  { name: 'Swashbuckler',     role: 'Skirmisher', desc: 'Light armor · Light blade' },
-  { name: 'Warrior Priest',   role: 'Support',    desc: 'Medium armor · Divine weapons' },
+  { name: 'Arcane Archer',   role: 'Ranged',     desc: 'No armor · Bow · Exploding magic arrows' },
+  { name: 'Battlemind',      role: 'Defender',   desc: 'Light armor · Medium weapon · Psionic deflection' },
+  { name: 'Cloak and Dagger',role: 'Skirmisher', desc: 'Light armor · Two light weapons · Hit and fade' },
+  { name: 'Dual Wielder',    role: 'Striker',    desc: 'Medium armor · Light + medium weapon · Two strikes' },
+  { name: 'Guisarmier',      role: 'Controller', desc: 'Medium armor · Polearm · Extended reach' },
+  { name: 'Martial Artist',  role: 'Skirmisher', desc: 'No armor · Unarmed · Acrobatic close-combat' },
+  { name: 'Mountain',        role: 'Defender',   desc: 'Heavy armor · Heavy weapon · Immovable wall' },
+  { name: 'Panther',         role: 'Skirmisher', desc: 'No armor · Heavy weapon · Devastating charge' },
+  { name: 'Pugilist',        role: 'Brawler',    desc: 'No armor · Unarmed · Float and hit hard' },
+  { name: 'Raider',          role: 'Warrior',    desc: 'Light armor · Shield + light weapon · Versatile' },
+  { name: 'Ranger',          role: 'Hybrid',     desc: 'Medium armor · Bow + medium weapon · Adaptable' },
+  { name: 'Rapid Fire',      role: 'Ranged',     desc: 'Light armor · Bow · Maximum arrow volume' },
+  { name: 'Retiarius',       role: 'Controller', desc: 'Light armor · Net + polearm · Entangle and stab' },
+  { name: 'Shining Armor',   role: 'Defender',   desc: 'Heavy armor · Shield + medium weapon · Knight' },
+  { name: 'Sniper',          role: 'Ranged',     desc: 'No armor · Bow · Extreme range and patience' },
+  { name: 'Spellsword',      role: 'Hybrid',     desc: 'Light armor · Shield + medium weapon · Blade + magic' },
+  { name: 'Stick and Robe',  role: 'Controller', desc: 'Light armor · Polearm · Mobile reach' },
+  { name: 'Swashbuckler',    role: 'Skirmisher', desc: 'Light armor · Medium weapon · Daring duelist' },
+  { name: 'Sword and Board', role: 'Defender',   desc: 'Medium armor · Shield + medium weapon · Shield bash' },
+  { name: 'Warrior Priest',  role: 'Support',    desc: 'Heavy armor · Light weapon · Divine smiter' },
+  { name: 'Whirlwind',       role: 'Striker',    desc: 'No armor · Whip · Reach and brutal pull' },
+];
+
+// Stormwight Beast Aspect kits — Fury/Stormwight subclass only
+const STORMWIGHT_KITS = [
+  { name: 'Boren',  role: 'Bear Aspect', desc: 'Channel the bear: large, durable, cold-north aspect. Claws that grab, and can pull instead of push with forced movement.' },
+  { name: 'Corven', role: 'Crow Aspect', desc: 'Channel the crow: fast and stealthy, anabatic wind. Burst strikes that punish enemies who surround you.' },
+  { name: 'Raden',  role: 'Rat Aspect',  desc: 'Channel the rat: mobile and elusive, the rat flood. Quick pounces that push enemies back.' },
+  { name: 'Vuken',  role: 'Wolf Aspect', desc: 'Channel the wolf: fleet-footed hunter, the thunderstorm. Attacks that knock enemies prone.' },
 ];
 
 const KIT_STAMINA = {
-  'Cloak and Dagger': 3,  'Dancer': 3,        'Dual Wielder': 3,
-  'Guisarmier': 6,        'Mountain': 9,       'Panther': 3,
-  'Pugilist': 3,          'Raider': 6,         'Rapid Fire': 3,
-  'Ranger': 6,            'Retiarius': 3,      'Shining Armor': 9,
-  'Sniper': 3,            'Spellsword': 3,     'Stormwight': 6,
-  'Swashbuckler': 3,      'Warrior Priest': 6,
+  'Arcane Archer': 0,   'Battlemind': 3,      'Cloak and Dagger': 3,
+  'Dual Wielder': 6,    'Guisarmier': 6,      'Martial Artist': 3,
+  'Mountain': 9,        'Panther': 6,          'Pugilist': 6,
+  'Raider': 6,          'Ranger': 6,           'Rapid Fire': 3,
+  'Retiarius': 3,       'Shining Armor': 12,   'Sniper': 0,
+  'Spellsword': 6,      'Stick and Robe': 3,   'Swashbuckler': 3,
+  'Sword and Board': 9, 'Warrior Priest': 9,   'Whirlwind': 0,
+  // Stormwight Beast Aspect kits
+  'Boren': 9, 'Corven': 3, 'Raden': 3, 'Vuken': 9,
 };
 
 const CULTURES = [
@@ -1190,20 +1615,11 @@ const CAREERS = [
   'Sage', 'Sailor', 'Soldier', 'Spy', 'Thief',
 ];
 
-const COMPLICATIONS = [
-  { name: 'None',                     desc: 'No complication — clean slate' },
-  { name: 'Cursed Item',              desc: 'Bound to a dangerous object' },
-  { name: 'Destiny',                  desc: 'Fated for something great or terrible' },
-  { name: 'Escaped Experiment',       desc: "You were someone's test subject" },
-  { name: 'Monster Beneath the Skin', desc: 'Something dangerous lurks within' },
-  { name: 'Oath',                     desc: 'Bound by an unbreakable vow' },
-  { name: 'On the Run',               desc: 'Fleeing something from your past' },
-  { name: 'Order Member',             desc: 'Part of a secret organization' },
-  { name: 'Stalker',                  desc: 'Someone or something pursues you' },
-];
+// COMPLICATIONS is defined in wizard-data.js (full d100 table)
 
 // Max recoveries per class (refill on Respite — 24hr rest)
 const CLASS_RECOVERIES = {
+  Beastheart: 12,
   Conduit: 8, Elementalist: 8, Fury: 10,
   Null: 8, Shadow: 8, Tactician: 8, Talent: 8,
 };
@@ -1227,6 +1643,7 @@ const CONDITION_DESCRIPTIONS = [
 ];
 
 const CLASS_DESCRIPTIONS = {
+  Beastheart:   'A beast master whose companion tracks Ferocity — a shared resource powering both hero and beast. Together you share a turn and devastate enemies through coordinated strikes.',
   Fury:         'A berserker who harnesses Rage through violence. More damage dealt means more power unleashed.',
   Tactician:    'A battlefield commander who uses Focus to grant allies extra actions and dominate the flow of combat.',
   Shadow:       'A deadly operative who builds Insight through deception and precision. Every secret is a weapon.',
@@ -1270,12 +1687,14 @@ const CLASS_RESOURCE_CONDITIONS = {
 };
 
 const CLASS_BASE_STAMINA = {
+  Beastheart: 21,
   Conduit: 18, Elementalist: 18, Fury: 24,
   Null: 21, Shadow: 18, Tactician: 21, Talent: 18,
 };
 
 // Additional Stamina gained per level after level 1
 const CLASS_STAMINA_PER_LEVEL = {
+  Beastheart: 12,
   Conduit: 6, Elementalist: 6, Fury: 9,
   Null: 6, Shadow: 6, Tactician: 6, Talent: 6,
 };
@@ -1293,11 +1712,19 @@ function getKitStaminaForEchelon(kitName, echelon) {
   return (KIT_STAMINA[kitName] ?? 0) * echelon;
 }
 
-function computeMaxHP(cls, kit, level) {
+function computeMaxHP(cls, kit, level, kit2) {
   const base     = CLASS_BASE_STAMINA[cls] ?? 18;
   const perLevel = CLASS_STAMINA_PER_LEVEL[cls] ?? 6;
   const echelon  = getEchelon(level);
-  const kitBonus = getKitStaminaForEchelon(kit, echelon);
+  const bonus1   = getKitStaminaForEchelon(kit, echelon);
+  const bonus2   = kit2 ? getKitStaminaForEchelon(kit2, echelon) : 0;
+  // Tactician Field Arsenal: use the better kit bonus, not additive.
+  // Non-kit classes (Conduit, Elementalist, Null, Talent): kit is null → bonus1 = 0.
+  // Fury/Stormwight: kit = beast aspect name (e.g. 'Boren') → bonus from KIT_STAMINA.
+  // TODO: Fury Berserker/Reaver aspects add stamina similar to kits,
+  //       but exact values aren't yet verified. Currently p.kit = null for those
+  //       subclasses so they use base stamina only (no aspect bonus).
+  const kitBonus = Math.max(bonus1, bonus2);
   return base + (perLevel * (level - 1)) + kitBonus;
 }
 
@@ -1319,15 +1746,15 @@ function computeCharacteristicsForLevel(baseChars, level) {
   return result;
 }
 
-// Suggested characteristic spread per class (each sums to 5, max 2 per stat)
+// Suggested characteristic spread per class (each sums to 5, max 2 per primary stat)
 const CLASS_CHARACTERISTICS = {
   Fury:         { MGT: 2, AGL: 2, REA: 0, INU: 1, PRS: 0 },
   Tactician:    { MGT: 2, AGL: 0, REA: 2, INU: 1, PRS: 0 },
   Shadow:       { MGT: 0, AGL: 2, REA: 1, INU: 2, PRS: 0 },
   Conduit:      { MGT: 0, AGL: 0, REA: 1, INU: 2, PRS: 2 },
   Elementalist: { MGT: 0, AGL: 0, REA: 2, INU: 2, PRS: 1 },
-  Null:         { MGT: 2, AGL: 2, REA: 0, INU: 0, PRS: 1 },
-  Talent:       { MGT: 0, AGL: 1, REA: 2, INU: 0, PRS: 2 },
+  Null:         { MGT: 2, AGL: 0, REA: 2, INU: 0, PRS: 1 }, // primaries: MGT, REA
+  Talent:       { MGT: 0, AGL: 1, REA: 0, INU: 2, PRS: 2 }, // primaries: INU, PRS
 };
 
 const CHAR_STATS  = ['MGT', 'AGL', 'REA', 'INU', 'PRS'];
@@ -1359,14 +1786,31 @@ const WIZARD_CONFIG = [
 function startWizard() {
   AppState.pendingCharacter = {
     name: '', ancestry: '', career: '',
-    class: null, kit: null, complication: 'None',
+    class: null, kit: null,
     characteristics: { MGT: 0, AGL: 0, REA: 0, INU: 0, PRS: 0 },
     ancestryTraits: [],
     cultureEnvironment: null, cultureOrganization: null, cultureUpbringing: null,
     subclass: null,
     abilityIds: [],
     _step: 1, _charsReady: false,
-    _step7Sigs: [], _step7Heroic: [],
+    _sigAbilityIds: [], _heroic3AbilityIds: [], _heroic5AbilityIds: [],
+    _sigPoolHasData: false, _heroic3PoolHasData: false, _heroic5PoolHasData: false,
+    _complicationId: null, _complicationName: null,
+    _classSkills: [],
+    // Skill collection fields
+    _cultureSkill_env: null,
+    _cultureSkill_org: null,
+    _cultureSkill_upb: null,
+    _cultureSkill_anc: null,
+    _careerChosenSkills: [],
+    _subclassSkill: null,
+    // Beastheart-specific
+    _companionSpecies: null,
+    _drakeElement:     null,
+    // Fury-specific
+    _furyAspect:       null,
+    // Revenant-specific
+    _revenantFormerLife: null,
   };
   showScreen(SCREENS.WIZARD);
   renderWizardStep(1);
@@ -1530,6 +1974,31 @@ function _step2(body) {
         renderAncestryDetail(ancestryName);
       });
     });
+
+    // Former Life picker — Revenant only
+    if (ancestryName === 'Revenant') {
+      const flSection = document.createElement('div');
+      flSection.className = 'former-life-section';
+      flSection.innerHTML = `
+        <div class="former-life-title">◆ Former Life</div>
+        <p class="former-life-note">As a Revenant you were once a member of another ancestry. Choose the ancestry you belonged to in life — your Previous Life traits draw from that ancestry's trait list.</p>
+        <div class="former-life-grid">
+          ${(typeof REVENANT_FORMER_LIFE_OPTIONS !== 'undefined' ? REVENANT_FORMER_LIFE_OPTIONS : []).map(name => `
+            <button class="former-life-btn ${p._revenantFormerLife === name ? 'selected' : ''}"
+                    data-fl="${name}">${name}</button>
+          `).join('')}
+        </div>
+      `;
+      panel.appendChild(flSection);
+
+      flSection.querySelectorAll('.former-life-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          p._revenantFormerLife = btn.dataset.fl;
+          flSection.querySelectorAll('.former-life-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+        });
+      });
+    }
   }
 
   document.getElementById('ancestry-grid').querySelectorAll('[data-pick]').forEach(btn => {
@@ -1539,6 +2008,7 @@ function _step2(body) {
       if (p.ancestry !== btn.dataset.pick) {
         p.ancestry = btn.dataset.pick;
         p.ancestryTraits = [];
+        p._revenantFormerLife = null; // clear if switching away from Revenant
       }
       renderAncestryDetail(p.ancestry);
     });
@@ -1574,10 +2044,36 @@ function _step3(body) {
     `;
   }
 
+  const ancestryOpts = p.ancestry
+    ? (typeof ANCESTRY_CULTURES !== 'undefined' ? (ANCESTRY_CULTURES[p.ancestry] || []) : [])
+    : [];
+  const ancestrySection = ancestryOpts.length > 0
+    ? sectionHTML('Ancestry Heritage', 'How did your ancestry shape your upbringing?', ancestryOpts, 'cultureAncestry')
+    : `<div class="culture-section">
+        <div class="culture-section-header">
+          <span class="culture-section-title">Ancestry Heritage</span>
+          <span class="culture-section-hint">How did your ancestry shape your upbringing?</span>
+        </div>
+        <p class="wizard-hint" style="margin:8px 0; color: var(--text-secondary);">${
+          p.ancestry
+            ? `No specific heritage options available for ${p.ancestry}.`
+            : 'Select your ancestry in Step 2 to see heritage options for your people.'
+        }</p>
+      </div>`;
+
   body.innerHTML =
     sectionHTML('Environment', 'Where did your community live?', CULTURE_ENVIRONMENTS, 'cultureEnvironment') +
     sectionHTML('Organization', 'How was your community governed?', CULTURE_ORGANIZATIONS, 'cultureOrganization') +
-    sectionHTML('Upbringing', 'How were you raised?', CULTURE_UPBRINGINGS, 'cultureUpbringing');
+    sectionHTML('Upbringing', 'How were you raised?', CULTURE_UPBRINGINGS, 'cultureUpbringing') +
+    ancestrySection;
+
+  // Maps pendingCharacter field → culture data array → skill key on p
+  const CULTURE_SKILL_MAP = {
+    cultureEnvironment:  { data: CULTURE_ENVIRONMENTS,  key: '_cultureSkill_env' },
+    cultureOrganization: { data: CULTURE_ORGANIZATIONS, key: '_cultureSkill_org' },
+    cultureUpbringing:   { data: CULTURE_UPBRINGINGS,   key: '_cultureSkill_upb' },
+    cultureAncestry:     { data: ancestryOpts,           key: '_cultureSkill_anc' },
+  };
 
   body.querySelectorAll('[data-pick][data-field]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1585,7 +2081,22 @@ function _step3(body) {
       body.querySelectorAll(`[data-field="${field}"]`).forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       p[field] = btn.dataset.pick;
+      // Also capture the quickBuild skill for this layer
+      const map = CULTURE_SKILL_MAP[field];
+      if (map) {
+        const entry = map.data.find(e => e.name === btn.dataset.pick);
+        p[map.key] = entry?.quickBuild || null;
+      }
     });
+  });
+
+  // Restore previously captured skills if re-entering step 3
+  ['cultureEnvironment', 'cultureOrganization', 'cultureUpbringing', 'cultureAncestry'].forEach(field => {
+    const map = CULTURE_SKILL_MAP[field];
+    if (p[field] && map && !p[map.key]) {
+      const entry = map.data.find(e => e.name === p[field]);
+      p[map.key] = entry?.quickBuild || null;
+    }
   });
 }
 
@@ -1593,6 +2104,43 @@ function _step3(body) {
 
 function _step4(body) {
   const p = AppState.pendingCharacter;
+
+  // Build a pool of skill names for the given categories
+  function skillsForCategories(categories) {
+    return Object.entries(SKILL_CATEGORIES)
+      .filter(([, cat]) => categories.includes(cat))
+      .map(([name]) => name)
+      .sort();
+  }
+
+  function careerSkillPickerHTML(c) {
+    if (!c?.chooseSkills) return '';
+    const { count, categories } = c.chooseSkills;
+    const chosen = p._careerChosenSkills || [];
+    const pool   = skillsForCategories(categories);
+    // Exclude fixed skills already granted
+    const available = pool.filter(s => !(c.fixedSkills || []).includes(s));
+    return `
+      <div class="class-skill-section" style="margin-top:14px">
+        <div class="class-skill-header">
+          <span class="class-skill-title">Choose Skills</span>
+          <span class="pool-quota ${chosen.length >= count ? 'quota-met' : ''}">
+            ${chosen.length} / ${count} selected
+          </span>
+        </div>
+        <p class="wizard-hint" style="margin:4px 0 8px">
+          Pick ${count} skill${count !== 1 ? 's' : ''} from:
+          <strong>${categories.map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(' or ')}</strong>
+        </p>
+        <div class="skill-pick-grid" id="career-skill-grid">
+          ${available.map(skill => `
+            <button class="skill-pick-btn ${chosen.includes(skill) ? 'selected' : ''} ${chosen.length >= count && !chosen.includes(skill) ? 'at-limit' : ''}"
+                    data-skill="${skill}">${skill}</button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
 
   function careerDetailHTML(c) {
     if (!c) return '<p class="col-right-placeholder">← Select a career to see details</p>';
@@ -1614,8 +2162,29 @@ function _step4(body) {
             <span class="career-detail-val">${c.resources}</span>
           </div>
         </div>
+        ${careerSkillPickerHTML(c)}
       </div>
     `;
+  }
+
+  function wireCareerSkillPicker(c) {
+    const grid = document.getElementById('career-skill-grid');
+    if (!grid || !c?.chooseSkills) return;
+    const { count } = c.chooseSkills;
+    grid.querySelectorAll('[data-skill]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const skill = btn.dataset.skill;
+        const idx   = p._careerChosenSkills.indexOf(skill);
+        if (idx >= 0) {
+          p._careerChosenSkills.splice(idx, 1);
+        } else if (p._careerChosenSkills.length < count) {
+          p._careerChosenSkills.push(skill);
+        }
+        // Re-render right panel to update quota and button states
+        document.getElementById('career-right').innerHTML = careerDetailHTML(c);
+        wireCareerSkillPicker(c);
+      });
+    });
   }
 
   body.innerHTML = `
@@ -1636,12 +2205,19 @@ function _step4(body) {
     </div>
   `;
 
+  // Wire skill picker for initially selected career
+  wireCareerSkillPicker(CAREER_DATA.find(c => c.name === p.career));
+
   document.getElementById('career-list').querySelectorAll('[data-pick]').forEach(btn => {
     btn.addEventListener('click', () => {
       document.getElementById('career-list').querySelectorAll('[data-pick]').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       p.career = btn.dataset.pick;
-      document.getElementById('career-right').innerHTML = careerDetailHTML(CAREER_DATA.find(c => c.name === p.career));
+      // Reset career skill choices when career changes
+      p._careerChosenSkills = [];
+      const career = CAREER_DATA.find(c => c.name === p.career);
+      document.getElementById('career-right').innerHTML = careerDetailHTML(career);
+      wireCareerSkillPicker(career);
     });
   });
 }
@@ -1655,6 +2231,80 @@ function _step5(body) {
     if (!className) return '<p class="col-right-placeholder">← Select a class to see subclasses</p>';
     const subs = CLASS_SUBCLASSES[className] || [];
     const meta = CLASS_COLORS[className] || { accent: '#2980B9', resource: 'Resource' };
+    const skillGrant = CLASS_SKILL_GRANTS?.[className];
+    const chosenSkills = p._classSkills || [];
+    const skillPickHTML = skillGrant ? `
+      <div class="class-skill-section">
+        <div class="class-skill-header">
+          <span class="class-skill-title">Class Skills</span>
+          <span class="pool-quota ${chosenSkills.length >= skillGrant.choose ? 'quota-met' : ''}">
+            ${chosenSkills.length} / ${skillGrant.choose} selected
+          </span>
+        </div>
+        <p class="wizard-hint" style="margin:4px 0 8px">
+          Always gains: <strong>${skillGrant.fixed.join(', ')}</strong><br>
+          Choose ${skillGrant.choose} more:
+        </p>
+        <div class="skill-pick-grid" id="class-skill-grid">
+          ${skillGrant.pool.map(skill => `
+            <button class="skill-pick-btn ${chosenSkills.includes(skill) ? 'selected' : ''} ${chosenSkills.length >= skillGrant.choose && !chosenSkills.includes(skill) ? 'at-limit' : ''}"
+                    data-skill="${skill}">${skill}</button>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    // Beastheart-only: companion species picker with rich cards
+    const companionPickHTML = className === 'Beastheart' ? (() => {
+      const species = typeof BEASTHEART_COMPANION_SPECIES !== 'undefined'
+        ? BEASTHEART_COMPANION_SPECIES : [];
+      const selectedSpec = species.find(c => c.name === p._companionSpecies);
+
+      const drakeElementHTML = (p._companionSpecies === 'Drake') ? `
+        <div class="drake-element-section" id="drake-element-section">
+          <div class="drake-element-title">Drake's Elemental Attunement</div>
+          <div class="drake-element-grid">
+            ${(selectedSpec?.subChoiceOptions || []).map(el => `
+              <button class="drake-element-btn ${p._drakeElement === el ? 'selected' : ''}"
+                      data-element="${el}">${el}</button>
+            `).join('')}
+          </div>
+          <p class="drake-element-hint">Both you and your drake gain Immunity 3 to this damage type.</p>
+        </div>
+      ` : '';
+
+      return `
+        <div class="companion-picker-section">
+          <div class="companion-picker-title">
+            Choose Your Companion
+            ${p._companionSpecies ? ' <span style="color:var(--color-gold)">✓</span>' : ''}
+          </div>
+          ${species.map(c => `
+            <div class="companion-card ${p._companionSpecies === c.name ? 'selected' : ''}"
+                 data-companion="${c.name}" id="companion-card-${c.name.replace(/\s+/g, '-')}">
+              <div class="companion-card-header">
+                <span class="companion-name">${c.name}</span>
+                <span class="companion-badge companion-badge-type">${c.type}</span>
+                <span class="companion-badge companion-badge-size">Size ${c.size}</span>
+                <span class="companion-badge companion-badge-role">${c.role}</span>
+              </div>
+              ${c.heroBenefit ? `<div class="companion-hero-benefit">★ ${c.heroBenefit}</div>` : ''}
+              <div class="companion-desc">${c.desc}</div>
+              <span class="companion-detail-toggle"
+                    data-companion-toggle="${c.name.replace(/\s+/g, '-')}">▼ Show abilities</span>
+              <div class="companion-details" id="companion-detail-${c.name.replace(/\s+/g, '-')}">
+                <div class="companion-detail-label">Special Trait</div>
+                <div class="companion-detail-text">${c.specialTrait}</div>
+                <div class="companion-detail-label">Signature Maneuver</div>
+                <div class="companion-detail-text">${c.signatureManeuver}</div>
+              </div>
+            </div>
+          `).join('')}
+          ${drakeElementHTML}
+        </div>
+      `;
+    })() : '';
+
     return `
       <div class="subclass-header" style="border-left-color: ${meta.accent}">
         <span class="subclass-title">Choose Your ${className} Subclass</span>
@@ -1670,6 +2320,8 @@ function _step5(body) {
           </button>
         `).join('')}
       </div>
+      ${skillPickHTML}
+      ${companionPickHTML}
     `;
   }
 
@@ -1693,13 +2345,22 @@ function _step5(body) {
   `;
 
   function wireSubclassList() {
+    const subs = CLASS_SUBCLASSES[p.class] || [];
     document.getElementById('subclass-list')?.querySelectorAll('[data-subclass]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.getElementById('subclass-list').querySelectorAll('[data-subclass]').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         p.subclass = btn.dataset.subclass;
+        // Capture the subclass skill
+        const sub = subs.find(s => s.name === btn.dataset.subclass);
+        p._subclassSkill = sub?.skill || null;
       });
     });
+    // Restore _subclassSkill if subclass already chosen (re-entering step)
+    if (p.subclass && !p._subclassSkill) {
+      const sub = subs.find(s => s.name === p.subclass);
+      p._subclassSkill = sub?.skill || null;
+    }
   }
 
   document.getElementById('class-grid').querySelectorAll('[data-pick]').forEach(btn => {
@@ -1710,26 +2371,112 @@ function _step5(body) {
         p.class = btn.dataset.pick;
         p.subclass = null;
         p._charsReady = false;
-        // Clear any previous ability selections when class changes
-        p._step7Sigs = [];
-        p._step7Heroic = [];
+        // Clear any previous ability, skill, and subclass selections when class changes
+        p._sigAbilityIds = [];
+        p._heroic3AbilityIds = [];
+        p._heroic5AbilityIds = [];
+        p._sigPoolHasData = false;
+        p._heroic3PoolHasData = false;
+        p._heroic5PoolHasData = false;
         p.abilityIds = [];
+        p._classSkills = [];
+        p._subclassSkill = null;
+        p._companionSpecies = null;
+        p._drakeElement = null;
       }
       document.getElementById('class-right').innerHTML = rightPanelHTML(p.class);
       wireSubclassList();
+      wireClassSkillPicker();
+      wireCompanionPicker();
     });
   });
 
   wireSubclassList();
+  wireClassSkillPicker();
+  wireCompanionPicker();
+
+  function wireCompanionPicker() {
+    // Use event delegation on the section — one listener handles all interactions.
+    // This is more reliable on mobile than per-element listeners on div elements.
+    const section = document.querySelector('.companion-picker-section');
+    if (!section) return;
+
+    section.addEventListener('click', e => {
+      // Drake element button clicked
+      const elementBtn = e.target.closest('[data-element]');
+      if (elementBtn) {
+        p._drakeElement = elementBtn.dataset.element;
+        document.getElementById('class-right').innerHTML = rightPanelHTML(p.class);
+        wireSubclassList();
+        wireClassSkillPicker();
+        wireCompanionPicker();
+        return;
+      }
+
+      // Expand/collapse toggle clicked
+      const toggle = e.target.closest('[data-companion-toggle]');
+      if (toggle) {
+        const id = toggle.dataset.companionToggle;
+        const detail = document.getElementById(`companion-detail-${id}`);
+        if (!detail) return;
+        const open = detail.classList.toggle('open');
+        toggle.textContent = open ? '▲ Hide abilities' : '▼ Show abilities';
+        return;
+      }
+
+      // Companion card clicked — select this companion species
+      const card = e.target.closest('[data-companion]');
+      if (card) {
+        const name = card.dataset.companion;
+        if (p._companionSpecies === name) return;
+        p._companionSpecies = name;
+        if (name !== 'Drake') p._drakeElement = null;
+        document.getElementById('class-right').innerHTML = rightPanelHTML(p.class);
+        wireSubclassList();
+        wireClassSkillPicker();
+        wireCompanionPicker();
+      }
+    });
+  }
+
+  function wireClassSkillPicker() {
+    const grid = document.getElementById('class-skill-grid');
+    if (!grid) return;
+    const grant = CLASS_SKILL_GRANTS?.[p.class];
+    if (!grant) return;
+    if (!p._classSkills) p._classSkills = [];
+    grid.querySelectorAll('[data-skill]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const skill = btn.dataset.skill;
+        const idx = p._classSkills.indexOf(skill);
+        if (idx >= 0) {
+          p._classSkills.splice(idx, 1);
+        } else if (p._classSkills.length < grant.choose) {
+          p._classSkills.push(skill);
+        }
+        // Re-render right panel to update quota and button states
+        document.getElementById('class-right').innerHTML = rightPanelHTML(p.class);
+        wireSubclassList();
+        wireClassSkillPicker();
+      });
+    });
+  }
 }
 
 // ── Step 6: Kit ───────────────────────────────────────────────────────────────
 
 function _step6(body) {
   const p = AppState.pendingCharacter;
+  const access      = (typeof CLASS_KIT_ACCESS !== 'undefined' ? CLASS_KIT_ACCESS : {})[p.class] || { type: 'none' };
+  const isTactician = access.type === 'standard' && access.count === 2;
 
-  function kitStatsHTML(kitName) {
-    if (!kitName) return '<p class="col-right-placeholder">← Select a kit to see stats</p>';
+  function kitStatsHTML(kitName, slotLabel) {
+    if (!kitName) {
+      const placeholder = slotLabel
+        ? `← Select ${slotLabel} to see stats`
+        : '← Select a kit to see stats';
+      return `<p class="col-right-placeholder">${placeholder}</p>`;
+    }
     const s = KIT_STATS[kitName];
     if (!s) return '<p class="col-right-placeholder">No stats available for this kit.</p>';
     const rows = [
@@ -1745,6 +2492,7 @@ function _step6(body) {
     ].filter(([, v]) => v && v !== '—');
     return `
       <div class="kit-stats-card">
+        ${slotLabel ? `<div class="kit-slot-badge">${slotLabel}</div>` : ''}
         <div class="kit-stats-title">${kitName}</div>
         <div class="kit-stats-grid">
           ${rows.map(([label, val]) => `
@@ -1762,33 +2510,244 @@ function _step6(body) {
     `;
   }
 
-  body.innerHTML = `
-    <div class="wizard-two-col">
-      <div class="wizard-col-left">
-        <div class="wizard-grid wizard-grid-2" id="kit-grid">
-          ${KITS.map(k => `
-            <button class="wizard-pick-btn ${p.kit === k.name ? 'selected' : ''}" data-pick="${k.name}">
-              <span class="pick-name">${k.name}</span>
-              <span class="pick-sub">${k.role}</span>
-              <span class="pick-desc">${k.desc}</span>
-            </button>
-          `).join('')}
+  if (access.type === 'none') {
+    // ── Conduit, Elementalist, Null, Talent — no kit ─────────────────────────
+    const CLASS_NO_KIT_DESC = {
+      Conduit:      "Conduits draw combat power from their divine domain, not from kits. Your domain features, prayers, and holy abilities define your combat style.",
+      Elementalist: "Elementalists channel raw elemental forces. Your elemental specialization determines your combat capabilities — kits don't apply.",
+      Null:         "Nulls wield psychic discipline. Your tradition features provide your combat framework — kits don't apply to your class.",
+      Talent:       "Talents channel psionic power through their tradition. Your tradition abilities define your combat style — kits don't apply.",
+    };
+    p.kit  = null;
+    p.kit2 = null;
+    body.innerHTML = `
+      <div class="wizard-step-info-panel">
+        <div class="wizard-step-icon">⚡</div>
+        <h3>Kits Don't Apply to ${p.class}s</h3>
+        <p class="wizard-hint">${CLASS_NO_KIT_DESC[p.class] || 'This class does not use kits.'}</p>
+        <p class="wizard-hint" style="margin-top:12px; opacity:0.7">
+          Your combat features come from your subclass and class abilities.
+          Click <strong>Next</strong> to continue to ability selection.
+        </p>
+      </div>
+    `;
+
+  } else if (access.type === 'primordial_aspect') {
+    // ── Fury — Primordial Aspect (subclass-specific) ──────────────────────────
+    const subclass = p.subclass;
+    if (!subclass) {
+      body.innerHTML = `
+        <div class="wizard-step-info-panel">
+          <div class="wizard-step-icon">⚡</div>
+          <h3>Choose Your Subclass First</h3>
+          <p class="wizard-hint">Return to Step 5 and select a Fury subclass (Berserker, Reaver, or Stormwight) before choosing your Primordial Aspect.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const isStormwightSub = subclass === 'Stormwight';
+    const aspects = (typeof FURY_ASPECTS !== 'undefined' ? FURY_ASPECTS[subclass] : null) || [];
+
+    // On subclass change, clear any invalid aspect
+    if (p._furyAspect && !aspects.some(a => a.name === p._furyAspect)) {
+      p._furyAspect = null;
+      p.kit = null;
+    }
+
+    function renderAspectRight() {
+      const rightEl = document.getElementById('aspect-right');
+      if (!rightEl) return;
+      if (!p._furyAspect) {
+        rightEl.innerHTML = '<p class="col-right-placeholder">← Select an aspect to see details</p>';
+        return;
+      }
+      if (isStormwightSub) {
+        rightEl.innerHTML = kitStatsHTML(p._furyAspect);
+      } else {
+        const asp = aspects.find(a => a.name === p._furyAspect);
+        rightEl.innerHTML = asp ? `
+          <div class="kit-stats-card">
+            <div class="kit-stats-title">${asp.name}</div>
+            <div class="kit-sig-ability">
+              <span class="kit-sig-label">Feature</span>
+              <span class="kit-sig-name">${asp.sigAbility}</span>
+            </div>
+            <p style="font-size:11px; color:var(--text-secondary); margin-top:8px">
+              Exact combat stats (Stamina/Speed/Damage bonuses) will be added when verified from Forge Steel source data.
+            </p>
+          </div>
+        ` : '<p class="col-right-placeholder">No data for this aspect.</p>';
+      }
+    }
+
+    body.innerHTML = `
+      <div class="wizard-two-col">
+        <div class="wizard-col-left">
+          <p class="wizard-hint" style="margin-bottom:8px">
+            <strong>Primordial Aspect:</strong> As a ${subclass}, your combat style comes from your primordial aspect, not a standard kit.
+            ${isStormwightSub ? 'Each aspect transforms you into a different beast form with its own signature ability.' : 'Choose the aspect that matches your fighting style.'}
+          </p>
+          <div class="wizard-grid wizard-grid-2" id="aspect-grid">
+            ${aspects.map(a => `
+              <button class="wizard-pick-btn ${p._furyAspect === a.name ? 'selected' : ''}" data-pick="${a.name}">
+                <span class="pick-name">${a.name}</span>
+                <span class="pick-sub">${a.role}</span>
+                <span class="pick-desc">${a.desc}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="wizard-col-right" id="aspect-right">
+          <!-- populated by renderAspectRight -->
         </div>
       </div>
-      <div class="wizard-col-right" id="kit-right">
-        ${kitStatsHTML(p.kit)}
-      </div>
-    </div>
-  `;
+    `;
 
-  document.getElementById('kit-grid').querySelectorAll('[data-pick]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('kit-grid').querySelectorAll('[data-pick]').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      p.kit = btn.dataset.pick;
-      document.getElementById('kit-right').innerHTML = kitStatsHTML(p.kit);
+    renderAspectRight();
+
+    document.getElementById('aspect-grid')?.querySelectorAll('[data-pick]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('aspect-grid').querySelectorAll('[data-pick]').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        p._furyAspect = btn.dataset.pick;
+        // Stormwight aspects double as kit names for maxHP calculation
+        p.kit = isStormwightSub ? btn.dataset.pick : null;
+        renderAspectRight();
+      });
     });
-  });
+
+  } else if (isTactician) {
+    // ── Tactician: Field Arsenal — pick two different kits ──────────────────
+
+    // Ensure p.kit2 is initialized
+    if (p.kit2 === undefined) p.kit2 = null;
+
+    function renderTacticianKitRight() {
+      const rightEl = document.getElementById('kit-right');
+      if (!rightEl) return;
+      if (p.kit || p.kit2) {
+        rightEl.innerHTML = `
+          <div class="tactician-kit-panels">
+            ${kitStatsHTML(p.kit, 'Kit 1')}
+            ${kitStatsHTML(p.kit2, 'Kit 2')}
+          </div>
+        `;
+      } else {
+        rightEl.innerHTML = `<p class="col-right-placeholder">← Select Kit 1 and Kit 2</p>`;
+      }
+    }
+
+    body.innerHTML = `
+      <div class="wizard-two-col">
+        <div class="wizard-col-left">
+          <p class="wizard-hint" style="margin-bottom:8px">
+            <strong>Field Arsenal:</strong> Tacticians choose two kits. Your first click selects Kit 1, your second selects Kit 2. You cannot pick the same kit twice.
+          </p>
+          <div class="wizard-grid wizard-grid-2" id="kit-grid">
+            ${KITS.map(k => {
+              const isKit1 = p.kit === k.name;
+              const isKit2 = p.kit2 === k.name;
+              const cls = isKit1 ? 'selected kit1-selected' : isKit2 ? 'selected kit2-selected' : '';
+              const badge = isKit1 ? '<span class="kit-slot-inline-badge">Kit 1</span>'
+                          : isKit2 ? '<span class="kit-slot-inline-badge">Kit 2</span>' : '';
+              return `
+                <button class="wizard-pick-btn ${cls}" data-pick="${k.name}">
+                  ${badge}
+                  <span class="pick-name">${k.name}</span>
+                  <span class="pick-sub">${k.role}</span>
+                  <span class="pick-desc">${k.desc}</span>
+                </button>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="wizard-col-right" id="kit-right">
+          <!-- populated by renderTacticianKitRight -->
+        </div>
+      </div>
+    `;
+
+    renderTacticianKitRight();
+
+    document.getElementById('kit-grid').querySelectorAll('[data-pick]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.pick;
+        if (p.kit === name) {
+          p.kit = null;
+        } else if (p.kit2 === name) {
+          p.kit2 = null;
+        } else if (!p.kit) {
+          if (p.kit2 === name) return;
+          p.kit = name;
+        } else if (!p.kit2) {
+          if (p.kit === name) {
+            _flashError('You cannot pick the same kit twice.');
+            return;
+          }
+          p.kit2 = name;
+        } else {
+          if (p.kit === name) {
+            _flashError('You cannot pick the same kit twice.');
+            return;
+          }
+          p.kit2 = name;
+        }
+
+        document.getElementById('kit-grid').querySelectorAll('[data-pick]').forEach(b => {
+          const n = b.dataset.pick;
+          const is1 = p.kit === n;
+          const is2 = p.kit2 === n;
+          b.className = `wizard-pick-btn${is1 ? ' selected kit1-selected' : is2 ? ' selected kit2-selected' : ''}`;
+          const existingBadge = b.querySelector('.kit-slot-inline-badge');
+          if (existingBadge) existingBadge.remove();
+          if (is1 || is2) {
+            const badge = document.createElement('span');
+            badge.className = 'kit-slot-inline-badge';
+            badge.textContent = is1 ? 'Kit 1' : 'Kit 2';
+            b.prepend(badge);
+          }
+        });
+
+        renderTacticianKitRight();
+      });
+    });
+
+  } else {
+    // ── Shadow, Beastheart (and future Censor, Troubadour) — standard 1-kit pick
+
+    // Clear any invalid previously-selected kit
+    if (p.kit && !KITS.some(k => k.name === p.kit)) {
+      p.kit = null;
+    }
+
+    body.innerHTML = `
+      <div class="wizard-two-col">
+        <div class="wizard-col-left">
+          <div class="wizard-grid wizard-grid-2" id="kit-grid">
+            ${KITS.map(k => `
+              <button class="wizard-pick-btn ${p.kit === k.name ? 'selected' : ''}" data-pick="${k.name}">
+                <span class="pick-name">${k.name}</span>
+                <span class="pick-sub">${k.role}</span>
+                <span class="pick-desc">${k.desc}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="wizard-col-right" id="kit-right">
+          ${kitStatsHTML(p.kit)}
+        </div>
+      </div>
+    `;
+
+    document.getElementById('kit-grid').querySelectorAll('[data-pick]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('kit-grid').querySelectorAll('[data-pick]').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        p.kit = btn.dataset.pick;
+        document.getElementById('kit-right').innerHTML = kitStatsHTML(p.kit);
+      });
+    });
+  }
 }
 
 // ── Step 7: Ability Selection ─────────────────────────────────────────────────
@@ -1800,9 +2759,14 @@ async function _step7(body) {
     return;
   }
 
-  const picks = CLASS_ABILITY_PICKS[p.class] || { signatures: 1, heroic: 2 };
-  if (!p._step7Sigs)   p._step7Sigs   = [];
-  if (!p._step7Heroic) p._step7Heroic = [];
+  const picks        = CLASS_ABILITY_PICKS[p.class] || { signatures: 1, heroic3: 1, heroic5: 1 };
+  const access       = (typeof CLASS_KIT_ACCESS !== 'undefined' ? CLASS_KIT_ACCESS : {})[p.class] || { type: 'none' };
+  const isTactician  = access.type === 'standard' && access.count === 2;
+  const isStormwight = p.class === 'Fury' && p.subclass === 'Stormwight';
+
+  if (!p._sigAbilityIds)     p._sigAbilityIds     = [];
+  if (!p._heroic3AbilityIds) p._heroic3AbilityIds = [];
+  if (!p._heroic5AbilityIds) p._heroic5AbilityIds = [];
 
   body.innerHTML = `
     <div class="wizard-two-col">
@@ -1821,20 +2785,31 @@ async function _step7(body) {
       .where('level', '==', 1)
       .get();
 
-    const all    = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const sigs   = all.filter(a => a.isSignature);
-    const heroic = all.filter(a => !a.isSignature).sort((a, b) => (a.cost || 0) - (b.cost || 0));
-    const meta   = CLASS_COLORS[p.class] || { resource: 'Resource' };
+    const all         = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const sigPool     = all.filter(a => a.isSignature);
+    const heroic3Pool = all.filter(a => !a.isSignature && a.cost === 3);
+    const heroic5Pool = all.filter(a => !a.isSignature && a.cost === 5);
 
-    function abilityCardHTML(a, pool) {
-      const sel = pool === 'sig' ? p._step7Sigs.includes(a.id) : p._step7Heroic.includes(a.id);
+    p._sigPoolHasData     = sigPool.length > 0;
+    p._heroic3PoolHasData = heroic3Pool.length > 0;
+    p._heroic5PoolHasData = heroic5Pool.length > 0;
+
+    function costBadge(a) {
+      if (a.isSignature) return '<span class="cost-badge cost-sig">★ Sig</span>';
+      if (a.cost === 3)  return '<span class="cost-badge cost-3pt">3</span>';
+      if (a.cost === 5)  return '<span class="cost-badge cost-5pt">5</span>';
+      return `<span class="cost-badge">${a.cost}pt</span>`;
+    }
+
+    function abilityCardHTML(a, pool, isSelected) {
       return `
-        <button class="ability-pick-card ${sel ? 'selected' : ''}" data-ability-id="${a.id}" data-pool="${pool}">
+        <button class="ability-pick-card ${isSelected ? 'selected' : ''}"
+                data-ability-id="${a.id}" data-pool="${pool}">
           <div class="ability-pick-header">
             <span class="ability-pick-name">${a.name}</span>
             <div class="ability-pick-meta">
-              <span class="ability-pick-type">${a.type}</span>
-              ${a.cost > 0 ? `<span class="ability-pick-cost">${a.cost} ${meta.resource}</span>` : ''}
+              ${costBadge(a)}
+              ${a.type ? `<span class="ability-pick-type">${a.type}</span>` : ''}
             </div>
           </div>
           ${a.tier2 ? `<div class="ability-pick-desc">${a.tier2}</div>` : ''}
@@ -1843,28 +2818,82 @@ async function _step7(body) {
       `;
     }
 
+    function selectablePoolHTML(title, poolAbilities, selectedIds, maxPicks, poolKey, emptyMsg) {
+      const done = selectedIds.length >= maxPicks;
+      return `
+        <div class="ability-pool">
+          <div class="ability-pool-header">
+            <span class="pool-title">${title}</span>
+            <span class="pool-quota ${done ? 'quota-met' : ''}">${selectedIds.length} / ${maxPicks} selected</span>
+          </div>
+          ${poolAbilities.length
+            ? poolAbilities.map(a => abilityCardHTML(a, poolKey, selectedIds.includes(a.id))).join('')
+            : `<p class="summary-empty">${emptyMsg}</p>`}
+        </div>
+      `;
+    }
+
     function renderPools() {
       const poolEl = document.getElementById('ability-pools');
       if (!poolEl) return;
+
+      // ── Stormwight: beast aspect sig shown read-only, THEN class sig pool for picking
+      const stormwightAutoSigHTML = isStormwight ? (() => {
+        const swSig   = p.kit && KIT_STATS?.[p.kit]?.sigAbility;
+        const swTiers = p.kit && KIT_STATS?.[p.kit]?.sigTiers;
+        return `
+          <div class="ability-pool ability-pool-readonly">
+            <div class="ability-pool-header">
+              <span class="pool-title">Beast Aspect Signature</span>
+              <span class="pool-quota quota-met">✓ Auto</span>
+            </div>
+            <p class="wizard-hint">Your Beast Aspect grants an automatic signature ability in addition to your class signature pick below.</p>
+            ${swSig ? `
+              <div class="kit-sig-name-display">${swSig}</div>
+              ${swTiers ? `<div class="kit-sig-tiers-display" style="font-size:12px;color:var(--text-secondary);margin-top:4px">${swTiers}</div>` : ''}
+            ` : '<p class="summary-empty">No Beast Aspect selected — return to Step 6.</p>'}
+          </div>
+        `;
+      })() : '';
+
+      // ── Tactician: kit sigs read-only, no class sig pool
+      const tacticianSigHTML = isTactician ? `
+        <div class="ability-pool ability-pool-readonly">
+          <div class="ability-pool-header">
+            <span class="pool-title">SIGNATURE ABILITIES — From Kits</span>
+            <span class="pool-quota quota-met">✓ Auto</span>
+          </div>
+          <p class="wizard-hint">Tacticians get signature abilities from their kits via Field Arsenal — no class pool pick needed.</p>
+          ${p.kit  && KIT_STATS?.[p.kit]?.sigAbility  ? `<div class="kit-sig-source-label">From ${p.kit} (Kit 1):</div><div class="kit-sig-name-display">${KIT_STATS[p.kit].sigAbility}</div>` : '<p class="summary-empty">No Kit 1 selected — return to Step 6.</p>'}
+          ${p.kit2 && KIT_STATS?.[p.kit2]?.sigAbility ? `<div class="kit-sig-source-label" style="margin-top:8px">From ${p.kit2} (Kit 2):</div><div class="kit-sig-name-display">${KIT_STATS[p.kit2].sigAbility}</div>` : '<p class="summary-empty">No Kit 2 selected — return to Step 6.</p>'}
+        </div>
+      ` : '';
+
+      // ── Class sig pool (all non-Tactician classes pick from this)
+      const classSigHTML = picks.signatures > 0 ? selectablePoolHTML(
+        `SIGNATURE ABILITIES — Choose ${picks.signatures}`,
+        sigPool,
+        p._sigAbilityIds,
+        picks.signatures,
+        'sig',
+        `No signature abilities found for ${p.class}. This class's ability data may not be seeded yet.`
+      ) : '';
+
       poolEl.innerHTML = `
-        <div class="ability-pool">
-          <div class="ability-pool-header">
-            <span class="pool-title">Signature Abilities</span>
-            <span class="pool-quota ${p._step7Sigs.length >= picks.signatures ? 'quota-met' : ''}">
-              ${p._step7Sigs.length} / ${picks.signatures} selected
-            </span>
-          </div>
-          ${sigs.length ? sigs.map(a => abilityCardHTML(a, 'sig')).join('') : '<p class="summary-empty">No signature abilities available.</p>'}
-        </div>
-        <div class="ability-pool">
-          <div class="ability-pool-header">
-            <span class="pool-title">Heroic Abilities</span>
-            <span class="pool-quota ${p._step7Heroic.length >= picks.heroic ? 'quota-met' : ''}">
-              ${p._step7Heroic.length} / ${picks.heroic} selected
-            </span>
-          </div>
-          ${heroic.length ? heroic.map(a => abilityCardHTML(a, 'heroic')).join('') : '<p class="summary-empty">No heroic abilities available.</p>'}
-        </div>
+        ${stormwightAutoSigHTML}
+        ${isTactician ? tacticianSigHTML : classSigHTML}
+        ${selectablePoolHTML(
+          '3-POINT ABILITIES — Choose 1',
+          heroic3Pool, p._heroic3AbilityIds, picks.heroic3,
+          'heroic3',
+          `No 3-point heroic abilities found for ${p.class}. This class's ability data may not be seeded yet.`
+        )}
+        ${selectablePoolHTML(
+          '5-POINT ABILITIES — Choose 1',
+          heroic5Pool, p._heroic5AbilityIds, picks.heroic5,
+          'heroic5',
+          `No 5-point heroic abilities found for ${p.class}. This class's ability data may not be seeded yet.`
+        )}
       `;
 
       poolEl.querySelectorAll('[data-ability-id]').forEach(btn => {
@@ -1872,15 +2901,19 @@ async function _step7(body) {
           const id   = btn.dataset.abilityId;
           const pool = btn.dataset.pool;
           if (pool === 'sig') {
-            const idx = p._step7Sigs.indexOf(id);
-            if (idx >= 0) p._step7Sigs.splice(idx, 1);
-            else if (p._step7Sigs.length < picks.signatures) p._step7Sigs.push(id);
-          } else {
-            const idx = p._step7Heroic.indexOf(id);
-            if (idx >= 0) p._step7Heroic.splice(idx, 1);
-            else if (p._step7Heroic.length < picks.heroic) p._step7Heroic.push(id);
+            const idx = p._sigAbilityIds.indexOf(id);
+            if (idx >= 0) p._sigAbilityIds.splice(idx, 1);
+            else if (p._sigAbilityIds.length < picks.signatures) p._sigAbilityIds.push(id);
+          } else if (pool === 'heroic3') {
+            const idx = p._heroic3AbilityIds.indexOf(id);
+            if (idx >= 0) p._heroic3AbilityIds.splice(idx, 1);
+            else if (p._heroic3AbilityIds.length < picks.heroic3) p._heroic3AbilityIds.push(id);
+          } else if (pool === 'heroic5') {
+            const idx = p._heroic5AbilityIds.indexOf(id);
+            if (idx >= 0) p._heroic5AbilityIds.splice(idx, 1);
+            else if (p._heroic5AbilityIds.length < picks.heroic5) p._heroic5AbilityIds.push(id);
           }
-          p.abilityIds = [...p._step7Sigs, ...p._step7Heroic];
+          p.abilityIds = [...p._sigAbilityIds, ...p._heroic3AbilityIds, ...p._heroic5AbilityIds];
           renderPools();
           renderSummary();
         });
@@ -1890,32 +2923,59 @@ async function _step7(body) {
     function renderSummary() {
       const rightEl = document.getElementById('ability-selection-right');
       if (!rightEl) return;
-      const sigAbilities    = sigs.filter(a => p._step7Sigs.includes(a.id));
-      const heroicAbilities = heroic.filter(a => p._step7Heroic.includes(a.id));
-      const sigDone    = p._step7Sigs.length >= picks.signatures;
-      const heroicDone = p._step7Heroic.length >= picks.heroic;
+
+      // Stormwight beast sig in summary
+      const stormwightLine = isStormwight ? (() => {
+        const swSig = p.kit && KIT_STATS?.[p.kit]?.sigAbility;
+        return `
+          <div class="summary-section-title">Beast Sig <span class="summary-check">✓</span></div>
+          ${swSig ? `<div class="summary-ability"><span class="summary-ability-name">${swSig}</span></div>` : '<p class="summary-empty">No Aspect selected</p>'}
+        `;
+      })() : '';
+
+      // Tactician kit sigs in summary
+      const tacticianLine = isTactician ? (() => {
+        const s1 = p.kit  && KIT_STATS?.[p.kit]?.sigAbility;
+        const s2 = p.kit2 && KIT_STATS?.[p.kit2]?.sigAbility;
+        return `
+          <div class="summary-section-title">Signature <span class="summary-check">✓</span></div>
+          ${s1 ? `<div class="summary-ability"><span class="summary-ability-name">${s1}</span><span class="summary-ability-type">Kit 1</span></div>` : '<p class="summary-empty">No Kit 1 selected</p>'}
+          ${s2 ? `<div class="summary-ability"><span class="summary-ability-name">${s2}</span><span class="summary-ability-type">Kit 2</span></div>` : '<p class="summary-empty">No Kit 2 selected</p>'}
+        `;
+      })() : '';
+
+      // Class sig pool summary
+      const classSigLine = picks.signatures > 0 ? (() => {
+        const done   = p._sigAbilityIds.length >= picks.signatures;
+        const sigAbs = sigPool.filter(a => p._sigAbilityIds.includes(a.id));
+        return `
+          <div class="summary-section-title">
+            Signature${picks.signatures > 1 ? 's' : ''} ${done ? '<span class="summary-check">✓</span>' : `(${p._sigAbilityIds.length}/${picks.signatures})`}
+          </div>
+          ${sigAbs.map(a => `<div class="summary-ability"><span class="summary-ability-name">${a.name}</span><span class="summary-ability-type">${a.type || ''}</span></div>`).join('')
+            || '<p class="summary-empty">None selected yet</p>'}
+        `;
+      })() : '';
+
+      const h3Done = p._heroic3AbilityIds.length >= picks.heroic3;
+      const h5Done = p._heroic5AbilityIds.length >= picks.heroic5;
+      const h3Abs  = heroic3Pool.filter(a => p._heroic3AbilityIds.includes(a.id));
+      const h5Abs  = heroic5Pool.filter(a => p._heroic5AbilityIds.includes(a.id));
 
       rightEl.innerHTML = `
         <div class="ability-selection-summary">
-          <div class="summary-section-title">
-            Signature ${sigDone ? '<span class="summary-check">✓</span>' : `(${p._step7Sigs.length}/${picks.signatures})`}
-          </div>
-          ${sigAbilities.map(a => `
-            <div class="summary-ability">
-              <span class="summary-ability-name">${a.name}</span>
-              <span class="summary-ability-type">${a.type}</span>
-            </div>
-          `).join('') || '<p class="summary-empty">None selected yet</p>'}
-
+          ${stormwightLine}
+          ${isTactician ? tacticianLine : classSigLine}
           <div class="summary-section-title" style="margin-top:12px">
-            Heroic ${heroicDone ? '<span class="summary-check">✓</span>' : `(${p._step7Heroic.length}/${picks.heroic})`}
+            3pt Heroic ${h3Done ? '<span class="summary-check">✓</span>' : `(${p._heroic3AbilityIds.length}/${picks.heroic3})`}
           </div>
-          ${heroicAbilities.map(a => `
-            <div class="summary-ability">
-              <span class="summary-ability-name">${a.name}</span>
-              <span class="summary-ability-type">${a.type}</span>
-            </div>
-          `).join('') || '<p class="summary-empty">None selected yet</p>'}
+          ${h3Abs.map(a => `<div class="summary-ability"><span class="summary-ability-name">${a.name}</span><span class="summary-ability-type">${a.type || ''}</span></div>`).join('')
+            || '<p class="summary-empty">None selected yet</p>'}
+          <div class="summary-section-title" style="margin-top:12px">
+            5pt Heroic ${h5Done ? '<span class="summary-check">✓</span>' : `(${p._heroic5AbilityIds.length}/${picks.heroic5})`}
+          </div>
+          ${h5Abs.map(a => `<div class="summary-ability"><span class="summary-ability-name">${a.name}</span><span class="summary-ability-type">${a.type || ''}</span></div>`).join('')
+            || '<p class="summary-empty">None selected yet</p>'}
         </div>
       `;
     }
@@ -1934,32 +2994,103 @@ async function _step7(body) {
 
 function _step8(body) {
   const p = AppState.pendingCharacter;
-  const sel = p.complication || 'None';
+  const list = typeof COMPLICATIONS !== 'undefined' ? COMPLICATIONS : [];
+
+  function selectedComp() {
+    return list.find(c => c.id === p._complicationId) || null;
+  }
+
+  function renderDetail() {
+    const rightEl = document.getElementById('complication-right');
+    if (!rightEl) return;
+    const c = selectedComp();
+    if (!c) {
+      rightEl.innerHTML = '<p class="col-right-placeholder">Select a complication to see details, or skip below.</p>';
+      return;
+    }
+    rightEl.innerHTML = `
+      <div class="comp-detail-name">${c.name}</div>
+      <div class="comp-detail-section">
+        <div class="comp-detail-label comp-detail-benefit">Benefit</div>
+        <div class="comp-detail-text">${c.benefit}</div>
+      </div>
+      <div class="comp-detail-section" style="margin-top:12px">
+        <div class="comp-detail-label comp-detail-drawback">Drawback</div>
+        <div class="comp-detail-text">${c.drawback}</div>
+      </div>
+    `;
+  }
+
+  function selectComplication(id) {
+    p._complicationId   = id;
+    const c = list.find(x => x.id === id);
+    p._complicationName = c ? c.name : null;
+    // Highlight selected row and scroll to it
+    body.querySelectorAll('.complication-entry').forEach(el => {
+      el.classList.toggle('selected', parseInt(el.dataset.cid) === id);
+    });
+    renderDetail();
+  }
+
   body.innerHTML = `
-    <div class="wizard-list">
-      ${COMPLICATION_DATA.map(c => `
-        <button class="wizard-pick-btn complication-btn ${sel === c.name ? 'selected' : ''}" data-pick="${c.name}">
-          <div class="complication-header">
-            <span class="pick-name">${c.name}</span>
-            <span class="pick-desc">${c.desc}</span>
-          </div>
-          ${c.name !== 'None' ? `
-            <div class="complication-perks">
-              <div class="complication-perk">
-                <span class="perk-label perk-bonus">Perk</span>
-                <span class="perk-text">${c.perk}</span>
-              </div>
-              <div class="complication-perk">
-                <span class="perk-label perk-draw">Drawback</span>
-                <span class="perk-text">${c.drawback}</span>
-              </div>
-            </div>
-          ` : ''}
+    <div class="wizard-two-col">
+      <div class="wizard-col-left">
+        <button class="complication-roll-btn" id="comp-roll-btn">
+          <span class="dice-icon">⚄</span>
+          <span>Roll d100</span>
+          <span class="comp-roll-result" id="comp-roll-result"></span>
         </button>
-      `).join('')}
+        <div class="complication-list" id="complication-list">
+          ${list.map(c => {
+            const preview = c.benefit.length > 70 ? c.benefit.slice(0, 68) + '…' : c.benefit;
+            return `
+              <div class="complication-entry ${p._complicationId === c.id ? 'selected' : ''}"
+                   data-cid="${c.id}">
+                <span class="complication-num">#${c.id}</span>
+                <div class="complication-entry-body">
+                  <div class="complication-entry-name">${c.name}</div>
+                  <div class="complication-entry-preview">${preview}</div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <button class="complication-skip-btn" id="comp-skip-btn">
+          ${p._complicationId === null ? '✓ No complication (skipped)' : 'Skip — No Complication'}
+        </button>
+      </div>
+      <div class="wizard-col-right" id="complication-right">
+        <p class="col-right-placeholder">Select a complication to see details, or skip below.</p>
+      </div>
     </div>
   `;
-  _wirePicker(body, 'complication');
+
+  // Wire list clicks
+  body.querySelectorAll('.complication-entry').forEach(el => {
+    el.addEventListener('click', () => selectComplication(parseInt(el.dataset.cid)));
+  });
+
+  // Wire roll button
+  document.getElementById('comp-roll-btn')?.addEventListener('click', () => {
+    const roll  = Math.ceil(Math.random() * 100);
+    const resultEl = document.getElementById('comp-roll-result');
+    if (resultEl) { resultEl.textContent = `→ ${roll}`; }
+    selectComplication(roll);
+    // Scroll the rolled entry into view
+    const entry = body.querySelector(`[data-cid="${roll}"]`);
+    entry?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+
+  // Wire skip button
+  document.getElementById('comp-skip-btn')?.addEventListener('click', () => {
+    p._complicationId   = null;
+    p._complicationName = null;
+    body.querySelectorAll('.complication-entry').forEach(el => el.classList.remove('selected'));
+    document.getElementById('comp-skip-btn').textContent = '✓ No complication (skipped)';
+    renderDetail();
+  });
+
+  if (p._complicationId !== null) renderDetail();
 }
 
 // ── Step 9: Characteristics ───────────────────────────────────────────────────
@@ -1973,46 +3104,78 @@ function _step9(body) {
     p._charsReady = true;
   }
 
-  const spent = Object.values(p.characteristics).reduce((a, b) => a + b, 0);
+  const primaries = (typeof CLASS_PRIMARY_CHARACTERISTICS !== 'undefined' && CLASS_PRIMARY_CHARACTERISTICS[p.class]) || [];
+  const [primA, primB] = primaries;
+  const primLabelA = CHAR_LABELS[primA] || primA;
+  const primLabelB = CHAR_LABELS[primB] || primB;
 
-  body.innerHTML = `
-    <div class="char-adjuster">
-      <div class="char-budget">
-        <span class="char-budget-label">Points remaining</span>
-        <span class="char-budget-count" id="char-remaining">${CHAR_BUDGET - spent}</span>
-      </div>
-      ${CHAR_STATS.map(stat => `
-        <div class="char-row">
-          <span class="char-label">${CHAR_LABELS[stat]}</span>
-          <div class="char-controls">
-            <button class="char-btn char-btn-minus" data-stat="${stat}">−</button>
-            <span class="char-value" id="char-${stat}">${p.characteristics[stat] ?? 0}</span>
-            <button class="char-btn char-btn-plus" data-stat="${stat}">+</button>
-          </div>
+  function render() {
+    const chars = p.characteristics;
+    const spent = Object.values(chars).reduce((a, b) => a + b, 0);
+    const rem   = CHAR_BUDGET - spent;
+
+    body.innerHTML = `
+      ${primaries.length ? `
+        <div class="char-primary-callout">
+          <span class="char-primary-icon">★</span>
+          Primary stats: <strong>${primLabelA}</strong> and <strong>${primLabelB}</strong>
+          — only these can reach 2 at level 1.
         </div>
-      `).join('')}
-    </div>
-    <p class="wizard-hint">Pre-filled with your class's suggested spread. Redistribute freely.</p>
-  `;
+      ` : ''}
+      <div class="char-adjuster">
+        <div class="char-budget">
+          <span class="char-budget-label">Points remaining</span>
+          <span class="char-budget-count" id="char-remaining">${rem}</span>
+        </div>
+        ${CHAR_STATS.map(stat => {
+          const val       = chars[stat] ?? 0;
+          const isPrimary = primaries.includes(stat);
+          const maxForStat = isPrimary ? 2 : 1;
+          const disablePlus  = val >= maxForStat || rem <= 0;
+          const disableMinus = val <= 0;
+          return `
+            <div class="char-row ${isPrimary ? 'char-row-primary' : ''}">
+              <span class="char-label">
+                ${CHAR_LABELS[stat]}
+                ${isPrimary ? '<span class="char-primary-badge">PRIMARY</span>' : ''}
+              </span>
+              <div class="char-controls">
+                <button class="char-btn char-btn-minus" data-stat="${stat}" ${disableMinus ? 'disabled' : ''}>−</button>
+                <span class="char-value">${val}</span>
+                <button class="char-btn char-btn-plus" data-stat="${stat}" ${disablePlus ? 'disabled' : ''}>+</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <p class="wizard-hint">Pre-filled with your class's suggested spread. Redistribute freely.</p>
+    `;
 
-  body.querySelectorAll('.char-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const stat     = btn.dataset.stat;
-      const valEl    = document.getElementById(`char-${stat}`);
-      const remEl    = document.getElementById('char-remaining');
-      const curr     = parseInt(valEl.textContent) || 0;
-      const rem      = parseInt(remEl.textContent) || 0;
-      const delta    = btn.classList.contains('char-btn-plus') ? 1 : -1;
-      const newVal   = curr + delta;
+    body.querySelectorAll('.char-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const stat       = btn.dataset.stat;
+        const curr       = p.characteristics[stat] ?? 0;
+        const delta      = btn.classList.contains('char-btn-plus') ? 1 : -1;
+        const newVal     = curr + delta;
+        const isPrimary  = primaries.includes(stat);
+        const maxForStat = isPrimary ? 2 : 1;
+        const spentNow   = Object.values(p.characteristics).reduce((a, b) => a + b, 0);
+        const remNow     = CHAR_BUDGET - spentNow;
 
-      if (newVal < 0 || newVal > 3) return;
-      if (delta > 0 && rem <= 0) return;
+        if (newVal < 0) return;
+        if (newVal > maxForStat) {
+          _flashError(`Only ${primLabelA} and ${primLabelB} can be raised to 2 at this level.`);
+          return;
+        }
+        if (delta > 0 && remNow <= 0) return;
 
-      valEl.textContent = newVal;
-      remEl.textContent = rem - delta;
-      p.characteristics[stat] = newVal;
+        p.characteristics[stat] = newVal;
+        render();
+      });
     });
-  });
+  }
+
+  render();
 }
 
 // ── Step 10: Stamina ──────────────────────────────────────────────────────────
@@ -2021,16 +3184,69 @@ function _step10(body) {
   const p         = AppState.pendingCharacter;
   const meta      = CLASS_COLORS[p.class] || { accent: '#2980B9', resource: 'Resource' };
   const base      = CLASS_BASE_STAMINA[p.class] || 18;
-  const kitBonus  = KIT_STAMINA[p.kit] || 0;
+  const access10  = (typeof CLASS_KIT_ACCESS !== 'undefined' ? CLASS_KIT_ACCESS : {})[p.class] || { type: 'none' };
+  const kitBonus1 = KIT_STAMINA[p.kit]  || 0;
+  const kitBonus2 = KIT_STAMINA[p.kit2] || 0;
+  const kitBonus  = isTacticianClass(p.class) ? Math.max(kitBonus1, kitBonus2) : kitBonus1;
   const maxHP     = base + kitBonus;
   const recovery  = Math.floor(maxHP / 3);
+
+  function isTacticianClass(cls) { return cls === 'Tactician'; }
+
+  let kitBonusLabel;
+  if (access10.type === 'none') {
+    kitBonusLabel = 'No kit (class features)';
+  } else if (access10.type === 'primordial_aspect') {
+    const aspectName = p._furyAspect || null;
+    kitBonusLabel = aspectName
+      ? `Primordial Aspect: ${aspectName}${kitBonus > 0 ? ` (+${kitBonus})` : ''}`
+      : 'No aspect selected';
+  } else if (p.class === 'Tactician') {
+    kitBonusLabel = `${kitBonus} kit bonus (best of two)`;
+  } else {
+    kitBonusLabel = p.kit ? `${kitBonus} kit bonus` : 'No kit selected';
+  }
+
+  // Beastheart companion preview
+  let companionPreviewHTML = '';
+  if (p.class === 'Beastheart') {
+    if (p._companionSpecies) {
+      const spec = typeof BEASTHEART_COMPANION_SPECIES !== 'undefined'
+        ? BEASTHEART_COMPANION_SPECIES.find(c => c.name === p._companionSpecies)
+        : null;
+      companionPreviewHTML = `
+        <div class="step10-companion-preview">
+          <div class="step10-companion-title">Companion</div>
+          <div class="step10-companion-row">
+            <span class="step10-companion-name">${p._companionSpecies}</span>
+            <span class="step10-companion-meta">${spec ? `${spec.type} · Size ${spec.size} · Speed ${spec.speed}` : ''}</span>
+          </div>
+          ${p._companionSpecies === 'Drake' && p._drakeElement ? `
+            <div class="step10-companion-row">
+              <span class="step10-companion-label">Element</span>
+              <span class="step10-companion-meta">${p._drakeElement} · You gain Immunity 3 to ${p._drakeElement}</span>
+            </div>
+          ` : ''}
+          ${spec?.heroBenefit ? `
+            <div class="step10-companion-benefit">★ ${spec.heroBenefit}</div>
+          ` : ''}
+        </div>
+      `;
+    } else {
+      companionPreviewHTML = `
+        <div class="step10-companion-preview step10-companion-missing">
+          ⚠ No companion selected — return to Step 5
+        </div>
+      `;
+    }
+  }
 
   body.innerHTML = `
     <div class="stamina-display">
       <div class="stamina-stat">
         <div class="stamina-value">${maxHP}</div>
         <div class="stamina-label">Stamina</div>
-        <div class="stamina-breakdown">${base} class + ${kitBonus} kit</div>
+        <div class="stamina-breakdown">${base} class${kitBonus > 0 ? ` + ${kitBonus} aspect/kit` : ''} · ${kitBonusLabel}</div>
       </div>
       <div class="stamina-stat">
         <div class="stamina-value">${recovery}</div>
@@ -2043,51 +3259,178 @@ function _step10(body) {
         <div class="stamina-breakdown">Starting max</div>
       </div>
     </div>
+    ${companionPreviewHTML}
   `;
 }
 
 // ── Step 11: Review ───────────────────────────────────────────────────────────
 
 function _step11(body) {
-  const p         = AppState.pendingCharacter;
-  const meta      = CLASS_COLORS[p.class] || { accent: '#2980B9', resource: 'Resource' };
-  const base      = CLASS_BASE_STAMINA[p.class] || 18;
-  const kitBonus  = KIT_STAMINA[p.kit] || 0;
-  const maxHP     = base + kitBonus;
+  const p    = AppState.pendingCharacter;
+  const meta = CLASS_COLORS[p.class] || { accent: '#2980B9', resource: 'Resource' };
 
+  // ── Required field validation ──────────────────────────────────────────────
+  const access11 = (typeof CLASS_KIT_ACCESS !== 'undefined' ? CLASS_KIT_ACCESS : {})[p.class] || { type: 'none' };
+  const missing = [];
+  if (!p.name?.trim())  missing.push('Hero name (Step 1)');
+  if (!p.ancestry)      missing.push('Ancestry (Step 2)');
+  if (p.ancestry === 'Revenant' && !p._revenantFormerLife) missing.push('Former Life (Step 2)');
+  if (!p.class)         missing.push('Class (Step 5)');
+  if (!p.subclass)      missing.push('Subclass (Step 5)');
+  // Kit required only for kit classes; Fury needs an aspect; non-kit classes skip
+  if (access11.type === 'standard' && !p.kit)           missing.push('Kit (Step 6)');
+  if (access11.type === 'primordial_aspect' && !p._furyAspect) missing.push('Primordial Aspect (Step 6)');
+  if (p.class === 'Beastheart' && !p._companionSpecies)                          missing.push('Companion (Step 5)');
+  if (p.class === 'Beastheart' && p._companionSpecies === 'Drake' && !p._drakeElement) missing.push('Drake elemental attunement (Step 5)');
+
+  // ── Computed stats ─────────────────────────────────────────────────────────
+  const base          = CLASS_BASE_STAMINA[p.class] || 18;
+  const kitBonus1     = KIT_STAMINA[p.kit]  || 0;
+  const kitBonus2     = KIT_STAMINA[p.kit2] || 0;
+  const kitBonus      = p.class === 'Tactician' ? Math.max(kitBonus1, kitBonus2) : kitBonus1;
+  const maxHP         = base + kitBonus;
+  const kitStatsSubLabel = access11.type === 'none'
+    ? 'No kit (class features)'
+    : access11.type === 'primordial_aspect'
+      ? `${base} class${kitBonus > 0 ? ` + ${kitBonus} aspect` : ''}`
+      : `${base} class + ${kitBonus} kit`;
+  const recoveryValue = Math.floor(maxHP / 3);
+  const recoveries    = CLASS_RECOVERIES[p.class] ?? 8;
+
+  // ── Skills preview — same assembly logic as finishCharacterCreation ────────
+  const skillSet = new Set();
+  if (p._cultureSkill_env) skillSet.add(p._cultureSkill_env);
+  if (p._cultureSkill_org) skillSet.add(p._cultureSkill_org);
+  if (p._cultureSkill_upb) skillSet.add(p._cultureSkill_upb);
+  if (p._cultureSkill_anc) skillSet.add(p._cultureSkill_anc);
+  const careerEntry = typeof CAREER_DATA !== 'undefined'
+    ? CAREER_DATA.find(c => c.name === p.career) : null;
+  for (const s of (careerEntry?.fixedSkills ?? [])) skillSet.add(s);
+  for (const s of (p._careerChosenSkills ?? [])) skillSet.add(s);
+  const classGrant = typeof CLASS_SKILL_GRANTS !== 'undefined'
+    ? CLASS_SKILL_GRANTS?.[p.class] : null;
+  if (classGrant) {
+    for (const s of classGrant.fixed) skillSet.add(s);
+    for (const s of (p._classSkills ?? [])) skillSet.add(s);
+  }
+  if (p._subclassSkill) skillSet.add(p._subclassSkill);
+  const skillsList = [...skillSet].sort();
+
+  // ── Row data ───────────────────────────────────────────────────────────────
   const cultureSummary = [p.cultureEnvironment, p.cultureOrganization, p.cultureUpbringing].filter(Boolean).join(' / ') || '—';
   const traitsSummary  = (p.ancestryTraits?.length) ? p.ancestryTraits.join(', ') : 'None selected';
-  const abilitySummary = (p.abilityIds?.length)
-    ? `${p.abilityIds.length} selected`
-    : 'None selected';
+  const abilitySummary = (p.abilityIds?.length) ? `${p.abilityIds.length} selected` : 'None selected';
+  // Kit row label/value — varies by class kit access type
+  let kitRowLabel, kitRowVal;
+  if (access11.type === 'none') {
+    kitRowLabel = 'Kit';
+    kitRowVal   = '— (not applicable)';
+  } else if (access11.type === 'primordial_aspect') {
+    kitRowLabel = 'Primordial Aspect';
+    kitRowVal   = p._furyAspect || '—';
+  } else if (p.class === 'Tactician' && p.kit2) {
+    kitRowLabel = 'Kit';
+    kitRowVal   = `${p.kit || '—'} + ${p.kit2}`;
+  } else {
+    kitRowLabel = 'Kit';
+    kitRowVal   = p.kit || '—';
+  }
+
   const rows = [
-    ['Name',            p.name || '—'],
+    ['Name',            p.name?.trim() || '—'],
     ['Ancestry',        p.ancestry || '—'],
     ...(p.ancestry === 'Dragon Knight' && p.ancestryDamageTypeChoice
       ? [['Wyrmplate Type', p.ancestryDamageTypeChoice.charAt(0).toUpperCase() + p.ancestryDamageTypeChoice.slice(1)]]
+      : []),
+    ...(p.ancestry === 'Revenant'
+      ? [['Former Life', p._revenantFormerLife || '—']]
       : []),
     ['Ancestry Traits', traitsSummary],
     ['Culture',         cultureSummary],
     ['Career',          p.career || '—'],
     ['Class',           p.class || '—'],
     ['Subclass',        p.subclass || '—'],
-    ['Kit',             p.kit || '—'],
+    [kitRowLabel,       kitRowVal],
+    ...(p.class === 'Beastheart' ? [['Companion', p._companionSpecies || '—']] : []),
+    ...(p.class === 'Beastheart' && p._companionSpecies === 'Drake' ? [['Element', p._drakeElement || '—']] : []),
     ['Abilities',       abilitySummary],
-    ['Complication',    p.complication || '—'],
-    ['Stamina',         `${maxHP}`],
+    ['Complication',    p._complicationName || '—'],
     ['Characteristics', CHAR_STATS.map(s => `${s} +${p.characteristics?.[s] ?? 0}`).join('  ')],
   ];
 
+  // Flag rows that are missing required values
+  const requiredFields = new Set(['Name', 'Ancestry', 'Class', 'Subclass']);
+  if (p.ancestry === 'Revenant')             requiredFields.add('Former Life');
+  if (access11.type === 'standard')          requiredFields.add('Kit');
+  if (access11.type === 'primordial_aspect') requiredFields.add('Primordial Aspect');
+  if (p.class === 'Beastheart') requiredFields.add('Companion');
+  if (p.class === 'Beastheart' && p._companionSpecies === 'Drake') requiredFields.add('Element');
+
   body.innerHTML = `
-    <div class="review-card" style="border-top-color: ${meta.accent}">
-      ${rows.map(([label, val]) => `
-        <div class="review-row">
-          <span class="review-label">${label}</span>
-          <span class="review-val">${val}</span>
+    ${missing.length ? `
+      <div class="review-missing">
+        <div class="review-missing-title">Missing required selections</div>
+        <ul class="review-missing-list">
+          ${missing.map(m => `<li>${m}</li>`).join('')}
+        </ul>
+        <p class="review-missing-hint">Go back and complete these steps before creating your hero.</p>
+      </div>
+    ` : ''}
+
+    <div class="review-stats-strip">
+      <div class="review-stat-block">
+        <div class="review-stat-value">${maxHP}</div>
+        <div class="review-stat-label">Stamina</div>
+        <div class="review-stat-sub">${kitStatsSubLabel}</div>
+      </div>
+      <div class="review-stat-block">
+        <div class="review-stat-value">${recoveryValue}</div>
+        <div class="review-stat-label">Recovery Value</div>
+        <div class="review-stat-sub">Stamina ÷ 3</div>
+      </div>
+      <div class="review-stat-block">
+        <div class="review-stat-value">${recoveries}</div>
+        <div class="review-stat-label">Recoveries</div>
+        <div class="review-stat-sub">Refill on Respite</div>
+      </div>
+      <div class="review-stat-block" style="color: ${meta.accent}">
+        <div class="review-stat-value">10</div>
+        <div class="review-stat-label">${meta.resource}</div>
+        <div class="review-stat-sub">Starting max</div>
+      </div>
+    </div>
+
+    <div class="review-card" style="--class-accent: ${meta.accent}; border-top-color: ${meta.accent}">
+      ${rows.map(([label, val]) => {
+        const isRequired = requiredFields.has(label);
+        const isEmpty    = val === '—';
+        return `
+          <div class="review-row${isRequired && isEmpty ? ' review-row-missing' : ''}">
+            <span class="review-label">${label}</span>
+            <span class="review-val">${val}</span>
+          </div>`;
+      }).join('')}
+    </div>
+
+    <div class="review-skills-section">
+      <div class="review-skills-title">Starting Skills</div>
+      ${skillsList.length ? `
+        <div class="review-skills-chips">
+          ${skillsList.map(s => `<span class="review-skill-chip">${s}</span>`).join('')}
         </div>
-      `).join('')}
+      ` : `<p class="review-skills-empty">No skills collected yet — complete Culture, Career, and Class steps.</p>`}
     </div>
   `;
+
+  // Enable/disable Create Hero button based on validation
+  const nextBtn = document.getElementById('wizard-next-btn');
+  if (missing.length) {
+    nextBtn.disabled = true;
+    nextBtn.title    = 'Complete all required steps first';
+  } else {
+    nextBtn.disabled = false;
+    nextBtn.title    = '';
+  }
 }
 
 // ── Picker wiring helper ──────────────────────────────────────────────────────
@@ -2119,24 +3462,54 @@ function advanceWizard() {
     if (p.ancestry === 'Dragon Knight' && !p.ancestryDamageTypeChoice) {
       _flashError('Choose your Wyrmplate damage type to continue.'); return;
     }
+    if (p.ancestry === 'Revenant' && !p._revenantFormerLife) {
+      _flashError('Choose your Former Life ancestry to continue.'); return;
+    }
   } else if (step === 3) {
     if (!p.cultureEnvironment)  { _flashError('Choose an Environment to continue.'); return; }
     if (!p.cultureOrganization) { _flashError('Choose an Organization to continue.'); return; }
     if (!p.cultureUpbringing)   { _flashError('Choose an Upbringing to continue.'); return; }
-  } else if (step === 4 && !p.career) {
-    _flashError('Pick a career to continue.'); return;
+  } else if (step === 4) {
+    if (!p.career) { _flashError('Pick a career to continue.'); return; }
+    const careerEntry = CAREER_DATA.find(c => c.name === p.career);
+    const cs = careerEntry?.chooseSkills;
+    if (cs && (p._careerChosenSkills?.length ?? 0) < cs.count) {
+      _flashError(`Choose ${cs.count} career skill${cs.count !== 1 ? 's' : ''} to continue.`); return;
+    }
   } else if (step === 5) {
     if (!p.class)    { _flashError('Pick a class to continue.'); return; }
     if (!p.subclass) { _flashError('Pick a subclass to continue.'); return; }
-  } else if (step === 6 && !p.kit) {
-    _flashError('Pick a kit to continue.'); return;
-  } else if (step === 7) {
-    const picks = CLASS_ABILITY_PICKS[p.class] || { signatures: 1, heroic: 2 };
-    if ((p._step7Sigs?.length ?? 0) < picks.signatures) {
-      _flashError(`Select ${picks.signatures} signature ability to continue.`); return;
+    const classSkillGrant = CLASS_SKILL_GRANTS?.[p.class];
+    if (classSkillGrant && (p._classSkills?.length ?? 0) < classSkillGrant.choose) {
+      _flashError(`Choose ${classSkillGrant.choose} class skills to continue.`); return;
     }
-    if ((p._step7Heroic?.length ?? 0) < picks.heroic) {
-      _flashError(`Select ${picks.heroic} heroic abilities to continue.`); return;
+    if (p.class === 'Beastheart' && !p._companionSpecies) {
+      _flashError('Choose your companion before continuing.'); return;
+    }
+    if (p.class === 'Beastheart' && p._companionSpecies === 'Drake' && !p._drakeElement) {
+      _flashError('Choose your drake\'s elemental attunement before continuing.'); return;
+    }
+  } else if (step === 6) {
+    const access6 = (typeof CLASS_KIT_ACCESS !== 'undefined' ? CLASS_KIT_ACCESS : {})[p.class] || { type: 'none' };
+    if (access6.type === 'standard') {
+      if (!p.kit) { _flashError('Pick a kit to continue.'); return; }
+      if (p.class === 'Tactician' && !p.kit2) {
+        _flashError('Tacticians pick two kits (Field Arsenal). Select a second kit.'); return;
+      }
+    } else if (access6.type === 'primordial_aspect') {
+      if (!p._furyAspect) { _flashError('Choose your Primordial Aspect to continue.'); return; }
+    }
+    // type: 'none' — always passes through
+  } else if (step === 7) {
+    const picks7 = CLASS_ABILITY_PICKS[p.class] || { signatures: 1, heroic3: 1, heroic5: 1 };
+    if (picks7.signatures > 0 && p._sigPoolHasData && (p._sigAbilityIds?.length ?? 0) < picks7.signatures) {
+      _flashError(`Select ${picks7.signatures} signature abilit${picks7.signatures === 1 ? 'y' : 'ies'} to continue.`); return;
+    }
+    if (p._heroic3PoolHasData && (p._heroic3AbilityIds?.length ?? 0) < picks7.heroic3) {
+      _flashError('Select a 3-point heroic ability to continue.'); return;
+    }
+    if (p._heroic5PoolHasData && (p._heroic5AbilityIds?.length ?? 0) < picks7.heroic5) {
+      _flashError('Select a 5-point heroic ability to continue.'); return;
     }
   }
   // steps 8–10: always valid
@@ -2165,13 +3538,42 @@ async function finishCharacterCreation() {
   const meta = CLASS_COLORS[p.class] || { accent: '#2980B9', resource: 'Resource' };
   const user = AppState.currentUser;
 
-  const base     = CLASS_BASE_STAMINA[p.class] || 18;
-  const kitBonus = KIT_STAMINA[p.kit] || 0;
-  const maxHP    = base + kitBonus;
+  const base      = CLASS_BASE_STAMINA[p.class] || 18;
+  const kitBonus1 = KIT_STAMINA[p.kit]  || 0;
+  const kitBonus2 = KIT_STAMINA[p.kit2] || 0;
+  const kitBonus  = p.class === 'Tactician' ? Math.max(kitBonus1, kitBonus2) : kitBonus1;
+  const maxHP     = base + kitBonus;
 
   const nextBtn = document.getElementById('wizard-next-btn');
   nextBtn.disabled = true;
   nextBtn.textContent = 'Creating...';
+
+  // Build skills array from all sources — culture, career, class, subclass
+  const skillSet = new Set();
+  // Culture (quickBuild skills captured per layer during wizard)
+  if (p._cultureSkill_env) skillSet.add(p._cultureSkill_env);
+  if (p._cultureSkill_org) skillSet.add(p._cultureSkill_org);
+  if (p._cultureSkill_upb) skillSet.add(p._cultureSkill_upb);
+  if (p._cultureSkill_anc) skillSet.add(p._cultureSkill_anc);
+  // Career: fixed + chosen
+  const careerEntry = CAREER_DATA.find(c => c.name === p.career);
+  for (const s of (careerEntry?.fixedSkills ?? [])) skillSet.add(s);
+  for (const s of (p._careerChosenSkills ?? [])) skillSet.add(s);
+  // Class: fixed + chosen
+  const classGrant = CLASS_SKILL_GRANTS?.[p.class];
+  if (classGrant) {
+    for (const s of classGrant.fixed) skillSet.add(s);
+    for (const s of (p._classSkills ?? [])) skillSet.add(s);
+  }
+  // Subclass skill
+  if (p._subclassSkill) skillSet.add(p._subclassSkill);
+
+  // Extract kit sig ability names for reliable display via virtual cards in abilities.js
+  // sigAbility is now just the name (no "Name: description" colon format).
+  const kitStats  = p.kit  && typeof KIT_STATS !== 'undefined' ? KIT_STATS[p.kit]  : null;
+  const kitStats2 = p.kit2 && typeof KIT_STATS !== 'undefined' ? KIT_STATS[p.kit2] : null;
+  const kitSigAbilityName  = kitStats?.sigAbility  || null;
+  const kitSigAbilityName2 = kitStats2?.sigAbility || null;
 
   const charData = {
     name:                p.name,
@@ -2184,14 +3586,45 @@ async function finishCharacterCreation() {
     career:              p.career || '',
     class:               p.class,
     subclass:            p.subclass || '',
-    kit:                 p.kit || '',
-    complication:        p.complication || 'None',
+    kit:                  p.kit  || null,
+    kit2:                 p.class === 'Tactician' ? (p.kit2 || null) : null,
+    furyAspect:           p.class === 'Fury' ? (p._furyAspect || null) : null,
+    revenantFormerLife:   p.ancestry === 'Revenant' ? (p._revenantFormerLife || null) : null,
+    kitSigAbilityName:    kitSigAbilityName  || null,
+    kitSigAbilityName2:   kitSigAbilityName2 || null,
+    complication:        p._complicationName || 'None',
+    complicationId:      p._complicationId   || null,
     characteristics:     p.characteristics || { MGT:0, AGL:0, REA:0, INU:0, PRS:0 },
     maxHP,
     currentHP:           maxHP,
     heroicResource:      { name: meta.resource, current: 0, max: 10 },
     recoveries:          { current: CLASS_RECOVERIES[p.class] ?? 8, max: CLASS_RECOVERIES[p.class] ?? 8 },
-    abilityIds:               p.abilityIds || [],
+    // Beastheart companion (null for all other classes)
+    companionSpecies:    p._companionSpecies || null,
+    drakeElement:        p._drakeElement     || null,
+    companion:           p._companionSpecies ? (() => {
+      const spec = typeof BEASTHEART_COMPANION_SPECIES !== 'undefined'
+        ? BEASTHEART_COMPANION_SPECIES.find(c => c.name === p._companionSpecies)
+        : null;
+      return {
+        species:     p._companionSpecies,
+        type:        spec?.type    || null,
+        size:        spec?.size    || '1M',
+        speed:       spec?.speed   || 5,
+        ferocity:    0,
+        ferocityMax: 3,
+        baseStamina: spec?.stamina || 21,
+        currentHP:   spec?.stamina || 21,
+        maxHP:       spec?.stamina || 21,
+        heroBenefit: spec?.heroBenefit || null,
+        immunities:  spec?.immunities  || [],
+        conditions:  [],
+        isRampaging: false,
+        drakeElement: p._drakeElement || null,
+      };
+    })() : null,
+    abilityIds:               [...(p._sigAbilityIds ?? []), ...(p._heroic3AbilityIds ?? []), ...(p._heroic5AbilityIds ?? [])],
+    skills:                   [...skillSet],
     conditions:               [],
     level:                    1,
     victories:                0,
@@ -2206,34 +3639,6 @@ async function finishCharacterCreation() {
   const initialResistances = computeDamageResistances({ ...charData, level: 1 });
   charData.damageImmunities = initialResistances.damageImmunities;
   charData.damageWeaknesses = initialResistances.damageWeaknesses;
-
-  // A2 — Kit signature ability: attempt to find a matching Firestore ability
-  // by name and, if found, add its ID so it shows via the normal ability flow.
-  // If not found, getKitVirtualAbility() in abilities.js will synthesize it.
-  if (p.kit) {
-    const kitStats = typeof KIT_STATS !== 'undefined' ? KIT_STATS[p.kit] : null;
-    if (kitStats?.sigAbility) {
-      const colonIdx = kitStats.sigAbility.indexOf(':');
-      const sigName = (colonIdx > -1
-        ? kitStats.sigAbility.substring(0, colonIdx)
-        : kitStats.sigAbility).trim();
-      try {
-        const sigSnap = await db.collection('abilities')
-          .where('name', '==', sigName)
-          .limit(1)
-          .get();
-        if (!sigSnap.empty) {
-          const sigId = sigSnap.docs[0].id;
-          if (!charData.abilityIds.includes(sigId)) {
-            charData.abilityIds = [...charData.abilityIds, sigId];
-          }
-        }
-        // If not found → getKitVirtualAbility handles display
-      } catch (e) {
-        console.warn('Kit sig ability lookup skipped:', e);
-      }
-    }
-  }
 
   try {
     const ref = await db.collection('users').doc(user.uid)

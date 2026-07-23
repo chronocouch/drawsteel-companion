@@ -179,7 +179,7 @@
           <button class="filter-pill active" data-type="">All</button>
           <button class="filter-pill" data-type="action">Action</button>
           <button class="filter-pill" data-type="maneuver">Maneuver</button>
-          <button class="filter-pill" data-type="anytime">Triggered</button>
+          <button class="filter-pill" data-type="anytime">Anytime</button>
           <button class="filter-pill" data-type="free">Free</button>
         </div>
         <div class="power-roll-banner" id="power-roll-banner">
@@ -270,7 +270,10 @@
     <header class="campaign-header">
       <button id="campaign-back-btn" class="btn btn-ghost btn-icon">←</button>
       <span class="campaign-header-title" id="campaign-header-title">Campaign</span>
-      <button id="campaign-respite-btn" class="btn btn-ghost btn-small">⛺ Respite</button>
+      <div class="campaign-header-actions">
+        <button id="levelup-party-btn" class="btn btn-ghost btn-small hidden">⬆ Level Up</button>
+        <button id="campaign-respite-btn" class="btn btn-ghost btn-small">⛺ Respite</button>
+      </div>
     </header>
 
     <!-- Party status bar -->
@@ -381,15 +384,15 @@
 
   <!-- ── App scripts ──────────────────────────────────────────────────── -->
   <!-- IMPORTANT: Paste your Firebase config into this file -->
-  <script src="js/firebase-config.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/wizard-data.js"></script>
-  <script src="js/character.js"></script>
-  <script src="js/abilities.js"></script>
-  <script src="js/session.js"></script>
-  <script src="js/monster-search.js"></script>
-  <script src="js/campaign.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/firebase-config.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
+  <script src="js/wizard-data.js?v=4"></script>
+  <script src="js/character.js?v=4"></script>
+  <script src="js/abilities.js?v=4"></script>
+  <script src="js/session.js?v=4"></script>
+  <script src="js/monster-search.js?v=4"></script>
+  <script src="js/campaign.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
 
 </body>
 </html>

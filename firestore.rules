@@ -47,6 +47,34 @@ service cloud.firestore {
     }
 
 
+    // ── Monsters ────────────────────────────────────────────────────────────
+    // Global bestiary — seeded once, readable by all signed-in users
+
+    match /monsters/{monsterId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Written only via Admin SDK in seed script
+    }
+
+
+    // ── Campaigns ───────────────────────────────────────────────────────────
+
+    match /campaigns/{campaignId} {
+      // Director can read/write their own campaign
+      allow read, write: if isSignedIn() &&
+        (resource == null || resource.data.directorId == request.auth.uid) &&
+        request.resource.data.directorId == request.auth.uid;
+
+      // Allow reads even when just querying (resource check not possible on list)
+      allow read: if isSignedIn();
+
+      // ── Encounters (subcollection) ─────────────────────────────────────
+      match /encounters/{encounterId} {
+        allow read, write: if isSignedIn() &&
+          get(/databases/$(database)/documents/campaigns/$(campaignId)).data.directorId == request.auth.uid;
+      }
+    }
+
+
     // ── Sessions ────────────────────────────────────────────────────────────
 
     match /sessions/{sessionCode} {
