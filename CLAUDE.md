@@ -23,6 +23,7 @@ the sheet, not the other way around. Players never leave their character to trac
 drawsteel/
 ├── CLAUDE.md               ← You are here
 ├── SETUP.md                ← Step-by-step setup guide
+├── STYLE_GUIDE.md           ← Visual/design reference — read before touching CSS or HTML
 ├── .firebaserc             ← Firebase project alias
 ├── firebase.json           ← Hosting + Functions config
 ├── firestore.rules         ← Security rules
@@ -32,19 +33,24 @@ drawsteel/
 │   ├── css/
 │   │   └── main.css
 │   └── js/
-│       ├── app.js          ← Entry point, router
-│       ├── auth.js         ← Google Sign-In
-│       ├── character.js    ← Character sheet + wizard
-│       ├── abilities.js    ← Ability card viewer + tag system
-│       ├── session.js      ← Combat session, live sync
-│       └── firebase-config.js  ← YOUR FIREBASE CONFIG GOES HERE
-├── functions/              ← Cloud Functions
+│       ├── app.js             ← Entry point, router
+│       ├── auth.js             ← Google Sign-In (redirect-based, not popup)
+│       ├── firebase-config.js  ← YOUR FIREBASE CONFIG GOES HERE
+│       ├── wizard-data.js      ← Static rules data: ancestries, cultures, kits,
+│       │                          complications, level-up tables, etc.
+│       ├── character.js        ← Character list, sheet, 10-step creation wizard
+│       ├── abilities.js        ← Ability card viewer + tag system
+│       ├── session.js          ← Combat session, live sync, encounter/negotiation/
+│       │                          montage runners
+│       ├── monster-search.js   ← Bestiary search/filter used by the encounter builder
+│       └── campaign.js         ← Campaign manager, encounter builder, respite/level-up
+├── functions/              ← Cloud Functions (scheduled cleanup only — no seeding here)
 │   ├── package.json        ← node engine MUST be "22"
-│   ├── index.js            ← Function exports
-│   └── src/
-│       └── seed.js         ← Phase 0: populates /abilities from Steel Compendium
-└── scripts/
-    └── seed-local.js       ← Run this once to seed Firestore: node scripts/seed-local.js
+│   └── index.js            ← cleanupOldSessions: daily prune of old /sessions docs
+└── scripts/                ← One-off Admin SDK scripts, run locally with `node`
+    ├── seed-local.js        ← Seeds /abilities from SteelCompendium/data-rules-md
+    ├── seed-monsters.js     ← Seeds /monsters from SteelCompendium/data-bestiary-json
+    └── seed-beastheart.js   ← Seeds Beastheart abilities (not yet in the compendium repo)
 ```
 
 ## Firestore Data Model
@@ -218,6 +224,16 @@ drawsteel/
     outcome: string
   },
 
+  // Montage fields (when type === 'montage')
+  montageConfig: {
+    description: string,
+    targetSuccesses: number,
+    roundLimit: number,
+    challenges: [{ name, tier, desc }],
+    successOutcome: string,
+    failureOutcome: string
+  },
+
   // Terrain / environment notes
   terrain: string,
   mapNotes: string,
@@ -252,23 +268,44 @@ Each card has two tag layers:
 - Card expanded: all three tiers, kit modifiers, USE THIS ABILITY button
 
 ## Class Accent Colors
+Source of truth is `CLASS_COLORS` in [character.js](public/js/character.js) — update there first if these drift.
 ```
-Fury:         #C0392B  (Blood Red)    resource: Rage
-Tactician:    #2980B9  (Steel Blue)   resource: Focus
-Shadow:       #6C3483  (Deep Purple)  resource: Insight
-Conduit:      #D4AC0D  (Holy Gold)    resource: Piety
-Elementalist: #E67E22  (Ember Orange) resource: Essence
-Null:         #717D7E  (Void Grey)    resource: Discipline
+Fury:         #C0392B  (Blood Red)      resource: Rage
+Tactician:    #2980B9  (Steel Blue)     resource: Focus
+Shadow:       #6C3483  (Deep Purple)    resource: Insight
+Conduit:      #D4AC0D  (Holy Gold)      resource: Piety
+Elementalist: #E67E22  (Ember Orange)   resource: Essence
+Null:         #717D7E  (Void Grey)      resource: Discipline
 Talent:       #9B59B6  (Psionic Violet) resource: Clarity
+Beastheart:   #7D5A3C  (Companion Brown) resource: Ferocity
 ```
 
-## Build Phases
-- **Phase 0**: Seed /abilities from Steel Compendium (scripts/seed-local.js)
-- **Phase 1**: Auth + character shell
-- **Phase 2**: 10-step creation wizard
-- **Phase 3**: Ability card viewer with full tag system
-- **Phase 4**: Session mode + live Firestore sync
-- **Phase 5**: Polish — class theming, mobile UX, kit modifiers
+Fury has a **Stormwight** subclass option (Beast Shape / Beast Aspect kits) handled via
+`STORMWIGHT_KITS` in wizard-data.js — it reuses the Fury accent color, not its own.
+
+## Build Phases — Status
+Everything below is done and pushed to `main` unless marked otherwise. Phase letters/numbers
+follow the naming used in commit messages and in-file section comments (e.g. `// ── H3: ...`).
+
+- **Phase 0**: Seed `/abilities` from Steel Compendium (scripts/seed-local.js) — done
+- **Phase 1**: Auth + character shell — done (Google Sign-In uses `signInWithRedirect`
+  everywhere, not popup — mobile Safari/Chrome kept breaking the popup flow)
+- **Phase 2**: 10-step creation wizard — done, and since extended with a 3rd ancestry
+  wave (Revenant + Former Life options), Beastheart class + companion species picker,
+  and Fury's Stormwight subclass (Beast Aspect kits)
+- **Phase 3**: Ability card viewer with full tag system — done
+- **Phase 4**: Session mode + live Firestore sync — done
+- **Phase 5**: Polish — class theming, mobile UX, kit modifiers — done
+- **Phase 8b + A–F**: Visual polish, data wiring, session resume, combat UX — done
+- **Phases G–J**: Monster bestiary (`/monsters`, monster-search.js), campaign manager
+  (`campaign.js`), encounter builder (combat/negotiation/montage config), desktop
+  runner for Director — done
+- **Phases K–L**: Negotiation & montage live-session runners (session.js), hero XP
+  progress bars, milestone-mode level-up flow + celebration modal, post-encounter
+  session notes, Beastheart class + seed script — done
+
+Nothing is currently in progress — pick the next slice of work and say which phase/file
+you're extending so this file can be updated to match.
 
 ## Known Firebase Gotchas
 - Node engine must be `"22"` in functions/package.json
@@ -276,6 +313,18 @@ Talent:       #9B59B6  (Psionic Violet) resource: Clarity
 - Firebase deploy port may need to be 22 depending on network
 - firebase-config.js must be manually pasted — never commit real credentials
 - After any file replacement, re-paste the Firebase config block
+- Google Sign-In must use `signInWithRedirect`, never the popup flow — popups broke on
+  mobile browsers and caused redirect loops; a `localStorage` pending-flag guards the
+  redirect round-trip in auth.js
+- `<script>` tags in index.html carry a `?v=N` cache-bust query param — bump it when a
+  JS file changes, or players/Directors may keep running stale cached code
+- firestore.rules has explicit sections for `/monsters` (read-only, written only by
+  Admin SDK seed scripts) and `/campaigns` + its `encounters` subcollection
+  (director-owned only) — if you add a new top-level collection, add matching rules
+  in the same commit or it'll be unreachable (or wide open) in production
+- There's no Cloud Function for seeding — `/abilities` and `/monsters` are populated by
+  running `scripts/seed-local.js` / `seed-monsters.js` / `seed-beastheart.js` locally
+  with Admin SDK credentials, not via `functions/`
 
 ## How to Talk to Claude Code
 Claude Code works best with specific, scoped instructions. Examples:
