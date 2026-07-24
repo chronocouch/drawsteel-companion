@@ -36,20 +36,100 @@ function computeXPProgress(hero) {
 
 // ── Check for existing campaign — called from app.js after auth ──────────────
 
+// ── Campaign data layer (multi-campaign) ─────────────────────────────────────
+//
+// A Director may own many campaigns. Which one is "open" is stored as
+// activeCampaignId on the user profile, so the selection follows them across
+// devices. Removal is two-stage: `archived: true` hides a campaign but keeps
+// every entity, note, encounter, and transcript; permanent deletion is a
+// separate explicit action (step 3, via a Cloud Function).
+
+// The slug is app-owned and fixed at creation — it names the campaign's vault
+// folder, so renaming the campaign must never orphan its markdown.
+function campaignSlug(name, existingSlugs = []) {
+  const strip = (typeof Vault !== 'undefined' && Vault.slugify)
+    ? Vault.slugify
+    : (s) => String(s || '').replace(/[\\/:*?"<>|#^[\]]/g, '').trim();
+  const base = strip(name) || 'Campaign';
+  let slug = base, n = 2;
+  while (existingSlugs.includes(slug)) slug = `${base} ${n++}`;
+  return slug;
+}
+
+async function loadDirectorCampaigns(uid, { includeArchived = false } = {}) {
+  const snap = await db.collection('campaigns').where('directorId', '==', uid).get();
+  const list = [];
+  snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+  return list
+    // Campaigns created before this field exists have archived === undefined
+    .filter(c => includeArchived || !c.archived)
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+}
+
+async function getActiveCampaignId(uid) {
+  try {
+    const doc = await db.collection('users').doc(uid).get();
+    return doc.exists ? (doc.data().activeCampaignId || null) : null;
+  } catch (_) { return null; }
+}
+
+async function setActiveCampaign(campaignId) {
+  const uid = AppState.currentUser?.uid;
+  if (!uid) return;
+  try {
+    await db.collection('users').doc(uid)
+      .set({ activeCampaignId: campaignId }, { merge: true });
+  } catch (e) {
+    console.warn('Could not persist active campaign:', e);
+  }
+}
+
+// One-time migration for campaigns created before slugs existed
+async function ensureCampaignSlug(campaign, siblingSlugs = []) {
+  if (campaign.slug) return campaign.slug;
+  const slug = campaignSlug(campaign.name, siblingSlugs);
+  try {
+    await db.collection('campaigns').doc(campaign.id).update({ slug });
+  } catch (e) {
+    console.warn('Could not backfill campaign slug:', e);
+  }
+  campaign.slug = slug;
+  return slug;
+}
+
+async function archiveCampaign(campaignId) {
+  await db.collection('campaigns').doc(campaignId).update({ archived: true });
+  const uid = AppState.currentUser?.uid;
+  if (!uid) return;
+  // If the archived campaign was the open one, repoint to another
+  if (AppState.currentCampaign?.id === campaignId) {
+    const remaining = await loadDirectorCampaigns(uid);
+    AppState.currentCampaign = remaining[0] || null;
+    await setActiveCampaign(remaining[0]?.id || null);
+  }
+}
+
+async function restoreCampaign(campaignId) {
+  await db.collection('campaigns').doc(campaignId).update({ archived: false });
+}
+
+// ── Director mode: resolve the active campaign from the profile ──────────────
+
 async function checkDirectorMode(uid) {
   try {
-    const snap = await db.collection('campaigns')
-      .where('directorId', '==', uid)
-      .limit(1)
-      .get();
+    const campaigns = await loadDirectorCampaigns(uid);
+    AppState.directorCampaigns = campaigns;
+
     const dirBtn = document.getElementById('director-mode-btn');
-    if (!snap.empty) {
-      AppState.currentCampaign = { id: snap.docs[0].id, ...snap.docs[0].data() };
-      if (dirBtn) dirBtn.classList.remove('hidden');
-    } else {
-      // Show a subtle setup link even with no campaign
-      if (dirBtn) dirBtn.classList.remove('hidden');
-    }
+    if (dirBtn) dirBtn.classList.remove('hidden'); // visible even with no campaign (setup)
+
+    if (!campaigns.length) { AppState.currentCampaign = null; return; }
+
+    const activeId = await getActiveCampaignId(uid);
+    const active = campaigns.find(c => c.id === activeId) || campaigns[0];
+    await ensureCampaignSlug(active, campaigns.filter(c => c.id !== active.id).map(c => c.slug).filter(Boolean));
+    AppState.currentCampaign = active;
+    if (active.id !== activeId) await setActiveCampaign(active.id);
   } catch (e) {
     console.warn('checkDirectorMode:', e);
   }
@@ -74,6 +154,12 @@ async function openCampaignScreen() {
       return;
     }
     AppState.currentCampaign = { id: snap.id, ...snap.data() };
+    // Backfill the vault slug for campaigns predating it
+    await ensureCampaignSlug(
+      AppState.currentCampaign,
+      (AppState.directorCampaigns || [])
+        .filter(c => c.id !== AppState.currentCampaign.id).map(c => c.slug).filter(Boolean)
+    );
   } catch (e) {
     console.error('Error loading campaign:', e);
     showToast('Could not load campaign.', 'danger');
@@ -138,20 +224,30 @@ async function createCampaign(name, advancementMode) {
   if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
 
   try {
+    // Slug is app-owned and fixed here for the life of the campaign — it names
+    // the vault folder, so a later rename must not orphan the markdown.
+    const existingSlugs = (AppState.directorCampaigns || []).map(c => c.slug).filter(Boolean);
+    const slug = campaignSlug(name, existingSlugs);
+
     const docRef = await db.collection('campaigns').add({
       name,
       directorId: user.uid,
       advancementMode,
-      isActive: true,
+      slug,
+      archived: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       heroes: [],
       sessionLog: [],
     });
 
-    AppState.currentCampaign = {
+    const created = {
       id: docRef.id, name, directorId: user.uid,
-      advancementMode, isActive: true, heroes: [], sessionLog: [], _encounters: [],
+      advancementMode, slug, archived: false,
+      heroes: [], sessionLog: [], _encounters: [],
     };
+    AppState.currentCampaign = created;
+    AppState.directorCampaigns = [created, ...(AppState.directorCampaigns || [])];
+    await setActiveCampaign(docRef.id);
 
     document.getElementById('director-mode-btn')?.classList.remove('hidden');
     hideModal();
@@ -2827,3 +2923,12 @@ window.checkDirectorMode       = checkDirectorMode;
 window.openCampaignScreen      = openCampaignScreen;
 window.showEndEncounterModal   = showEndEncounterModal;
 window.startEncounterFromCampaign = startEncounterFromCampaign;
+// Campaign data layer (multi-campaign) — the picker screen in step 2 uses these
+window.loadDirectorCampaigns   = loadDirectorCampaigns;
+window.setActiveCampaign       = setActiveCampaign;
+window.getActiveCampaignId     = getActiveCampaignId;
+window.ensureCampaignSlug      = ensureCampaignSlug;
+window.archiveCampaign         = archiveCampaign;
+window.restoreCampaign         = restoreCampaign;
+window.campaignSlug            = campaignSlug;
+window.showCreateCampaignModal = showCreateCampaignModal;

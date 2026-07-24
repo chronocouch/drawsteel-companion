@@ -58,7 +58,11 @@ drawsteel/
 
 ### /users/{userId}
 ```
-{ displayName, email, createdAt }
+{
+  displayName, email, createdAt,
+  activeCampaignId: string   // Director's currently-open campaign; synced so
+                             // the selection follows them across devices
+}
 ```
 
 ### /users/{userId}/characters/{characterId}
@@ -161,7 +165,12 @@ printed report, then `--promote monsters_staging`. Never seed /monsters directly
   advancementMode:              // 'xp' | 'milestone' | 'director'
     'xp' | 'milestone' | 'director',
   createdAt: timestamp,
-  isActive: boolean,            // only one active campaign per director
+  slug: string,                 // app-owned, fixed at creation — names the
+                                //   campaign's vault folder. NEVER regenerated
+                                //   on rename, or the markdown orphans.
+  archived: boolean,            // hides from the picker but keeps all data;
+                                //   permanent delete is a separate action.
+                                //   Missing on pre-existing campaigns = false.
 
   // Hero roster — manually managed by GM
   heroes: [{
