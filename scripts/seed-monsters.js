@@ -2,30 +2,29 @@
  * Draw Steel Companion — Monster Seed Script
  *
  * Downloads the SteelCompendium/data-bestiary-json repo as a zip,
- * parses every Statblocks/*.json file, and writes to /monsters in Firestore.
+ * parses every Statblocks/*.json file, and writes them to Firestore.
  *
- * Run: node scripts/seed-monsters.js
+ * Usage:
+ *   node scripts/seed-monsters.js --dry-run
+ *       Parse + verify only. No Firestore connection needed.
+ *   node scripts/seed-monsters.js --collection monsters_staging
+ *       Seed into a fresh collection. Never seed directly into /monsters —
+ *       verify the staging collection first, then promote.
+ *   node scripts/seed-monsters.js --promote monsters_staging
+ *       Copy the verified staging collection into /monsters, deleting any
+ *       /monsters doc not present in staging.
  *
- * Prerequisites:
- *   1. firebase login
- *   2. npm install in project root (firebase-admin must be available)
- *   3. Your Firebase project ID set in .firebaserc
+ * Prerequisites for writing:
+ *   1. gcloud auth application-default login  (or GOOGLE_APPLICATION_CREDENTIALS)
+ *   2. npm install in scripts/ (firebase-admin must be available)
+ *   3. Your Firebase project ID set in .firebaserc or FIREBASE_PROJECT_ID
  */
 
-const admin    = require('firebase-admin');
 const https    = require('https');
 const fs       = require('fs');
 const path     = require('path');
 const os       = require('os');
 const { execSync } = require('child_process');
-
-// ── Firebase init ────────────────────────────────────────────────────────────
-
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  projectId: process.env.FIREBASE_PROJECT_ID || 'drawsteel-companion',
-});
-const db = admin.firestore();
 
 // ── Download helpers ─────────────────────────────────────────────────────────
 
@@ -75,42 +74,31 @@ function slugify(str) {
     .replace(/^-|-$/g, '');
 }
 
-// ── Role normalisation ───────────────────────────────────────────────────────
-// Source roles can be "Solo", "Leader", "Minion Hexer", "Horde Controller", etc.
-// We map to the canonical schema values and extract isMinion / isSolo flags.
+// ── Role / organization split ────────────────────────────────────────────────
+// Each `roles` element fuses organization and role ("Horde Hexer", "Solo").
+// Split on whitespace and classify tokens against two closed vocabularies.
+// Both fields are nullable: Leader/Solo monsters carry no role, and a handful
+// of monsters (Xorannox's eyes) carry a role but no organization.
 
-const ROLE_MAP = [
-  ['solo',       'solo'],
-  ['leader',     'leader'],
-  ['controller', 'controller'],
-  ['defender',   'defender'],
-  ['hexer',      'hexer'],
-  ['artillery',  'artillery'],
-  ['ambusher',   'ambusher'],
-  ['harrier',    'ambusher'],   // "Horde Harrier" → ambusher
-  ['skirmisher', 'ambusher'],
-  ['brute',      'brute'],
-  ['grunt',      'brute'],      // "Horde Grunt" → brute
-  ['support',    'leader'],     // "Elite Support", "Platoon Support" → leader
-  ['mount',      'brute'],      // "Elite Mount", "Platoon Mount" → brute
-];
+const ORGANIZATIONS = ['minion', 'horde', 'platoon', 'elite', 'leader', 'solo'];
+const ROLES = ['ambusher', 'artillery', 'brute', 'controller', 'defender',
+               'harrier', 'hexer', 'mount', 'support'];
 
-function normaliseRole(rawRoles) {
-  const joined = (rawRoles || []).join(' ').toLowerCase();
-  const isMinion = joined.includes('minion');
-  const isSolo   = joined.includes('solo');
+function splitRolesOrg(rawRoles) {
+  let organization = null;
+  let role         = null;
+  const unrecognized = [];
 
-  for (const [key, canonical] of ROLE_MAP) {
-    if (joined.includes(key)) {
-      return { role: canonical, isMinion, isSolo };
+  for (const el of rawRoles || []) {
+    for (const token of String(el).trim().split(/\s+/)) {
+      const t = token.toLowerCase();
+      if (!t) continue;
+      if (ORGANIZATIONS.includes(t))      organization = t;
+      else if (ROLES.includes(t))         role = t;
+      else                                unrecognized.push(token);
     }
   }
-  // Fallback: strip "Minion "/"Horde " prefixes and lowercase whatever remains
-  const stripped = (rawRoles[0] || '')
-    .replace(/^(Minion|Horde)\s+/i, '')
-    .toLowerCase()
-    .trim() || 'unknown';
-  return { role: stripped, isMinion, isSolo };
+  return { organization, role, unrecognized };
 }
 
 // ── Parse "Fire 6" / "poison 10" → { type, value } ──────────────────────────
@@ -124,12 +112,16 @@ function parseResistanceList(arr) {
   }).filter(Boolean);
 }
 
-// ── Parse EV — "3" or "3 for four minions" → 3 ──────────────────────────────
+// ── parseEV — four formats, per spec §5.4 ────────────────────────────────────
+// Minion EV is priced per group of four; '-' means not purchasable.
 
 function parseEV(raw) {
-  if (!raw) return 0;
-  const m = String(raw).match(/\d+/);
-  return m ? parseInt(m[0], 10) : 0;
+  const s = String(raw ?? '').trim();
+  if (s === '-')       return { value: null, mode: 'non_purchasable' };
+  if (/^\d+$/.test(s)) return { value: parseInt(s, 10), mode: 'per_creature' };
+  const m = s.match(/^(\d+)\s+for\s+(4|four)\s+minions$/i);
+  if (m)               return { value: parseInt(m[1], 10), mode: 'per_four_minions' };
+  return { value: null, mode: 'unparsed' };
 }
 
 // ── Parse movement types ──────────────────────────────────────────────────────
@@ -142,11 +134,21 @@ function parseMovement(movement) {
 
 // ── Parse a single statblock JSON ────────────────────────────────────────────
 
-function parseStatblock(json, factionName, maliceFeatureNames) {
+function parseStatblock(json, factionName, maliceFeatureNames, issues) {
   if (!json || json.type !== 'statblock') return null;
 
   const rawRoles = json.roles || [];
-  const { role, isMinion, isSolo } = normaliseRole(rawRoles);
+  const { organization, role, unrecognized } = splitRolesOrg(rawRoles);
+  const { value: ev, mode: evMode } = parseEV(json.ev);
+
+  if (unrecognized.length) {
+    issues.push({ monster: json.name, kind: 'unrecognized-role-token',
+                  detail: `${unrecognized.join(', ')} (raw: ${JSON.stringify(rawRoles)})` });
+  }
+  if (evMode === 'unparsed') {
+    issues.push({ monster: json.name, kind: 'unparsed-ev',
+                  detail: `raw ev: ${JSON.stringify(json.ev)}` });
+  }
 
   // Collect ability names from features
   const abilities = (json.features || [])
@@ -156,7 +158,9 @@ function parseStatblock(json, factionName, maliceFeatureNames) {
   return {
     name:            json.name || '',
     level:           json.level ?? 1,
-    ev:              parseEV(json.ev),
+    ev,
+    evMode,
+    organization,
     role,
     keywords:        Array.isArray(json.ancestry) ? json.ancestry : [],
     stamina:         parseInt(json.stamina, 10) || 0,
@@ -174,8 +178,9 @@ function parseStatblock(json, factionName, maliceFeatureNames) {
     immunities:      parseResistanceList(json.immunities),
     weaknesses:      parseResistanceList(json.weaknesses),
     movementTypes:   parseMovement(json.movement),
-    isMinion,
-    isSolo,
+    // Derived from organization — kept so existing call sites survive
+    isMinion:        organization === 'minion',
+    isSolo:          organization === 'solo',
     faction:         factionName,
     abilities,
     maliceFeatures:  maliceFeatureNames,
@@ -183,20 +188,6 @@ function parseStatblock(json, factionName, maliceFeatureNames) {
 }
 
 // ── Walk the Monsters/ directory ─────────────────────────────────────────────
-
-function findJsonFiles(dir) {
-  const results = [];
-  if (!fs.existsSync(dir)) return results;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...findJsonFiles(full));
-    } else if (entry.isFile() && entry.name.endsWith('.json')) {
-      results.push(full);
-    }
-  }
-  return results;
-}
 
 function parseMaliceFeatureNames(featuresDir) {
   if (!fs.existsSync(featuresDir)) return [];
@@ -213,7 +204,24 @@ function parseMaliceFeatureNames(featuresDir) {
   return names;
 }
 
-function parseAllMonsters(repoDir) {
+// Statblocks dirs are not always directly under the faction dir — Rivals
+// nests them per echelon (Rivals/<Echelon>/Statblocks/). Walk recursively.
+function findStatblockFiles(dir) {
+  const results = [];
+  if (!fs.existsSync(dir)) return results;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...findStatblockFiles(full));
+    } else if (entry.isFile() && entry.name.endsWith('.json') &&
+               path.basename(dir) === 'Statblocks') {
+      results.push(full);
+    }
+  }
+  return results;
+}
+
+function parseAllMonsters(repoDir, issues) {
   const monstersDir = path.join(repoDir, 'Monsters');
   if (!fs.existsSync(monstersDir)) {
     throw new Error(`Monsters/ directory not found at ${monstersDir}`);
@@ -225,40 +233,124 @@ function parseAllMonsters(repoDir) {
     .map(e => e.name);
 
   for (const factionName of factionDirs) {
-    const factionDir    = path.join(monstersDir, factionName);
-    const statblocksDir = path.join(factionDir, 'Statblocks');
-    const featuresDir   = path.join(factionDir, 'Features');
+    const factionDir  = path.join(monstersDir, factionName);
+    const featuresDir = path.join(factionDir, 'Features');
 
     const maliceFeatureNames = parseMaliceFeatureNames(featuresDir);
 
-    if (!fs.existsSync(statblocksDir)) continue;
-
-    for (const file of fs.readdirSync(statblocksDir)) {
-      if (!file.endsWith('.json')) continue;
-      const filePath = path.join(statblocksDir, file);
+    let count = 0;
+    for (const filePath of findStatblockFiles(factionDir)) {
       try {
         const json    = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        const monster = parseStatblock(json, factionName, maliceFeatureNames);
+        const monster = parseStatblock(json, factionName, maliceFeatureNames, issues);
         if (monster && monster.name) {
           allMonsters.push(monster);
+          count++;
         }
       } catch (e) {
-        console.log(`  ⚠️  Could not parse ${factionName}/${file}: ${e.message}`);
+        issues.push({ monster: `${factionName}/${path.basename(filePath)}`, kind: 'file-parse-failure', detail: e.message });
       }
     }
-
-    if (fs.existsSync(statblocksDir)) {
-      const count = fs.readdirSync(statblocksDir).filter(f => f.endsWith('.json')).length;
-      if (count > 0) process.stdout.write(`  ✓ ${factionName}: ${count}\n`);
-    }
+    if (count > 0) process.stdout.write(`  ✓ ${factionName}: ${count}\n`);
   }
 
   return allMonsters;
 }
 
-// ── Write to Firestore ───────────────────────────────────────────────────────
+// Doc ids derive from the name, but Rival statblocks reuse one name across
+// four echelons — disambiguate every duplicate name with its level so no
+// batch.set silently overwrites another monster.
+function assignDocIds(monsters, issues) {
+  const nameCounts = {};
+  for (const m of monsters) nameCounts[m.name] = (nameCounts[m.name] || 0) + 1;
 
-async function writeMonsters(monsters) {
+  const seen = new Set();
+  for (const m of monsters) {
+    let id = slugify(nameCounts[m.name] > 1 ? `${m.name} lv${m.level}` : m.name);
+    while (seen.has(id)) id = `${id}-2`;
+    seen.add(id);
+    m._docId = id;
+  }
+}
+
+// ── Parse-error report + verification ────────────────────────────────────────
+// A malformed file never blocks the run; it lands in this report instead.
+
+function printReport(monsters, issues) {
+  console.log('\n── Parse-error report ─────────────────────────────');
+  if (issues.length === 0) {
+    console.log('  (no parse errors)');
+  } else {
+    for (const i of issues) {
+      console.log(`  ⚠️  [${i.kind}] ${i.monster}: ${i.detail}`);
+    }
+  }
+
+  const evModes = {}, orgs = {}, roles = {};
+  for (const m of monsters) {
+    evModes[m.evMode] = (evModes[m.evMode] || 0) + 1;
+    orgs[m.organization ?? 'null']  = (orgs[m.organization ?? 'null'] || 0) + 1;
+    roles[m.role ?? 'null'] = (roles[m.role ?? 'null'] || 0) + 1;
+  }
+  console.log('\n── Distribution ───────────────────────────────────');
+  console.log(`  Total monsters:  ${monsters.length}`);
+  console.log('  evMode:        ', evModes);
+  console.log('  organization:  ', orgs);
+  console.log('  role:          ', roles);
+}
+
+// Monsters allowed to have neither organization nor role. The spec's verified
+// corpus had none; upstream has since added Noncombatant (a level-0 bystander
+// statblock with empty roles and ev '-'). Genuine drift lands here after review.
+const KNOWN_NULL_NULL = ['Noncombatant'];
+
+function verify(monsters, issues) {
+  const failures = [];
+  const unparsedEV   = monsters.filter(m => m.evMode === 'unparsed');
+  const roleIssues   = issues.filter(i => i.kind === 'unrecognized-role-token');
+  const nullRole     = monsters.filter(m => m.role === null);
+  const nullOrg      = monsters.filter(m => m.organization === null);
+  const rolesPresent = new Set(monsters.map(m => m.role).filter(Boolean));
+
+  if (unparsedEV.length)  failures.push(`${unparsedEV.length} monsters with unparsed EV: ${unparsedEV.map(m => m.name).join(', ')}`);
+  if (roleIssues.length)  failures.push(`${roleIssues.length} unrecognized role tokens`);
+  for (const r of ['harrier', 'mount', 'support']) {
+    if (!rolesPresent.has(r)) failures.push(`role '${r}' absent — role/org split is misclassifying`);
+  }
+  for (const m of nullOrg) {
+    if (m.role === null && !KNOWN_NULL_NULL.includes(m.name)) {
+      failures.push(`${m.name} has neither organization nor role and is not a documented exception`);
+    }
+  }
+
+  console.log('\n── Verification (§13 tests 2–4) ───────────────────');
+  console.log(`  Null role:         ${nullRole.length}  (spec snapshot: 52 Leaders + Solos)`);
+  console.log(`  Null organization: ${nullOrg.length}  (spec snapshot: 6 — Xorannox's eyes)`);
+  console.log(`  Distinct roles:    ${[...rolesPresent].sort().join(', ')}`);
+  const nullNull = monsters.filter(m => m.role === null && m.organization === null);
+  if (nullNull.length) {
+    console.log(`  Documented null/null exceptions present: ${nullNull.map(m => m.name).join(', ')}`);
+  }
+  if (failures.length === 0) {
+    console.log('  ✓ All checks passed');
+    return true;
+  }
+  for (const f of failures) console.log(`  ✗ ${f}`);
+  return false;
+}
+
+// ── Firestore ────────────────────────────────────────────────────────────────
+
+function initFirestore() {
+  const admin = require('firebase-admin');
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    projectId: process.env.FIREBASE_PROJECT_ID || 'drawsteel-companion',
+  });
+  return { admin, db: admin.firestore() };
+}
+
+async function writeMonsters(db, admin, monsters, collectionName) {
   const BATCH_SIZE = 400;
   let written = 0;
 
@@ -267,71 +359,136 @@ async function writeMonsters(monsters) {
     const chunk = monsters.slice(i, i + BATCH_SIZE);
 
     for (const monster of chunk) {
-      const id  = slugify(monster.name);
-      const ref = db.collection('monsters').doc(id);
+      const { _docId, ...data } = monster;
+      const ref = db.collection(collectionName).doc(_docId);
       batch.set(ref, {
-        ...monster,
+        ...data,
         seededAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
 
     await batch.commit();
     written += chunk.length;
-    console.log(`  Wrote ${written}/${monsters.length} monsters...`);
+    console.log(`  Wrote ${written}/${monsters.length} monsters to /${collectionName}...`);
   }
+}
+
+// Copy a verified staging collection into /monsters, removing stale docs.
+async function promote(db, sourceCollection) {
+  console.log(`Promoting /${sourceCollection} → /monsters ...`);
+  const sourceSnap = await db.collection(sourceCollection).get();
+  if (sourceSnap.empty) {
+    throw new Error(`/${sourceCollection} is empty — seed and verify it first.`);
+  }
+  const targetSnap = await db.collection('monsters').get();
+  const sourceIds  = new Set(sourceSnap.docs.map(d => d.id));
+  const staleIds   = targetSnap.docs.map(d => d.id).filter(id => !sourceIds.has(id));
+
+  const BATCH_SIZE = 400;
+  const docs = sourceSnap.docs;
+  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    for (const doc of docs.slice(i, i + BATCH_SIZE)) {
+      batch.set(db.collection('monsters').doc(doc.id), doc.data());
+    }
+    await batch.commit();
+    console.log(`  Copied ${Math.min(i + BATCH_SIZE, docs.length)}/${docs.length}`);
+  }
+  for (let i = 0; i < staleIds.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    for (const id of staleIds.slice(i, i + BATCH_SIZE)) {
+      batch.delete(db.collection('monsters').doc(id));
+    }
+    await batch.commit();
+  }
+  console.log(`  ✓ ${docs.length} docs promoted, ${staleIds.length} stale docs removed.`);
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
+  const args    = process.argv.slice(2);
+  const dryRun  = args.includes('--dry-run');
+  const collIdx = args.indexOf('--collection');
+  const promIdx = args.indexOf('--promote');
+
   console.log('╔══════════════════════════════════════════════╗');
   console.log('║  Draw Steel — Monster Seed Script            ║');
   console.log('╚══════════════════════════════════════════════╝\n');
 
-  console.log('Connecting to Firestore...');
-  try {
-    await db.collection('_seed_test').doc('ping').set({ ts: Date.now() });
-    await db.collection('_seed_test').doc('ping').delete();
-    console.log('✓ Firestore connection OK\n');
-  } catch (e) {
-    console.error('✗ Could not connect to Firestore:', e.message);
-    console.error('Make sure you have run: firebase login');
-    process.exit(1);
+  if (promIdx !== -1) {
+    const source = args[promIdx + 1];
+    if (!source) { console.error('✗ --promote requires a source collection name'); process.exit(1); }
+    const { db } = initFirestore();
+    await promote(db, source);
+    process.exit(0);
   }
 
   console.log('Downloading Steel Compendium bestiary...');
   const repoDir = await downloadRepo();
 
   console.log('\nParsing monsters by faction:');
-  const monsters = parseAllMonsters(repoDir);
+  const issues   = [];
+  const monsters = parseAllMonsters(repoDir, issues)
+    .filter(m => m.evMode !== 'unparsed');  // log + exclude, never crash
 
   if (monsters.length === 0) {
     console.error('\n✗ No monsters found. Check your internet connection or repo structure.');
     process.exit(1);
   }
 
-  console.log(`\n📊 Total monsters parsed: ${monsters.length}`);
+  assignDocIds(monsters, issues);
+  printReport(monsters, issues);
+  const ok = verify(monsters, issues);
 
-  // Distribution summary
-  const roleCounts = {};
-  for (const m of monsters) roleCounts[m.role] = (roleCounts[m.role] || 0) + 1;
-  console.log('   Role distribution:', roleCounts);
-  console.log('   Minions:', monsters.filter(m => m.isMinion).length);
-  console.log('   Solos:  ', monsters.filter(m => m.isSolo).length);
+  if (dryRun) {
+    console.log('\n--dry-run: no Firestore writes performed.');
+    process.exit(ok ? 0 : 1);
+  }
 
-  console.log('\nWriting to Firestore /monsters...');
-  await writeMonsters(monsters);
+  if (!ok) {
+    console.error('\n✗ Verification failed — refusing to write. Fix the parse first.');
+    process.exit(1);
+  }
+
+  const collectionName = collIdx !== -1 ? args[collIdx + 1] : 'monsters_staging';
+  if (!collectionName) { console.error('✗ --collection requires a name'); process.exit(1); }
+  if (collectionName === 'monsters') {
+    console.error('✗ Refusing to seed directly into /monsters. Seed a staging');
+    console.error('  collection, verify it, then run --promote <staging>.');
+    process.exit(1);
+  }
+
+  const { admin, db } = initFirestore();
+  console.log('\nConnecting to Firestore...');
+  try {
+    await db.collection('_seed_test').doc('ping').set({ ts: Date.now() });
+    await db.collection('_seed_test').doc('ping').delete();
+    console.log('✓ Firestore connection OK');
+  } catch (e) {
+    console.error('✗ Could not connect to Firestore:', e.message);
+    console.error('Make sure application-default credentials are set up.');
+    process.exit(1);
+  }
+
+  console.log(`\nWriting to Firestore /${collectionName}...`);
+  await writeMonsters(db, admin, monsters, collectionName);
 
   console.log('\n╔══════════════════════════════════════════════╗');
   console.log('║  ✓ Monster seed complete!                    ║');
   console.log('╚══════════════════════════════════════════════╝');
-  console.log(`\n${monsters.length} monsters written to /monsters collection.`);
-  console.log('Verify in Firebase Console → Firestore → /monsters\n');
+  console.log(`\n${monsters.length} monsters written to /${collectionName}.`);
+  console.log('Verify in Firebase Console, then swap into place with:');
+  console.log(`  node scripts/seed-monsters.js --promote ${collectionName}\n`);
 
   process.exit(0);
 }
 
-main().catch(err => {
-  console.error('\n✗ Seed failed:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(err => {
+    console.error('\n✗ Seed failed:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { parseEV, splitRolesOrg, parseStatblock, slugify };

@@ -48,11 +48,19 @@ const MonsterSearch = (() => {
     return _loading;
   }
 
-  // ── Canonical roles for filter pills ──────────────────────────────────────
+  // ── Cache lookup ───────────────────────────────────────────────────────────
 
-  const ROLES = ['brute', 'controller', 'defender', 'hexer', 'artillery', 'ambusher', 'leader', 'solo'];
+  function getById(id) {
+    return _cache.find(m => m.id === id) || null;
+  }
+
+  // ── Filter pills: the nine roles plus the Leader/Solo organizations ────────
+
+  const ROLES = ['ambusher', 'artillery', 'brute', 'controller', 'defender',
+                 'harrier', 'hexer', 'mount', 'support', 'leader', 'solo'];
 
   // ── Filter logic ───────────────────────────────────────────────────────────
+  // Leader and Solo are organizations, not roles — a pill matches either axis.
 
   function filterMonsters(query, role, levelMin, levelMax) {
     const q   = query.trim().toLowerCase();
@@ -61,16 +69,34 @@ const MonsterSearch = (() => {
 
     return _cache.filter(m => {
       if (q && !m.name.toLowerCase().includes(q)) return false;
-      if (role && m.role !== role) return false;
+      if (role && m.role !== role && m.organization !== role) return false;
       if (m.level < min || m.level > max) return false;
       return true;
     });
   }
 
-  // ── Role pill label ────────────────────────────────────────────────────────
+  // ── Labels ─────────────────────────────────────────────────────────────────
 
   function roleLabel(r) {
+    if (!r) return '';
     return r.charAt(0).toUpperCase() + r.slice(1);
+  }
+
+  // Leaders and Solos legitimately have no role; show whichever axes exist.
+  function orgRoleLabel(m) {
+    return [roleLabel(m.organization), roleLabel(m.role)].filter(Boolean).join(' ') || '—';
+  }
+
+  function evLabel(m) {
+    if (m.evMode === 'non_purchasable') return 'No EV';
+    if (m.evMode === 'per_four_minions') return `EV ${m.ev} per 4`;
+    return `EV ${m.ev}`;
+  }
+
+  function totalEVFor(m, count) {
+    if (m.evMode === 'non_purchasable') return 0;
+    if (m.evMode === 'per_four_minions') return Math.ceil(count / 4) * m.ev;
+    return (m.ev || 0) * count;
   }
 
   // ── Build results HTML ─────────────────────────────────────────────────────
@@ -83,10 +109,11 @@ const MonsterSearch = (() => {
       <button class="ms-result-row" data-monster-id="${m.id}">
         <span class="ms-level-badge">Lv ${m.level}</span>
         <span class="ms-name">${m.name}</span>
-        <span class="ms-role-tag">${roleLabel(m.role)}</span>
-        <span class="ms-ev">EV ${m.ev}</span>
+        <span class="ms-role-tag">${orgRoleLabel(m)}</span>
+        <span class="ms-ev">${evLabel(m)}</span>
         <span class="ms-stamina">${m.stamina} HP</span>
         ${m.isMinion ? '<span class="ms-minion-tag">MINION</span>' : ''}
+        ${m.evMode === 'non_purchasable' ? '<span class="ms-minion-tag">NOT PURCHASABLE</span>' : ''}
       </button>
     `).join('');
   }
@@ -197,8 +224,8 @@ const MonsterSearch = (() => {
         <h2>${monster.name}</h2>
         <div class="ms-count-meta">
           <span class="ms-level-badge">Lv ${monster.level}</span>
-          <span class="ms-role-tag">${roleLabel(monster.role)}</span>
-          <span class="ms-ev">EV ${monster.ev} each</span>
+          <span class="ms-role-tag">${orgRoleLabel(monster)}</span>
+          <span class="ms-ev">${evLabel(monster)}</span>
           <span class="ms-stamina">${monster.stamina} HP</span>
         </div>
 
@@ -217,7 +244,7 @@ const MonsterSearch = (() => {
         </label>
 
         <div class="ms-count-ev-preview" id="ms-count-ev-preview">
-          Total EV: ${monster.ev * defaultCount}
+          Total EV: ${totalEVFor(monster, defaultCount)}
         </div>
 
         <div class="ms-count-actions">
@@ -233,7 +260,7 @@ const MonsterSearch = (() => {
       const countEl   = document.getElementById('ms-count-value');
       const previewEl = document.getElementById('ms-count-ev-preview');
       if (countEl)   countEl.textContent   = count;
-      if (previewEl) previewEl.textContent = `Total EV: ${monster.ev * count}`;
+      if (previewEl) previewEl.textContent = `Total EV: ${totalEVFor(monster, count)}`;
     }
 
     document.getElementById('ms-count-minus')?.addEventListener('click', () => {
@@ -257,7 +284,7 @@ const MonsterSearch = (() => {
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
-  return { init, showMonsterSearch };
+  return { init, showMonsterSearch, getById };
 
 })();
 

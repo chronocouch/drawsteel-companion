@@ -5616,6 +5616,14 @@ button.condition-chip:hover {
   color: var(--text-dim);
   margin-left: 3px;
 }
+.enc-slot-row { margin-top: 8px; margin-bottom: 0; }
+.enc-budget-note {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  color: var(--color-gold);
+  margin-top: 6px;
+  letter-spacing: 0.03em;
+}
 .enc-budget-bar-track {
   height: 7px;
   background: var(--bg-elevated);

@@ -320,13 +320,81 @@ function renderHeroRoster(campaign) {
 // ── I3: Budget math ───────────────────────────────────────────────────────────
 
 function heroES(level)  { return 4 + (2 * (level || 1)); }
-function partyES(heroes) { return heroes.reduce((s, h) => s + heroES(h.level), 0); }
 
-function encounterBudgets(heroes) {
-  if (!heroes.length) return { total: 0, avgHeroES: 0, trivialMax: 0, easyMax: 0, standardMax: 0, hardMax: 0 };
-  const es       = partyES(heroes);
-  const avgHeroES = es / heroes.length;
-  return { total: es, avgHeroES, trivialMax: es - avgHeroES, easyMax: es, standardMax: es + avgHeroES, hardMax: es + (3 * avgHeroES) };
+// Retainers and allied NPCs fighting alongside the heroes count as heroes,
+// and every 2 average Victories adds one hero's worth of ES.
+function partyESBreakdown(heroes, allied) {
+  const alliedCount = allied?.count || 0;
+  const alliedLevel = allied?.level || 1;
+  if (!heroes.length && !alliedCount) {
+    return { base: 0, alliedES: 0, victoryBonusES: 0, total: 0, avgVictories: 0, bonusHeroes: 0, avgLevel: 1 };
+  }
+  const base     = heroes.reduce((s, h) => s + heroES(h.level), 0);
+  const alliedES = alliedCount * heroES(alliedLevel);
+  const avgVic   = heroes.length
+    ? Math.floor(heroes.reduce((s, h) => s + (h.currentVictories || 0), 0) / heroes.length)
+    : 0;
+  const bonusHeroes = Math.floor(avgVic / 2);
+  const avgLevel = heroes.length
+    ? Math.round(heroes.reduce((s, h) => s + (h.level || 1), 0) / heroes.length)
+    : alliedLevel;
+  const victoryBonusES = bonusHeroes * heroES(avgLevel);
+  return {
+    base, alliedES, victoryBonusES,
+    total: base + alliedES + victoryBonusES,
+    avgVictories: avgVic, bonusHeroes, avgLevel,
+  };
+}
+
+function partyES(heroes, allied) { return partyESBreakdown(heroes, allied).total; }
+
+function encounterBudgets(heroes, allied) {
+  const bd = partyESBreakdown(heroes, allied);
+  if (bd.total === 0) return { total: 0, heroESRef: 0, trivialMax: 0, easyMax: 0, standardMax: 0, hardMax: 0, breakdown: bd };
+  const es = bd.total;
+  // Bands are defined in terms of ONE hero's encounter strength at the party's
+  // average level — not party ES divided by headcount.
+  const H  = heroES(bd.avgLevel);
+  return { total: es, heroESRef: H, trivialMax: es - H, easyMax: es, standardMax: es + H, hardMax: es + (3 * H), breakdown: bd };
+}
+
+// ── EV cost per group — minion EV is priced per group of four ────────────────
+
+function groupEV(g) {
+  if (g.evMode === 'non_purchasable') return 0;
+  return g.evMode === 'per_four_minions'
+    ? Math.ceil(g.count / 4) * g.ev
+    : (g.ev || 0) * (g.count || 0);
+}
+
+// ── Hero slots — organization is the only axis that matters ──────────────────
+
+function groupSlots(g, avgLevel) {
+  const count = g.count || 1;
+  switch (g.organization) {
+    case 'minion':  return count / 8;
+    case 'horde':   return count / 2;
+    case 'platoon': return count;
+    case 'elite':   return count * 2;
+    case 'leader':  return count * 2;
+    case 'solo':    return count * (6 + Math.max(0, (g.monsterLevel || 1) - avgLevel));
+    default:        return count;
+  }
+}
+
+function encounterSlotsUsed(enc, avgLevel) {
+  const g = (enc.groups     || []).reduce((s, g) => s + groupSlots(g, avgLevel), 0);
+  const n = (enc.customNPCs || []).reduce((s, n) => s + (n.isBoss ? 2 : 1), 0);
+  return g + n;
+}
+
+function encounterSlotsAvailable(heroes, enc, breakdown) {
+  const effective = heroes.length + (enc.alliedCount || 0) + (breakdown?.bonusHeroes || 0);
+  return (enc.difficulty === 'trivial') ? effective - 2 : effective;
+}
+
+function formatSlots(n) {
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
 }
 
 function computeDifficulty(spent, budgets) {
@@ -364,7 +432,7 @@ const GOAL_TYPES = [
 ];
 
 function computeSpent(enc) {
-  const g = (enc.groups     || []).reduce((s, g) => s + (g.totalEV || g.ev * g.count || 0), 0);
+  const g = (enc.groups     || []).reduce((s, g) => s + groupEV(g), 0);
   const n = (enc.customNPCs || []).reduce((s, n) => s + (n.ev || 0), 0);
   return g + n;
 }
@@ -1532,6 +1600,8 @@ function showAddEncounterModal() {
       goalType:          'defeat_all',
       goalDescription:   '',
       expectedVictories: 1,
+      alliedCount:       0,
+      alliedLevel:       1,
       terrain:           '',
       mapNotes:          '',
       gmNotes:           '',
@@ -1580,13 +1650,35 @@ async function _saveEncounterNow(campaign, enc) {
   }
 }
 
-function openEncounterEditor(campaign, enc) {
+async function openEncounterEditor(campaign, enc) {
   document.getElementById('encounter-editor-overlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id        = 'encounter-editor-overlay';
   overlay.className = 'encounter-editor-overlay';
   document.getElementById('campaign-screen')?.appendChild(overlay);
+  await refreshEncounterMonsterData(enc);
   renderEncounterEditor(campaign, enc, overlay);
+}
+
+// Stored group EV / evMode / organization may predate a re-seed; the stored
+// budgetSpent is not trusted — refresh from live monster data on every open.
+async function refreshEncounterMonsterData(enc) {
+  if (!(enc.groups || []).length) return;
+  try {
+    await MonsterSearch.init();
+    for (const g of enc.groups) {
+      const m = MonsterSearch.getById(g.monsterId);
+      if (!m) continue;
+      g.ev           = m.ev;
+      g.evMode       = m.evMode || 'per_creature';
+      g.organization = m.organization ?? null;
+      g.monsterLevel = m.level;
+      g.totalEV      = groupEV(g);
+    }
+    enc.budgetSpent = computeSpent(enc);
+  } catch (e) {
+    console.error('Could not refresh monster data for encounter:', e);
+  }
 }
 
 function closeEncounterEditor(campaign, enc) {
@@ -1594,9 +1686,13 @@ function closeEncounterEditor(campaign, enc) {
   document.getElementById('encounter-editor-overlay')?.remove();
 }
 
+function encAllied(enc) {
+  return { count: enc.alliedCount || 0, level: enc.alliedLevel || 1 };
+}
+
 function renderEncounterEditor(campaign, enc, overlay) {
   const heroes  = campaign.heroes || [];
-  const budgets = encounterBudgets(heroes);
+  const budgets = encounterBudgets(heroes, encAllied(enc));
   enc.encounterBudget = difficultyTarget(enc.difficulty || 'standard', budgets);
   enc.budgetSpent     = computeSpent(enc);
 
@@ -1666,6 +1762,19 @@ function renderEncounterEditor(campaign, enc, overlay) {
           </div>
         </div>
 
+        <div class="enc-field-row">
+          <div class="enc-field">
+            <label class="enc-label">Allied NPCs / Retainers</label>
+            <input type="number" id="enc-allied-count-field" class="wizard-text-input"
+              value="${enc.alliedCount || 0}" min="0" max="10" />
+          </div>
+          <div class="enc-field">
+            <label class="enc-label">Ally Level</label>
+            <input type="number" id="enc-allied-level-field" class="wizard-text-input"
+              value="${enc.alliedLevel || 1}" min="1" max="10" />
+          </div>
+        </div>
+
         <div class="enc-field">
           <label class="enc-label">Terrain / Map Notes</label>
           <textarea id="enc-terrain-field" class="campaign-textarea" rows="2"
@@ -1688,7 +1797,7 @@ function renderEncounterEditor(campaign, enc, overlay) {
           ${buildMontageConfigHTML(enc, (campaign.heroes || []).length)}
         ` : `
           <div class="enc-section-title">Monster Roster</div>
-          ${buildBudgetBarHTML(enc, budgets)}
+          ${buildBudgetBarHTML(enc, budgets, heroes)}
           <div id="enc-roster-list" class="enc-roster-list">
             ${buildRosterHTML(enc, heroes)}
           </div>
@@ -1727,12 +1836,15 @@ function renderEncounterEditor(campaign, enc, overlay) {
 
 // ── Builder HTML helpers ──────────────────────────────────────────────────────
 
-function buildBudgetBarHTML(enc, budgets) {
+function buildBudgetBarHTML(enc, budgets, heroes) {
   const spent  = enc.budgetSpent || 0;
   const budget = Math.max(enc.encounterBudget || 1, 1);
   const pct    = Math.min(100, Math.round((spent / budget) * 100));
   const barColor = spent > budget * 1.1 ? 'var(--color-danger)'
     : spent > budget * 0.85 ? 'var(--color-gold)' : 'var(--color-available)';
+  const bd = budgets.breakdown;
+  const slotsUsed  = encounterSlotsUsed(enc, bd?.avgLevel || 1);
+  const slotsAvail = encounterSlotsAvailable(heroes || [], enc, bd);
   return `
     <div class="enc-budget-bar-section">
       <div class="enc-budget-bar-header">
@@ -1747,6 +1859,19 @@ function buildBudgetBarHTML(enc, budgets) {
       <div class="enc-budget-bar-track">
         <div class="enc-budget-bar-fill" id="enc-budget-bar-fill" style="width:${pct}%;background:${barColor}"></div>
       </div>
+      <div class="enc-budget-bar-header enc-slot-row">
+        <span class="enc-budget-label">Hero Slots</span>
+        <span class="enc-budget-numbers" id="enc-slot-numbers">
+          <span class="enc-budget-spent" style="color:${slotsUsed > slotsAvail ? 'var(--color-danger)' : 'var(--color-available)'}">${formatSlots(slotsUsed)}</span>
+          <span class="enc-budget-sep">/</span>
+          <span class="enc-budget-total">${formatSlots(slotsAvail)}</span>
+        </span>
+      </div>
+      ${bd?.victoryBonusES ? `
+        <div class="enc-budget-note" id="enc-victory-bonus-note">
+          +${bd.victoryBonusES} EV budget from ${bd.avgVictories} avg Victories (+${bd.bonusHeroes} hero ES)
+        </div>
+      ` : ''}
     </div>
   `;
 }
@@ -1762,8 +1887,11 @@ function buildRosterHTML(enc, heroes) {
   }
 
   const groupHTML = groups.map((g, idx) => {
-    const totalEV = g.totalEV ?? (g.ev * g.count);
+    const totalEV = groupEV(g);
     const isHigh  = (g.monsterLevel || 0) > warnLevel;
+    const evLabel = g.evMode === 'non_purchasable' ? 'No EV cost'
+      : g.evMode === 'per_four_minions' ? `${g.ev} EV per 4`
+      : `${g.ev} EV each`;
     return `
       <div class="enc-group-card ${isHigh ? 'enc-group-warning' : ''}" data-group-idx="${idx}">
         <div class="enc-group-header">
@@ -1777,7 +1905,7 @@ function buildRosterHTML(enc, heroes) {
             <span class="enc-count-val" id="enc-count-val-${idx}">${g.count}</span>
             <button class="enc-count-btn" data-group-idx="${idx}" data-delta="1">+</button>
           </div>
-          <span class="enc-group-ev">${g.ev} EV each</span>
+          <span class="enc-group-ev">${evLabel}</span>
           <span class="enc-group-total-ev" id="enc-total-ev-${idx}">${totalEV} EV total</span>
           <label class="ms-squad-toggle">
             <input type="checkbox" class="enc-squad-check" data-group-idx="${idx}" ${g.isSquad ? 'checked' : ''} />
@@ -1832,6 +1960,20 @@ function buildChallengePreviewHTML(campaign, enc, budgets) {
     <div class="preview-section">
       <div class="preview-section-label">Party ES</div>
       <div class="preview-hero-list">${heroRows}</div>
+      ${(enc.alliedCount || 0) > 0 ? `
+        <div class="preview-hero-row">
+          <span class="preview-hero-name">Allied NPCs ×${enc.alliedCount}</span>
+          <span class="preview-hero-class">Lv ${enc.alliedLevel || 1}</span>
+          <span class="preview-hero-es">ES ${budgets.breakdown?.alliedES ?? 0}</span>
+        </div>
+      ` : ''}
+      ${(budgets.breakdown?.bonusHeroes || 0) > 0 ? `
+        <div class="preview-hero-row">
+          <span class="preview-hero-name">Victory Bonus</span>
+          <span class="preview-hero-class">${budgets.breakdown.avgVictories} avg V</span>
+          <span class="preview-hero-es">ES ${budgets.breakdown.victoryBonusES}</span>
+        </div>
+      ` : ''}
       <div class="preview-total-row">
         <span>Total Party ES</span>
         <span class="preview-total-es">${budgets.total}</span>
@@ -1862,7 +2004,7 @@ function buildChallengePreviewHTML(campaign, enc, budgets) {
   `;
 }
 
-function refreshBudgetDisplay(enc, budgets) {
+function refreshBudgetDisplay(enc, budgets, heroes) {
   const spent  = enc.budgetSpent || 0;
   const budget = Math.max(enc.encounterBudget || 1, 1);
   const pct    = Math.min(100, Math.round((spent / budget) * 100));
@@ -1878,6 +2020,18 @@ function refreshBudgetDisplay(enc, budgets) {
       <span class="enc-budget-sep">/</span>
       <span class="enc-budget-total">${budget}</span>
       <span class="enc-budget-ev-label">EV</span>
+    `;
+  }
+
+  const slotsEl = document.getElementById('enc-slot-numbers');
+  if (slotsEl) {
+    const bd         = budgets.breakdown;
+    const slotsUsed  = encounterSlotsUsed(enc, bd?.avgLevel || 1);
+    const slotsAvail = encounterSlotsAvailable(heroes || [], enc, bd);
+    slotsEl.innerHTML = `
+      <span class="enc-budget-spent" style="color:${slotsUsed > slotsAvail ? 'var(--color-danger)' : 'var(--color-available)'}">${formatSlots(slotsUsed)}</span>
+      <span class="enc-budget-sep">/</span>
+      <span class="enc-budget-total">${formatSlots(slotsAvail)}</span>
     `;
   }
 }
@@ -1926,13 +2080,25 @@ function wireEncounterEditor(campaign, enc, overlay) {
 
   document.getElementById('enc-diff-field')?.addEventListener('change', e => {
     enc.difficulty = e.target.value;
-    const budgets = encounterBudgets(campaign.heroes || []);
+    const budgets = encounterBudgets(campaign.heroes || [], encAllied(enc));
     enc.encounterBudget = difficultyTarget(enc.difficulty, budgets);
-    refreshBudgetDisplay(enc, budgets);
+    refreshBudgetDisplay(enc, budgets, campaign.heroes || []);
     refreshChallengePreview(campaign, enc, budgets);
     queueSave(campaign, enc);
     renderEncounterList(campaign);
   });
+
+  const onAlliedChange = () => {
+    enc.alliedCount = Math.max(0, parseInt(document.getElementById('enc-allied-count-field')?.value, 10) || 0);
+    enc.alliedLevel = Math.min(10, Math.max(1, parseInt(document.getElementById('enc-allied-level-field')?.value, 10) || 1));
+    const budgets = encounterBudgets(campaign.heroes || [], encAllied(enc));
+    enc.encounterBudget = difficultyTarget(enc.difficulty || 'standard', budgets);
+    refreshBudgetDisplay(enc, budgets, campaign.heroes || []);
+    refreshChallengePreview(campaign, enc, budgets);
+    queueSave(campaign, enc);
+  };
+  document.getElementById('enc-allied-count-field')?.addEventListener('change', onAlliedChange);
+  document.getElementById('enc-allied-level-field')?.addEventListener('change', onAlliedChange);
 
   document.getElementById('enc-goal-field')?.addEventListener('change', e => {
     enc.goalType = e.target.value;
@@ -1993,8 +2159,8 @@ function wireEncounterEditor(campaign, enc, overlay) {
     if (rosterEl) rosterEl.innerHTML = buildRosterHTML(enc, campaign.heroes || []);
     document.getElementById('enc-custom-npc-form')?.classList.add('hidden');
 
-    const budgets = encounterBudgets(campaign.heroes || []);
-    refreshBudgetDisplay(enc, budgets);
+    const budgets = encounterBudgets(campaign.heroes || [], encAllied(enc));
+    refreshBudgetDisplay(enc, budgets, campaign.heroes || []);
     refreshChallengePreview(campaign, enc, budgets);
     wireGroupCards(campaign, enc);
     queueSave(campaign, enc);
@@ -2023,7 +2189,7 @@ function wireGroupCards(campaign, enc) {
       const group = enc.groups[idx];
       if (!group) return;
       group.count   = Math.max(1, group.count + delta);
-      group.totalEV = group.ev * group.count;
+      group.totalEV = groupEV(group);
       enc.budgetSpent = computeSpent(enc);
 
       const countEl = document.getElementById(`enc-count-val-${idx}`);
@@ -2031,8 +2197,8 @@ function wireGroupCards(campaign, enc) {
       if (countEl) countEl.textContent = group.count;
       if (totalEl) totalEl.textContent = `${group.totalEV} EV total`;
 
-      const budgets = encounterBudgets(campaign.heroes || []);
-      refreshBudgetDisplay(enc, budgets);
+      const budgets = encounterBudgets(campaign.heroes || [], encAllied(enc));
+      refreshBudgetDisplay(enc, budgets, campaign.heroes || []);
       refreshChallengePreview(campaign, enc, budgets);
       queueSave(campaign, enc);
       renderEncounterList(campaign);
@@ -2063,8 +2229,8 @@ function wireGroupCards(campaign, enc) {
       if (rosterEl) rosterEl.innerHTML = buildRosterHTML(enc, campaign.heroes || []);
       wireGroupCards(campaign, enc);
 
-      const budgets = encounterBudgets(campaign.heroes || []);
-      refreshBudgetDisplay(enc, budgets);
+      const budgets = encounterBudgets(campaign.heroes || [], encAllied(enc));
+      refreshBudgetDisplay(enc, budgets, campaign.heroes || []);
       refreshChallengePreview(campaign, enc, budgets);
       queueSave(campaign, enc);
       renderEncounterList(campaign);
@@ -2074,27 +2240,30 @@ function wireGroupCards(campaign, enc) {
 
 function addMonsterGroup(campaign, enc, monster, count, isSquad) {
   if (!enc.groups) enc.groups = [];
-  enc.groups.push({
+  const group = {
     groupId:      `${monster.id}-${Date.now()}`,
     monsterId:    monster.id,
     monsterName:  monster.name,
     monsterLevel: monster.level,
     count,
-    ev:           monster.ev,
-    totalEV:      monster.ev * count,
+    ev:           monster.ev ?? null,
+    evMode:       monster.evMode || 'per_creature',
+    organization: monster.organization ?? null,
     isSquad,
     squadStamina: isSquad ? monster.stamina * count : 0,
     isBoss:       monster.isSolo || false,
     notes:        '',
-  });
+  };
+  group.totalEV = groupEV(group);
+  enc.groups.push(group);
   enc.budgetSpent = computeSpent(enc);
 
   const rosterEl = document.getElementById('enc-roster-list');
   if (rosterEl) rosterEl.innerHTML = buildRosterHTML(enc, campaign.heroes || []);
   wireGroupCards(campaign, enc);
 
-  const budgets = encounterBudgets(campaign.heroes || []);
-  refreshBudgetDisplay(enc, budgets);
+  const budgets = encounterBudgets(campaign.heroes || [], encAllied(enc));
+  refreshBudgetDisplay(enc, budgets, campaign.heroes || []);
   refreshChallengePreview(campaign, enc, budgets);
   queueSave(campaign, enc);
   renderEncounterList(campaign);
