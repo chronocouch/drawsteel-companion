@@ -81,6 +81,37 @@ service cloud.firestore {
         allow read, write: if isSignedIn() &&
           get(/databases/$(database)/documents/campaigns/$(campaignId)).data.directorId == request.auth.uid;
       }
+
+      // ── Campaign knowledge layer — Director ONLY, players get nothing ──
+
+      match /entities/{entityId} {
+        allow read, write: if isSignedIn() &&
+          get(/databases/$(database)/documents/campaigns/$(campaignId)).data.directorId == request.auth.uid;
+      }
+
+      match /sessionNotes/{noteId} {
+        allow read, write: if isSignedIn() &&
+          get(/databases/$(database)/documents/campaigns/$(campaignId)).data.directorId == request.auth.uid;
+      }
+
+      // Ingestion proposals — written only by the Cloud Function (Admin SDK);
+      // the Director may read cached proposals
+      match /ingestions/{noteId} {
+        allow read: if isSignedIn() &&
+          get(/databases/$(database)/documents/campaigns/$(campaignId)).data.directorId == request.auth.uid;
+        allow write: if false;
+      }
+    }
+
+
+    // ── Ingestion usage + rate limiting — server-side only ──────────────────
+
+    match /usage/{docId} {
+      allow read, write: if false; // Cloud Function via Admin SDK only
+    }
+
+    match /rateLimits/{docId} {
+      allow read, write: if false; // Cloud Function via Admin SDK only
     }
 
 

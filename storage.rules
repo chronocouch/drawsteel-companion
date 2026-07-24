@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// Session transcripts live in Cloud Storage, not Firestore (§7.5).
+// A raw session recording is the most personal data in the system:
+// Director-only, campaign-scoped. Players get nothing.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /campaigns/{campaignId}/transcripts/{fileName} {
+      allow read, delete: if request.auth != null &&
+        firestore.get(/databases/(default)/documents/campaigns/$(campaignId)).data.directorId == request.auth.uid;
+
+      // Text only, capped at 1 MB — a 4-hour session is ~150–250 KB
+      allow write: if request.auth != null &&
+        firestore.get(/databases/(default)/documents/campaigns/$(campaignId)).data.directorId == request.auth.uid &&
+        request.resource.size < 1 * 1024 * 1024 &&
+        request.resource.contentType.matches('text/.*');
+    }
+
+    // Everything else: no client access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

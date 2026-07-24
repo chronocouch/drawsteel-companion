@@ -9,9 +9,11 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
 
   <!-- App styles -->
-  <link rel="stylesheet" href="css/main.css?v=6" />
+  <link rel="stylesheet" href="css/main.css?v=7" />
 </head>
 <body>
 
@@ -271,6 +273,7 @@
       <button id="campaign-back-btn" class="btn btn-ghost btn-icon">←</button>
       <span class="campaign-header-title" id="campaign-header-title">Campaign</span>
       <div class="campaign-header-actions">
+        <button id="knowledge-btn" class="btn btn-ghost btn-small">📖 Knowledge</button>
         <button id="levelup-party-btn" class="btn btn-ghost btn-small hidden">⬆ Level Up</button>
         <button id="campaign-respite-btn" class="btn btn-ghost btn-small">⛺ Respite</button>
       </div>
@@ -387,15 +390,17 @@
 
   <!-- ── App scripts ──────────────────────────────────────────────────── -->
   <!-- IMPORTANT: Paste your Firebase config into this file -->
-  <script src="js/firebase-config.js?v=6"></script>
-  <script src="js/auth.js?v=6"></script>
-  <script src="js/wizard-data.js?v=6"></script>
-  <script src="js/character.js?v=6"></script>
-  <script src="js/abilities.js?v=6"></script>
-  <script src="js/session.js?v=6"></script>
-  <script src="js/monster-search.js?v=6"></script>
-  <script src="js/campaign.js?v=6"></script>
-  <script src="js/app.js?v=6"></script>
+  <script src="js/firebase-config.js?v=7"></script>
+  <script src="js/auth.js?v=7"></script>
+  <script src="js/wizard-data.js?v=7"></script>
+  <script src="js/character.js?v=7"></script>
+  <script src="js/abilities.js?v=7"></script>
+  <script src="js/session.js?v=7"></script>
+  <script src="js/monster-search.js?v=7"></script>
+  <script src="js/campaign.js?v=7"></script>
+  <script src="js/vault.js?v=7"></script>
+  <script src="js/knowledge.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
 
 </body>
 </html>

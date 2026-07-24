@@ -2589,6 +2589,27 @@ async function performEndEncounter(campaign, enc, sessionCode, vicCount) {
       campaign.heroes = updatedHeroes;
     }
 
+    // Structured completion record — transcript ingestion consumes this so
+    // the session note reflects what actually happened in combat without the
+    // Director narrating it into the transcript
+    let completionRecord = null;
+    if (sessionCode) {
+      try {
+        const sessSnap = await db.collection('sessions').doc(sessionCode).get();
+        if (sessSnap.exists) {
+          const sess = sessSnap.data();
+          completionRecord = {
+            roundsElapsed:    sess.round || 1,
+            heroesDowned:     (sess.heroes || []).filter(h => (h.currentHP ?? 1) <= 0)
+                                .map(h => h.displayName),
+            monstersDefeated: (sess.enemies || []).filter(e => (e.currentHP ?? 1) <= 0)
+                                .map(e => e.name),
+            monstersRemaining:(sess.enemies || []).filter(e => (e.currentHP ?? 1) > 0).length,
+          };
+        }
+      } catch (_) { /* record is best-effort; completion must not fail on it */ }
+    }
+
     // Mark encounter complete
     if (enc && campaign) {
       await db.collection('campaigns').doc(campaign.id)
@@ -2597,9 +2618,11 @@ async function performEndEncounter(campaign, enc, sessionCode, vicCount) {
           status:           'complete',
           victoriesAwarded: vicCount,
           completedAt:      firebase.firestore.FieldValue.serverTimestamp(),
+          ...(completionRecord ? { completionRecord } : {}),
         });
       enc.status = 'complete';
       enc.victoriesAwarded = vicCount;
+      if (completionRecord) enc.completionRecord = completionRecord;
     }
 
     // Deactivate session
