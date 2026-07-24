@@ -172,20 +172,23 @@ exports.ingestSessionTranscript = onCall(
     const ingestRef = db.collection('campaigns').doc(campaignId)
       .collection('ingestions').doc(noteId);
 
-    // ── Repeat-call guard: kills retry storms ───────────────────────────────
     const ingestSnap = await ingestRef.get();
     const prior = ingestSnap.exists ? ingestSnap.data() : null;
-    if (prior?.lastCallAt && Date.now() - prior.lastCallAt.toMillis() < REPEAT_CALL_WINDOW_MS) {
-      throw new HttpsError('resource-exhausted',
-        'An ingestion for this session was started less than 60 seconds ago. Wait and retry.');
-    }
 
-    // ── Idempotency: a completed ingestion must not re-bill on retry ────────
+    // ── Idempotency FIRST: a completed ingestion is served from cache on any
+    // retry — free, instant, and it defuses retry storms as surely as a
+    // rejection would ────────────────────────────────────────────────────────
     if (prior?.rawResponse && !force) {
       const cached = tryParseProposal(prior.rawResponse);
       if (cached) {
         return { proposal: cached, cached: true };
       }
+    }
+
+    // ── Repeat-call guard: kills retry storms on ingestions still in flight ──
+    if (prior?.lastCallAt && Date.now() - prior.lastCallAt.toMillis() < REPEAT_CALL_WINDOW_MS) {
+      throw new HttpsError('resource-exhausted',
+        'An ingestion for this session was started less than 60 seconds ago. Wait and retry.');
     }
 
     // ── Per-Director daily rate limit, enforced in a transaction ────────────
