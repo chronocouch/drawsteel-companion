@@ -135,6 +135,202 @@ async function checkDirectorMode(uid) {
   }
 }
 
+// ── Campaign picker screen ───────────────────────────────────────────────────
+//
+// The Director's home: every campaign they own, with create / open / archive.
+// Archived campaigns live behind a toggle and can be restored; permanent
+// deletion is a separate action (step 3).
+
+let _pickerShowArchived = false;
+
+async function openCampaignPicker() {
+  if (!AppState.currentUser) return;
+  showScreen(SCREENS.CAMPAIGN_PICKER);
+  const listEl = document.getElementById('campaign-picker-list');
+  if (listEl) listEl.innerHTML = '<p class="loading-text">Loading campaigns…</p>';
+  await renderCampaignPicker();
+}
+
+// Per-card stats. Each campaign needs its own subcollection reads, so they run
+// in parallel and degrade to zeros rather than failing the whole picker.
+async function campaignCardStats(campaign) {
+  const base = db.collection('campaigns').doc(campaign.id);
+  const [encSnap, noteSnap, entSnap] = await Promise.all([
+    base.collection('encounters').get().catch(() => null),
+    base.collection('sessionNotes').get().catch(() => null),
+    base.collection('entities').get().catch(() => null),
+  ]);
+
+  let lastSession = 0;
+  noteSnap?.forEach(d => { lastSession = Math.max(lastSession, d.data().sessionNumber || 0); });
+
+  // Same staleness rule as the Knowledge dashboard (§8.2)
+  const threshold = campaign.stalenessThreshold ?? 3;
+  let stale = 0, clockRunning = 0;
+  entSnap?.forEach(d => {
+    const e = d.data();
+    if (e.entityType === 'thread' && e.urgency === 'clock-running') clockRunning++;
+    const isStale = (e.lastTouched ?? 0) <= lastSession - threshold;
+    const tracked = (e.entityType === 'thread' && e.status === 'open')
+                 || (e.entityType === 'npc'    && e.status === 'alive');
+    if (isStale && tracked) stale++;
+  });
+
+  return { encounters: encSnap?.size ?? 0, lastSession, stale, clockRunning };
+}
+
+function campaignCardHTML(c, s, isActive) {
+  const heroes   = c.heroes || [];
+  const avgLevel = heroes.length
+    ? Math.round(heroes.reduce((a, h) => a + (h.level || 1), 0) / heroes.length) : 0;
+  const mode = (c.advancementMode || 'milestone');
+  return `
+    <div class="campaign-pick-card ${isActive ? 'campaign-pick-active' : ''}" data-campaign-id="${c.id}">
+      <div class="campaign-pick-body">
+        <div class="campaign-pick-row1">
+          <span class="campaign-pick-name">${esc(c.name || 'Unnamed Campaign')}</span>
+          ${isActive ? '<span class="kn-tag kn-tag-ok">OPEN</span>' : ''}
+          <span class="kn-tag">${esc(mode.toUpperCase())}</span>
+        </div>
+        <div class="campaign-pick-meta">
+          <span>${heroes.length} hero${heroes.length !== 1 ? 'es' : ''}${avgLevel ? ` · avg Lv ${avgLevel}` : ''}</span>
+          <span class="enc-meta-sep">·</span>
+          <span>${s.encounters} encounter${s.encounters !== 1 ? 's' : ''}</span>
+          <span class="enc-meta-sep">·</span>
+          <span>${s.lastSession ? `through session ${s.lastSession}` : 'no sessions logged'}</span>
+        </div>
+        ${(s.stale || s.clockRunning) ? `
+          <div class="campaign-pick-staleness">
+            ${s.clockRunning ? `<span class="kn-tag kn-tag-clock">⏰ ${s.clockRunning} clock-running</span>` : ''}
+            ${s.stale ? `<span class="kn-tag">${s.stale} going cold</span>` : ''}
+          </div>` : ''}
+      </div>
+      <div class="campaign-pick-actions">
+        <button class="btn btn-primary btn-small campaign-open-btn" data-campaign-id="${c.id}">Open</button>
+        <button class="btn btn-ghost btn-small campaign-archive-btn" data-campaign-id="${c.id}" title="Hide from this list; keeps all data">Archive</button>
+      </div>
+    </div>
+  `;
+}
+
+async function renderCampaignPicker() {
+  const uid = AppState.currentUser?.uid;
+  const listEl     = document.getElementById('campaign-picker-list');
+  const archListEl = document.getElementById('campaign-archived-list');
+  const toggleEl   = document.getElementById('picker-archived-toggle');
+  if (!listEl) return;
+
+  let all;
+  try {
+    all = await loadDirectorCampaigns(uid, { includeArchived: true });
+  } catch (e) {
+    console.error('Could not load campaigns:', e);
+    listEl.innerHTML = '<p class="panel-empty">Could not load campaigns.</p>';
+    return;
+  }
+
+  const live     = all.filter(c => !c.archived);
+  const archived = all.filter(c => c.archived);
+  AppState.directorCampaigns = live;
+  const activeId = await getActiveCampaignId(uid);
+
+  if (!live.length) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <p>${archived.length ? 'No active campaigns.' : 'No campaigns yet.'}</p>
+        <p>Tap <strong>+ New Campaign</strong> to start one.</p>
+      </div>`;
+  } else {
+    const stats = await Promise.all(live.map(campaignCardStats));
+    listEl.innerHTML = live.map((c, i) => campaignCardHTML(c, stats[i], c.id === activeId)).join('');
+  }
+
+  // Archived section
+  if (toggleEl) {
+    toggleEl.classList.toggle('hidden', archived.length === 0);
+    toggleEl.textContent = _pickerShowArchived
+      ? `Hide archived (${archived.length})` : `Show archived (${archived.length})`;
+  }
+  if (archListEl) {
+    archListEl.classList.toggle('hidden', !_pickerShowArchived || !archived.length);
+    archListEl.innerHTML = archived.map(c => `
+      <div class="campaign-pick-card campaign-pick-archived" data-campaign-id="${c.id}">
+        <div class="campaign-pick-body">
+          <div class="campaign-pick-row1">
+            <span class="campaign-pick-name">${esc(c.name || 'Unnamed Campaign')}</span>
+            <span class="kn-tag">ARCHIVED</span>
+          </div>
+          <div class="campaign-pick-meta">All data kept — entities, notes, encounters, and transcripts.</div>
+        </div>
+        <div class="campaign-pick-actions">
+          <button class="btn btn-ghost btn-small campaign-restore-btn" data-campaign-id="${c.id}">Restore</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  wirePickerCards(all);
+}
+
+function wirePickerCards(all) {
+  const byId = id => all.find(c => c.id === id);
+
+  document.querySelectorAll('.campaign-open-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const c = byId(btn.dataset.campaignId);
+      if (c) await openCampaignFromPicker(c);
+    });
+  });
+
+  // Tapping the card body opens it too
+  document.querySelectorAll('#campaign-picker-list .campaign-pick-card').forEach(card => {
+    card.addEventListener('click', async () => {
+      const c = byId(card.dataset.campaignId);
+      if (c) await openCampaignFromPicker(c);
+    });
+  });
+
+  document.querySelectorAll('.campaign-archive-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const c = byId(btn.dataset.campaignId);
+      if (!c) return;
+      if (!confirm(`Archive "${c.name}"?\n\nIt is hidden from this list but nothing is deleted — entities, session notes, encounters, and transcripts are all kept, and you can restore it at any time.`)) return;
+      try {
+        await archiveCampaign(c.id);
+        showToast(`"${c.name}" archived.`, 'success');
+        await renderCampaignPicker();
+      } catch (err) {
+        console.error('Archive failed:', err);
+        showToast('Could not archive that campaign.', 'danger');
+      }
+    });
+  });
+
+  document.querySelectorAll('.campaign-restore-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const c = byId(btn.dataset.campaignId);
+      if (!c) return;
+      try {
+        await restoreCampaign(c.id);
+        showToast(`"${c.name}" restored.`, 'success');
+        await renderCampaignPicker();
+      } catch (err) {
+        console.error('Restore failed:', err);
+        showToast('Could not restore that campaign.', 'danger');
+      }
+    });
+  });
+}
+
+async function openCampaignFromPicker(campaign) {
+  AppState.currentCampaign = campaign;
+  await setActiveCampaign(campaign.id);
+  await openCampaignScreen();
+}
+
 // ── Open campaign screen ──────────────────────────────────────────────────────
 
 async function openCampaignScreen() {
@@ -2442,8 +2638,21 @@ document.getElementById('add-hero-btn')
 document.getElementById('add-encounter-btn')
   ?.addEventListener('click', showAddEncounterModal);
 
+// Director mode now lands on the campaign picker, not straight into one campaign
 document.getElementById('director-mode-btn')
-  ?.addEventListener('click', openCampaignScreen);
+  ?.addEventListener('click', openCampaignPicker);
+
+document.getElementById('picker-back-btn')
+  ?.addEventListener('click', () => showScreen(SCREENS.CHARACTER_SELECT));
+
+document.getElementById('picker-new-btn')
+  ?.addEventListener('click', showCreateCampaignModal);
+
+document.getElementById('picker-archived-toggle')
+  ?.addEventListener('click', async () => {
+    _pickerShowArchived = !_pickerShowArchived;
+    await renderCampaignPicker();
+  });
 
 // ── J1: Start Encounter from Campaign ────────────────────────────────────────
 
@@ -2932,3 +3141,5 @@ window.archiveCampaign         = archiveCampaign;
 window.restoreCampaign         = restoreCampaign;
 window.campaignSlug            = campaignSlug;
 window.showCreateCampaignModal = showCreateCampaignModal;
+window.openCampaignPicker      = openCampaignPicker;
+window.renderCampaignPicker    = renderCampaignPicker;

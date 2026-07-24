@@ -12,6 +12,7 @@ const SCREENS = {
   CHARACTER_SELECT: 'character-select-screen',
   CHARACTER_SHEET: 'character-sheet-screen',
   WIZARD: 'wizard-screen',
+  CAMPAIGN_PICKER: 'campaign-picker-screen',
   CAMPAIGN: 'campaign-screen',
   ENCOUNTER_RUNNER: 'encounter-runner-screen',
 };
@@ -115,8 +116,10 @@ document.getElementById('back-to-list-btn').addEventListener('click', () => {
   loadCharacterList(AppState.currentUser.uid);
 });
 
+// Back from a campaign returns to the picker (the Director's home)
 document.getElementById('campaign-back-btn')?.addEventListener('click', () => {
-  showScreen(SCREENS.CHARACTER_SELECT);
+  if (typeof openCampaignPicker === 'function') openCampaignPicker();
+  else showScreen(SCREENS.CHARACTER_SELECT);
 });
 
 document.getElementById('runner-back-btn')?.addEventListener('click', () => {

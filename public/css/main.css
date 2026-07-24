@@ -5738,6 +5738,52 @@ button.condition-chip:hover {
 }
 .kn-review-footer { display: flex; gap: 10px; justify-content: flex-end; }
 
+/* ── Campaign picker ──────────────────────────────────────────────────── */
+.campaign-picker-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.campaign-picker-list { display: flex; flex-direction: column; gap: 10px; }
+.campaign-pick-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card, #161a24);
+  border: 1px solid var(--border-subtle, #232838);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.campaign-pick-card:hover { border-color: var(--color-available, #1ABC9C); background: rgba(255,255,255,.03); }
+.campaign-pick-active { border-color: var(--color-available, #1ABC9C); }
+.campaign-pick-archived { opacity: .65; cursor: default; }
+.campaign-pick-archived:hover { border-color: var(--border-subtle, #232838); background: var(--bg-card, #161a24); }
+.campaign-pick-body { flex: 1; min-width: 0; }
+.campaign-pick-row1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.campaign-pick-name {
+  font-family: var(--font-condensed);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.campaign-pick-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--font-condensed);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.campaign-pick-staleness { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+.campaign-pick-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.picker-archived-section { display: flex; flex-direction: column; gap: 10px; }
+
 /* ── Forge Steel import ───────────────────────────────────────────────── */
 .import-review-modal { max-width: 560px; }
 .imp-source-unknown {
