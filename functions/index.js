@@ -5,6 +5,9 @@
  *  - ingestSessionTranscript: callable that turns a session transcript into a
  *    structured proposal (session note + entity changes + links). It NEVER
  *    writes campaign data — the Director reviews and commits client-side.
+ *  - deleteCampaignCascade: permanent campaign deletion. Lives server-side
+ *    because the `ingestions` subcollection is Admin-SDK-write-only, so a
+ *    browser physically cannot clean it up.
  *
  * The Anthropic API key lives in Firebase Secrets:
  *   firebase functions:secrets:set ANTHROPIC_API_KEY
@@ -37,6 +40,93 @@ exports.cleanupOldSessions = onSchedule(
     await Promise.all(deletions);
 
     console.log(`Cleaned up ${deletions.length} old sessions`);
+  }
+);
+
+// ── Permanent campaign deletion ─────────────────────────────────────────────
+//
+// Irreversible. Removes the campaign doc and every subcollection (encounters,
+// entities, sessionNotes, ingestions) plus the raw session transcripts in
+// Cloud Storage — the most personal data in the system.
+//
+// Deliberately NOT deleted: generated markdown in the Director's Obsidian
+// vault. The vault is write-only by design (§2.3); files there are the
+// Director's to remove by hand, and this function never reaches into it.
+//
+// Three guards, because this cannot be undone:
+//   1. Caller must be the campaign's Director.
+//   2. The campaign must already be archived (deletion is never a first step).
+//   3. The caller must echo back the campaign's exact name.
+
+exports.deleteCampaignCascade = onCall(
+  { timeoutSeconds: 540, memory: '512MiB' },
+  async (request) => {
+    const db = admin.firestore();
+
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+    const uid = request.auth.uid;
+    const { campaignId, confirmName } = request.data || {};
+    if (!campaignId) {
+      throw new HttpsError('invalid-argument', 'campaignId is required.');
+    }
+
+    const campaignRef = db.collection('campaigns').doc(campaignId);
+    const snap = await campaignRef.get();
+    if (!snap.exists) {
+      throw new HttpsError('not-found', 'That campaign no longer exists.');
+    }
+    const campaign = snap.data();
+
+    if (campaign.directorId !== uid) {
+      throw new HttpsError('permission-denied', 'Only the campaign Director can delete it.');
+    }
+    if (!campaign.archived) {
+      throw new HttpsError('failed-precondition',
+        'Archive the campaign before deleting it permanently.');
+    }
+    if ((confirmName || '') !== (campaign.name || '')) {
+      throw new HttpsError('failed-precondition',
+        'The confirmation name does not match this campaign.');
+    }
+
+    // Count what we're about to destroy, so the Director gets a real receipt
+    const counts = {};
+    for (const sub of ['encounters', 'entities', 'sessionNotes', 'ingestions']) {
+      try {
+        counts[sub] = (await campaignRef.collection(sub).get()).size;
+      } catch (_) { counts[sub] = 0; }
+    }
+
+    // Transcripts first — if this fails we stop with Firestore intact, rather
+    // than orphaning recordings whose owning campaign no longer exists
+    let transcripts = 0;
+    try {
+      const bucket = admin.storage().bucket();
+      const [files] = await bucket.getFiles({ prefix: `campaigns/${campaignId}/` });
+      transcripts = files.length;
+      await Promise.all(files.map(f => f.delete().catch(() => {})));
+    } catch (e) {
+      console.error('Transcript deletion failed:', e);
+      throw new HttpsError('internal',
+        'Could not delete the stored transcripts. Nothing was deleted — try again.');
+    }
+
+    // recursiveDelete removes the campaign doc and every subcollection under it
+    await db.recursiveDelete(campaignRef);
+
+    // Clear the pointer if this campaign was still the Director's active one
+    try {
+      const userRef = db.collection('users').doc(uid);
+      const userSnap = await userRef.get();
+      if (userSnap.exists && userSnap.data().activeCampaignId === campaignId) {
+        await userRef.set({ activeCampaignId: null }, { merge: true });
+      }
+    } catch (_) { /* pointer cleanup is best-effort */ }
+
+    console.log(`Deleted campaign ${campaignId} for ${uid}`, { ...counts, transcripts });
+    return { deleted: true, counts: { ...counts, transcripts } };
   }
 );
 

@@ -264,6 +264,7 @@ async function renderCampaignPicker() {
         </div>
         <div class="campaign-pick-actions">
           <button class="btn btn-ghost btn-small campaign-restore-btn" data-campaign-id="${c.id}">Restore</button>
+          <button class="btn btn-ghost btn-small campaign-delete-btn" data-campaign-id="${c.id}">Delete…</button>
         </div>
       </div>
     `).join('');
@@ -308,6 +309,14 @@ function wirePickerCards(all) {
     });
   });
 
+  document.querySelectorAll('.campaign-delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const c = byId(btn.dataset.campaignId);
+      if (c) showDeleteCampaignModal(c);
+    });
+  });
+
   document.querySelectorAll('.campaign-restore-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -329,6 +338,70 @@ async function openCampaignFromPicker(campaign) {
   AppState.currentCampaign = campaign;
   await setActiveCampaign(campaign.id);
   await openCampaignScreen();
+}
+
+// ── Permanent deletion (archived campaigns only) ─────────────────────────────
+//
+// Irreversible, so the Director types the campaign name to confirm — the same
+// value the Cloud Function re-checks server-side before deleting anything.
+
+function showDeleteCampaignModal(campaign) {
+  showModal(`
+    <div class="delete-campaign-modal">
+      <h2>Delete “${esc(campaign.name)}” permanently?</h2>
+      <div class="delete-warning">
+        This cannot be undone. It will permanently destroy:
+        <ul>
+          <li>every encounter in this campaign</li>
+          <li>all tracked NPCs, threads, locations, and factions</li>
+          <li>all session notes</li>
+          <li><strong>the raw session transcripts</strong> stored in the cloud</li>
+        </ul>
+      </div>
+      <p class="imp-dim">
+        Markdown already written to your Obsidian vault is <strong>not</strong> touched —
+        those files stay on your disk for you to keep or remove yourself.
+      </p>
+      <div class="wizard-field">
+        <label class="wizard-label">Type the campaign name to confirm</label>
+        <input type="text" id="delete-confirm-input" class="wizard-text-input"
+          placeholder="${esc(campaign.name)}" autocomplete="off" />
+      </div>
+      <div class="kn-modal-footer">
+        <button class="btn btn-ghost" id="delete-cancel-btn">Cancel</button>
+        <button class="btn btn-primary" id="delete-confirm-btn" disabled>Delete Permanently</button>
+      </div>
+    </div>
+  `);
+
+  const input = document.getElementById('delete-confirm-input');
+  const btn   = document.getElementById('delete-confirm-btn');
+  input?.addEventListener('input', () => {
+    if (btn) btn.disabled = input.value.trim() !== (campaign.name || '');
+  });
+  setTimeout(() => input?.focus(), 60);
+
+  document.getElementById('delete-cancel-btn')?.addEventListener('click', hideModal);
+  btn?.addEventListener('click', () => performDeleteCampaign(campaign, input.value.trim()));
+}
+
+async function performDeleteCampaign(campaign, confirmName) {
+  const btn = document.getElementById('delete-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+  try {
+    const callable = firebase.functions().httpsCallable('deleteCampaignCascade', { timeout: 540000 });
+    const res = await callable({ campaignId: campaign.id, confirmName });
+    const c = res.data?.counts || {};
+    hideModal();
+    showToast(
+      `"${campaign.name}" deleted — ${c.encounters || 0} encounters, ${c.entities || 0} entities, ` +
+      `${c.sessionNotes || 0} notes, ${c.transcripts || 0} transcripts removed.`, 'success');
+    await renderCampaignPicker();
+  } catch (e) {
+    console.error('Campaign deletion failed:', e);
+    showToast(e.message || 'Could not delete that campaign.', 'danger');
+    if (btn) { btn.disabled = false; btn.textContent = 'Delete Permanently'; }
+  }
 }
 
 // ── Open campaign screen ──────────────────────────────────────────────────────

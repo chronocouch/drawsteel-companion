@@ -5783,6 +5783,24 @@ button.condition-chip:hover {
 .campaign-pick-staleness { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
 .campaign-pick-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
 .picker-archived-section { display: flex; flex-direction: column; gap: 10px; }
+.campaign-delete-btn { color: var(--color-danger); }
+.campaign-delete-btn:hover { border-color: var(--color-danger); }
+.delete-campaign-modal { max-width: 520px; }
+.delete-warning {
+  background: rgba(192,57,43,.1);
+  border: 1px solid var(--color-danger);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #e57368;
+  line-height: 1.5;
+  margin: 10px 0;
+}
+.delete-warning ul { margin: 6px 0 0 18px; }
+.delete-campaign-modal #delete-confirm-btn:not(:disabled) {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
 
 /* ── Forge Steel import ───────────────────────────────────────────────── */
 .import-review-modal { max-width: 560px; }
