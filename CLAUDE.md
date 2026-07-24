@@ -4,8 +4,9 @@
 A web-based character creator and combat tracker for the TTRPG **Draw Steel** by MCDM Productions.
 Built for a small group of friends. The Director (GM) and players use this at the table.
 
-Published under the **DRAW STEEL Creator License**. Attribution required in footer:
-> "[App Name] is an independent product published under the DRAW STEEL Creator License and is not affiliated with MCDM Productions, LLC. DRAW STEEL © 2024 MCDM Productions, LLC."
+Published under the **DRAW STEEL Creator License**. Attribution required in footer,
+exactly this wording (no year after the ©):
+> "[App Name] is an independent product published under the DRAW STEEL Creator License and is not affiliated with MCDM Productions, LLC. DRAW STEEL © MCDM Productions, LLC."
 
 ## North Star
 **D&D Beyond** — the character sheet IS the playing surface. Combat sync layers on top of
@@ -112,13 +113,24 @@ drawsteel/
 ```
 
 ### /monsters/{monsterId}  [global, seeded from SteelCompendium/data-bestiary-json]
+Organization and role are SEPARATE axes and both are nullable — Leaders and Solos
+carry no role, and a few monsters (Xorannox's eyes, Noncombatant) have no
+organization. Never collapse one into the other, and never model them as one enum.
 ```
 {
   name: string,
   level: number,
-  ev: number,                   // encounter value for budget math
-  role: string,                 // 'brute'|'controller'|'defender'|'hexer'|
-                                //   'artillery'|'ambusher'|'leader'|'solo'
+  ev: number|null,              // encounter value; null when non-purchasable
+  evMode:                       // how ev is priced — minion EV is PER GROUP OF
+    'per_creature'              //   FOUR, not per creature; cost is
+    | 'per_four_minions'        //   ceil(count/4) × ev
+    | 'non_purchasable',        // ev '-' in source: costs nothing, not buyable
+  organization:                 // Minion|Horde|Platoon|Elite|Leader|Solo axis;
+    'minion'|'horde'|'platoon'  //   drives hero-slot math
+    |'elite'|'leader'|'solo'|null,
+  role:                         // nine roles, or null (Leaders/Solos have none)
+    'ambusher'|'artillery'|'brute'|'controller'|'defender'
+    |'harrier'|'hexer'|'mount'|'support'|null,
   keywords: string[],           // e.g. ['Humanoid', 'Goblin']
   stamina: number,
   speed: number,
@@ -129,13 +141,17 @@ drawsteel/
   immunities: [{ type, value }],
   weaknesses: [{ type, value }],
   movementTypes: string[],      // ['fly', 'teleport', etc.]
-  isMinion: boolean,
-  isSolo: boolean,
+  isMinion: boolean,            // derived: organization === 'minion'
+  isSolo: boolean,              // derived: organization === 'solo'
   faction: string,              // 'Goblins', 'Demons', etc.
   abilities: string[],          // ability names (text only for now)
   maliceFeatures: string[]      // faction malice feature names
 }
 ```
+Doc ids are name slugs; duplicate names across levels (the Rival statblocks)
+get `-lvN` suffixes. Re-seeding goes staging-collection-first:
+`node scripts/seed-monsters.js --collection monsters_staging`, verify the
+printed report, then `--promote monsters_staging`. Never seed /monsters directly.
 
 ### /campaigns/{campaignId}
 ```
@@ -303,6 +319,13 @@ follow the naming used in commit messages and in-file section comments (e.g. `//
 - **Phases K–L**: Negotiation & montage live-session runners (session.js), hero XP
   progress bars, milestone-mode level-up flow + celebration modal, post-encounter
   session notes, Beastheart class + seed script — done
+- **Encounter-math repairs (buildspec Part I)**: minion EV priced per group of 4
+  (`groupEV`/`evMode`), organization/role split into two nullable axes with the
+  nine-role vocabulary, Victories + allied NPCs included in Encounter Strength,
+  budget bands from one hero's ES at average level, hero-slot display alongside
+  the EV budget, non-purchasable monsters cost 0, group monster data refreshed
+  from live /monsters on editor open. `/monsters` re-seeded (416 docs incl. the
+  nested Rival echelon statblocks). Regression tests: `node scripts/test-encounter-math.js` — done
 
 Nothing is currently in progress — pick the next slice of work and say which phase/file
 you're extending so this file can be updated to match.
