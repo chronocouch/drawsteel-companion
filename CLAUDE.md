@@ -326,6 +326,12 @@ follow the naming used in commit messages and in-file section comments (e.g. `//
   the EV budget, non-purchasable monsters cost 0, group monster data refreshed
   from live /monsters on editor open. `/monsters` re-seeded (416 docs incl. the
   nested Rival echelon statblocks). Regression tests: `node scripts/test-encounter-math.js` — done
+- **Encounter guardrails + parse-report surfacing (buildspec Part II remainder)**:
+  warn-never-block guardrails (§6.4) — monster level > party + 2 warns (+ 3 allowed
+  at 6+ avg Victories), solo above party level + 1 warns strongly, minions not in
+  multiples of 4 warn; minion count prompt defaults to two sets (8); seed runs
+  write `/meta/monsterSeedReport` and the campaign screen shows a Director-visible
+  banner when compendium files fail to parse — done
 
 Nothing is currently in progress — pick the next slice of work and say which phase/file
 you're extending so this file can be updated to match.

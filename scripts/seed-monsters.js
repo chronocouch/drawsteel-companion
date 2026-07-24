@@ -373,6 +373,20 @@ async function writeMonsters(db, admin, monsters, collectionName) {
   }
 }
 
+// Persist the parse report so the app can surface it to the Director
+// (a settings/campaign notice) — parse failures must be visible in-app,
+// not only in this script's stdout.
+async function writeSeedReport(db, admin, monsters, issues, collectionName) {
+  await db.collection('meta').doc('monsterSeedReport').set({
+    seededAt:       admin.firestore.FieldValue.serverTimestamp(),
+    collection:     collectionName,
+    totalMonsters:  monsters.length,
+    issueCount:     issues.length,
+    issues:         issues.slice(0, 50).map(i => ({ monster: i.monster, kind: i.kind, detail: i.detail })),
+    promotedAt:     null,
+  });
+}
+
 // Copy a verified staging collection into /monsters, removing stale docs.
 async function promote(db, sourceCollection) {
   console.log(`Promoting /${sourceCollection} → /monsters ...`);
@@ -402,6 +416,11 @@ async function promote(db, sourceCollection) {
     await batch.commit();
   }
   console.log(`  ✓ ${docs.length} docs promoted, ${staleIds.length} stale docs removed.`);
+
+  const admin = require('firebase-admin');
+  await db.collection('meta').doc('monsterSeedReport').set({
+    promotedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -473,6 +492,8 @@ async function main() {
 
   console.log(`\nWriting to Firestore /${collectionName}...`);
   await writeMonsters(db, admin, monsters, collectionName);
+  await writeSeedReport(db, admin, monsters, issues, collectionName);
+  console.log('  ✓ Parse report written to /meta/monsterSeedReport');
 
   console.log('\n╔══════════════════════════════════════════════╗');
   console.log('║  ✓ Monster seed complete!                    ║');

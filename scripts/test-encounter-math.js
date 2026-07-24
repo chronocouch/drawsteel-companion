@@ -38,7 +38,8 @@ vm.createContext(sandbox);
 const campaignSrc = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'campaign.js'), 'utf8');
 vm.runInContext(campaignSrc, sandbox, { filename: 'campaign.js' });
 
-const { partyES, computeSpent, groupEV, encounterSlotsUsed, encounterSlotsAvailable, encounterBudgets } = sandbox;
+const { partyES, computeSpent, groupEV, encounterSlotsUsed, encounterSlotsAvailable,
+        encounterBudgets, monsterLevelWarnThreshold, groupWarnings } = sandbox;
 
 // ── Tiny assert ──────────────────────────────────────────────────────────────
 
@@ -109,6 +110,20 @@ check('hard band = ES + 3×heroES(avgLevel) = 80', b.hardMax, 80);
 check('2 allied Lv3 NPCs add 20 ES', partyES(fiveLvl3, { count: 2, level: 3 }), 70);
 check('trivial difficulty subtracts 2 slots',
   encounterSlotsAvailable(fiveLvl3, { difficulty: 'trivial', alliedCount: 0 }, b.breakdown), 3);
+
+// ── §6.4 guardrails — warn, never block ──────────────────────────────────────
+
+console.log('\n§6.4 guardrails');
+check('warn threshold is party level + 2', monsterLevelWarnThreshold(3, 0), 5);
+check('threshold rises to +3 at 6 avg Victories', monsterLevelWarnThreshold(3, 6), 6);
+check('solo above party level + 1 warns strongly',
+  groupWarnings({ monsterName: 'X', organization: 'solo', monsterLevel: 5, count: 1 }, 3, 0).map(w => w.severity), ['danger']);
+check('solo at party level + 1 is fine',
+  groupWarnings({ monsterName: 'X', organization: 'solo', monsterLevel: 4, count: 1 }, 3, 0), []);
+check('minions not in multiples of 4 warn',
+  groupWarnings({ monsterName: 'Z', organization: 'minion', evMode: 'per_four_minions', monsterLevel: 1, count: 6 }, 3, 0).map(w => w.severity), ['warning']);
+check('minions in multiples of 4 are fine',
+  groupWarnings({ monsterName: 'Z', organization: 'minion', evMode: 'per_four_minions', monsterLevel: 1, count: 8 }, 3, 0), []);
 
 // ── Result ───────────────────────────────────────────────────────────────────
 

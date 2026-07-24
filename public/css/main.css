@@ -5617,6 +5617,19 @@ button.condition-chip:hover {
   margin-left: 3px;
 }
 .enc-slot-row { margin-top: 8px; margin-bottom: 0; }
+.seed-report-banner {
+  margin: 10px 16px 0;
+  padding: 10px 14px;
+  background: rgba(230,126,34,.1);
+  border: 1px solid #e67e22;
+  border-radius: 8px;
+  font-family: var(--font-condensed);
+  font-size: 13px;
+  color: #e67e22;
+  line-height: 1.5;
+}
+.seed-report-line { color: var(--text-secondary); font-size: 12px; }
+.seed-report-banner .btn { margin-top: 6px; }
 .enc-budget-note {
   font-family: var(--font-condensed);
   font-size: 11px;
@@ -5656,6 +5669,8 @@ button.condition-chip:hover {
   transition: border-color var(--transition-fast);
 }
 .enc-group-warning { border-color: #e67e22; background: rgba(230,126,34,.05); }
+.enc-group-danger  { border-color: var(--color-danger); background: rgba(224,82,82,.07); }
+.enc-warn-danger   { color: var(--color-danger); }
 .enc-group-header  { display: flex; align-items: center; gap: 7px; }
 .enc-group-name {
   flex: 1;
@@ -5805,6 +5820,18 @@ button.condition-chip:hover {
   color: #e67e22;
   line-height: 1.5;
   margin-top: 4px;
+}
+.preview-danger-banner {
+  background: rgba(192,57,43,.12);
+  border-color: var(--color-danger);
+  color: #e57368;
+}
+.ms-minion-warning {
+  min-height: 16px;
+  font-family: var(--font-condensed);
+  font-size: 12px;
+  color: #e67e22;
+  text-align: center;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

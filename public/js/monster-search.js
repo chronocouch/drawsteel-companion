@@ -217,7 +217,14 @@ const MonsterSearch = (() => {
   // ── Count + squad sub-prompt ───────────────────────────────────────────────
 
   function showCountPrompt(monster, onSelect) {
-    const defaultCount = monster.isMinion ? 4 : 1;
+    // Minions are purchased in fours; recommend at least two sets
+    const isMinionPriced = monster.evMode === 'per_four_minions' || monster.isMinion;
+    const defaultCount   = isMinionPriced ? 8 : 1;
+
+    function minionWarning(count) {
+      return (isMinionPriced && count % 4 !== 0)
+        ? '⚠ Minions are purchased in multiples of 4' : '';
+    }
 
     showModal(`
       <div class="ms-count-modal">
@@ -246,6 +253,7 @@ const MonsterSearch = (() => {
         <div class="ms-count-ev-preview" id="ms-count-ev-preview">
           Total EV: ${totalEVFor(monster, defaultCount)}
         </div>
+        <div class="ms-minion-warning" id="ms-minion-warning">${minionWarning(defaultCount)}</div>
 
         <div class="ms-count-actions">
           <button class="btn btn-ghost" id="ms-count-back">← Back</button>
@@ -259,8 +267,10 @@ const MonsterSearch = (() => {
     function updatePreview() {
       const countEl   = document.getElementById('ms-count-value');
       const previewEl = document.getElementById('ms-count-ev-preview');
+      const warnEl    = document.getElementById('ms-minion-warning');
       if (countEl)   countEl.textContent   = count;
       if (previewEl) previewEl.textContent = `Total EV: ${totalEVFor(monster, count)}`;
+      if (warnEl)    warnEl.textContent    = minionWarning(count);
     }
 
     document.getElementById('ms-count-minus')?.addEventListener('click', () => {

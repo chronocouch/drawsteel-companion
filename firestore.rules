@@ -56,6 +56,15 @@ service cloud.firestore {
     }
 
 
+    // ── Meta ────────────────────────────────────────────────────────────────
+    // Seed-run reports and other app metadata — written only by Admin SDK
+
+    match /meta/{docId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Written only via Admin SDK in seed script
+    }
+
+
     // ── Campaigns ───────────────────────────────────────────────────────────
 
     match /campaigns/{campaignId} {

@@ -208,6 +208,40 @@ function renderCampaignScreen() {
   renderHeroRoster(campaign);
   renderEncounterList(campaign);
   renderCampaignInfo(campaign);
+  renderSeedReportBanner();
+}
+
+// ── Compendium seed parse-error notice (§ fail-soft) ─────────────────────────
+// The seed script excludes files it cannot parse and records them in
+// /meta/monsterSeedReport; the Director sees that here, not in a terminal.
+
+let _seedReportChecked = false;
+
+async function renderSeedReportBanner() {
+  if (_seedReportChecked) return;
+  _seedReportChecked = true;
+  const banner = document.getElementById('seed-report-banner');
+  if (!banner) return;
+  try {
+    const doc = await db.collection('meta').doc('monsterSeedReport').get();
+    if (!doc.exists) return;
+    const report = doc.data();
+    if (!report.issueCount) return;
+    const lines = (report.issues || []).slice(0, 5)
+      .map(i => `<div class="seed-report-line">${esc(i.monster)}: ${esc(i.kind)}</div>`).join('');
+    banner.innerHTML = `
+      <strong>⚠ ${report.issueCount} compendium file${report.issueCount !== 1 ? 's' : ''} could not be fully parsed</strong>
+      and ${report.issueCount !== 1 ? 'are' : 'is'} excluded from the bestiary.
+      ${lines}
+      <button class="btn btn-ghost btn-small" id="seed-report-dismiss">Dismiss</button>
+    `;
+    banner.classList.remove('hidden');
+    document.getElementById('seed-report-dismiss')?.addEventListener('click', () => {
+      banner.classList.add('hidden');
+    });
+  } catch (e) {
+    console.error('Could not load seed report:', e);
+  }
 }
 
 // ── H5: Party status bar ──────────────────────────────────────────────────────
@@ -395,6 +429,33 @@ function encounterSlotsAvailable(heroes, enc, breakdown) {
 
 function formatSlots(n) {
   return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+}
+
+// ── Guardrails — warn, never block ───────────────────────────────────────────
+
+// Monsters above party level + 2 get a warning; a party holding 6+ average
+// Victories can handle + 3.
+function monsterLevelWarnThreshold(avgLevel, avgVictories) {
+  return avgLevel + ((avgVictories || 0) >= 6 ? 3 : 2);
+}
+
+function groupWarnings(g, avgLevel, avgVictories) {
+  const warnings = [];
+  const lvl   = g.monsterLevel || 0;
+  const bonus = (avgVictories || 0) >= 6 ? 3 : 2;
+  if (g.organization === 'solo' && lvl > avgLevel + 1) {
+    warnings.push({ severity: 'danger',  text: `${g.monsterName || 'Solo'} exceeds party level + 1 — solos this strong are likely deadly` });
+  } else if (lvl > monsterLevelWarnThreshold(avgLevel, avgVictories)) {
+    warnings.push({ severity: 'warning', text: `${g.monsterName || 'Monster'} exceeds party level + ${bonus}` });
+  }
+  if (g.evMode === 'per_four_minions' && (g.count || 0) % 4 !== 0) {
+    warnings.push({ severity: 'warning', text: `${g.monsterName || 'Minions'}: minions are purchased in multiples of 4` });
+  }
+  return warnings;
+}
+
+function encounterWarnings(enc, avgLevel, avgVictories) {
+  return (enc.groups || []).flatMap(g => groupWarnings(g, avgLevel, avgVictories));
 }
 
 function computeDifficulty(spent, budgets) {
@@ -1880,23 +1941,27 @@ function buildRosterHTML(enc, heroes) {
   const groups   = enc.groups     || [];
   const npcs     = enc.customNPCs || [];
   const avgLevel = heroes.length ? heroes.reduce((s, h) => s + (h.level || 1), 0) / heroes.length : 1;
-  const warnLevel = avgLevel + 2;
+  const avgVic   = heroes.length
+    ? Math.floor(heroes.reduce((s, h) => s + (h.currentVictories || 0), 0) / heroes.length)
+    : 0;
 
   if (groups.length === 0 && npcs.length === 0) {
     return '<p class="panel-empty">No monsters yet.<br>Add monsters to build this encounter.</p>';
   }
 
   const groupHTML = groups.map((g, idx) => {
-    const totalEV = groupEV(g);
-    const isHigh  = (g.monsterLevel || 0) > warnLevel;
+    const totalEV  = groupEV(g);
+    const warnings = groupWarnings(g, avgLevel, avgVic);
+    const worst    = warnings.some(w => w.severity === 'danger') ? 'enc-group-danger'
+      : warnings.length ? 'enc-group-warning' : '';
     const evLabel = g.evMode === 'non_purchasable' ? 'No EV cost'
       : g.evMode === 'per_four_minions' ? `${g.ev} EV per 4`
       : `${g.ev} EV each`;
     return `
-      <div class="enc-group-card ${isHigh ? 'enc-group-warning' : ''}" data-group-idx="${idx}">
+      <div class="enc-group-card ${worst}" data-group-idx="${idx}">
         <div class="enc-group-header">
           <span class="enc-group-name">${esc(g.monsterName || 'Unknown')}</span>
-          ${isHigh ? '<span class="enc-level-warn-icon" title="Monster exceeds party level +2">⚠</span>' : ''}
+          ${warnings.map(w => `<span class="enc-level-warn-icon ${w.severity === 'danger' ? 'enc-warn-danger' : ''}" title="${esc(w.text)}">⚠</span>`).join('')}
           <button class="enc-group-remove" data-type="group" data-group-idx="${idx}" title="Remove">✕</button>
         </div>
         <div class="enc-group-details">
@@ -1940,9 +2005,8 @@ function buildChallengePreviewHTML(campaign, enc, budgets) {
   const diff      = computeDifficulty(spent, budgets);
   const diffColor = DIFFICULTY_COLOR[diff] || DIFFICULTY_COLOR.standard;
   const malice    = round1Malice(heroes);
-  const groups    = enc.groups || [];
   const avgLevel  = heroes.length ? heroes.reduce((s, h) => s + (h.level || 1), 0) / heroes.length : 1;
-  const anyHighLevel = groups.some(g => (g.monsterLevel || 0) > avgLevel + 2);
+  const warnings  = encounterWarnings(enc, avgLevel, budgets.breakdown?.avgVictories || 0);
   const vicLabel  = enc.expectedVictories === 0 ? 'No victories'
     : enc.expectedVictories === 2 ? '2 victories' : '1 victory';
 
@@ -1996,11 +2060,11 @@ function buildChallengePreviewHTML(campaign, enc, budgets) {
       </div>
     </div>
 
-    ${anyHighLevel ? `
-      <div class="preview-warning-banner">
-        ⚠ One or more monsters exceed party level + 2. Consider reducing difficulty.
+    ${warnings.map(w => `
+      <div class="preview-warning-banner ${w.severity === 'danger' ? 'preview-danger-banner' : ''}">
+        ⚠ ${esc(w.text)}
       </div>
-    ` : ''}
+    `).join('')}
   `;
 }
 
@@ -2192,10 +2256,10 @@ function wireGroupCards(campaign, enc) {
       group.totalEV = groupEV(group);
       enc.budgetSpent = computeSpent(enc);
 
-      const countEl = document.getElementById(`enc-count-val-${idx}`);
-      const totalEl = document.getElementById(`enc-total-ev-${idx}`);
-      if (countEl) countEl.textContent = group.count;
-      if (totalEl) totalEl.textContent = `${group.totalEV} EV total`;
+      // Re-render the whole roster so per-group warnings (minion multiples,
+      // level thresholds) track the new count
+      const rosterEl = document.getElementById('enc-roster-list');
+      if (rosterEl) { rosterEl.innerHTML = buildRosterHTML(enc, campaign.heroes || []); wireGroupCards(campaign, enc); }
 
       const budgets = encounterBudgets(campaign.heroes || [], encAllied(enc));
       refreshBudgetDisplay(enc, budgets, campaign.heroes || []);
