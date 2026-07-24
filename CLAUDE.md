@@ -333,7 +333,21 @@ follow the naming used in commit messages and in-file section comments (e.g. `//
   write `/meta/monsterSeedReport` and the campaign screen shows a Director-visible
   banner when compendium files fail to parse — done
 
-Nothing is currently in progress — pick the next slice of work and say which phase/file
+- **Campaign knowledge layer (buildspec Part III)**: `/campaigns/{id}/entities` +
+  `sessionNotes` + `ingestions` subcollections (Director-only rules),
+  `ingestSessionTranscript` v2 callable (claude-sonnet-5, structured output,
+  rate-limited, idempotent — needs `ANTHROPIC_API_KEY` in Firebase Secrets),
+  transcripts in Cloud Storage at `campaigns/{id}/transcripts/{noteId}.txt`
+  (storage.rules, 1 MB text cap), write-only Obsidian vault via File System
+  Access API (vault.js — sentinel-preserving entity notes, zip fallback for
+  non-Chromium), Knowledge screen in campaign.js/knowledge.js (entity CRUD,
+  ingest → review → commit, staleness dashboard), encounter completionRecord
+  bridge. Tests: `node scripts/test-vault.js`. — code complete; **pending
+  operator setup**: Firebase Storage "Get Started" in console, then
+  `firebase functions:secrets:set ANTHROPIC_API_KEY`, then
+  `firebase deploy --only functions,storage`
+
+Nothing else is in progress — pick the next slice of work and say which phase/file
 you're extending so this file can be updated to match.
 
 ## Known Firebase Gotchas
