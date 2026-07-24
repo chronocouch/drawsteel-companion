@@ -484,7 +484,7 @@ function previewLevelUp(char, newLevel) {
   const oldHP     = char.maxHP ?? computeMaxHP(char.class, char.kit, char.level ?? 1, char.kit2);
   const newHP     = computeMaxHP(char.class, char.kit, newLevel, char.kit2);
   const oldChars  = char.characteristics ?? {};
-  const newChars  = computeCharacteristicsForLevel(baseChars, newLevel);
+  const newChars  = computeCharacteristicsForLevel(baseChars, newLevel, char.class);
   const oldResMax = getHeroicResourceMax(char.level ?? 1);
   const newResMax = getHeroicResourceMax(newLevel);
   return { oldHP, newHP, oldChars, newChars, oldResMax, newResMax };
@@ -1305,8 +1305,8 @@ function populateStatsTab(char) {
   const meta     = CLASS_COLORS[char.class] || { accent: '#2980B9', resource: 'Resource' };
   const stats    = char.characteristics || {};
   const level    = char.level ?? 1;
-  const recovery = Math.floor((char.maxHP ?? 0) / 3);
-  const resMax   = getHeroicResourceMax(level);
+  const recValue = Math.floor((char.maxHP ?? 0) / 3);                 // stamina regained per recovery
+  const recCount = char.recoveries?.max ?? CLASS_RECOVERIES[char.class] ?? 8; // number of recoveries
   const resourceGain = LAW_CLASSES_LOCAL.includes(char.class) ? '+2 per turn' : '+1d3 per turn';
 
   // Subclass lookup for A3
@@ -1323,9 +1323,9 @@ function populateStatsTab(char) {
       <div class="class-summary-stats">
         <span>${char.maxHP ?? 0} Stamina</span>
         <span>·</span>
-        <span>${recovery} Recovery</span>
+        <span>${recCount} Recoveries (${recValue} each)</span>
         <span>·</span>
-        <span>${meta.resource} (max ${resMax})</span>
+        <span>${meta.resource}</span>
       </div>
       <div class="resource-gain-section">
         <div class="resource-gain-label">
@@ -1617,11 +1617,14 @@ const CAREERS = [
 
 // COMPLICATIONS is defined in wizard-data.js (full d100 table)
 
-// Max recoveries per class (refill on Respite — 24hr rest)
+// Max recoveries per class (refill on Respite — 24hr rest).
+// Verified against Forge Steel exports: Elementalist 8, Tactician 10 (was 8),
+// Censor 12. Beastheart/Conduit/Fury/Null/Shadow/Talent NOT yet verified —
+// confirm against the rulebook.
 const CLASS_RECOVERIES = {
   Beastheart: 12,
-  Conduit: 8, Elementalist: 8, Fury: 10,
-  Null: 8, Shadow: 8, Tactician: 8, Talent: 8,
+  Conduit: 8, Elementalist: 8 /* verified */, Fury: 10,
+  Null: 8, Shadow: 8, Tactician: 10 /* verified */, Talent: 8,
 };
 
 // Standard toggleable conditions
@@ -1692,11 +1695,14 @@ const CLASS_BASE_STAMINA = {
   Null: 21, Shadow: 18, Tactician: 21, Talent: 18,
 };
 
-// Additional Stamina gained per level after level 1
+// Additional Stamina gained per level after level 1.
+// Verified against Forge Steel exports: Elementalist 6, Tactician 9 (was 6),
+// Censor 9. Beastheart/Conduit/Fury/Null/Shadow/Talent are NOT yet verified
+// against a real export — confirm against the rulebook.
 const CLASS_STAMINA_PER_LEVEL = {
   Beastheart: 12,
-  Conduit: 6, Elementalist: 6, Fury: 9,
-  Null: 6, Shadow: 6, Tactician: 6, Talent: 6,
+  Conduit: 6, Elementalist: 6 /* verified */, Fury: 9,
+  Null: 6, Shadow: 6, Tactician: 9 /* verified */, Talent: 6,
 };
 
 // ── Level / echelon helpers ───────────────────────────────────────────────────
@@ -1708,23 +1714,20 @@ function getEchelon(level) {
   return 1;
 }
 
-function getKitStaminaForEchelon(kitName, echelon) {
-  return (KIT_STAMINA[kitName] ?? 0) * echelon;
+// Kit stamina is a FLAT bonus (verified against Forge Steel exports: Battlemind
+// is +3 at every level, Mountain +9 at every level). It does NOT scale with
+// echelon — that was the previous bug.
+function getKitStamina(kitName) {
+  return KIT_STAMINA[kitName] ?? 0;
 }
 
 function computeMaxHP(cls, kit, level, kit2) {
   const base     = CLASS_BASE_STAMINA[cls] ?? 18;
   const perLevel = CLASS_STAMINA_PER_LEVEL[cls] ?? 6;
-  const echelon  = getEchelon(level);
-  const bonus1   = getKitStaminaForEchelon(kit, echelon);
-  const bonus2   = kit2 ? getKitStaminaForEchelon(kit2, echelon) : 0;
-  // Tactician Field Arsenal: use the better kit bonus, not additive.
-  // Non-kit classes (Conduit, Elementalist, Null, Talent): kit is null → bonus1 = 0.
-  // Fury/Stormwight: kit = beast aspect name (e.g. 'Boren') → bonus from KIT_STAMINA.
-  // TODO: Fury Berserker/Reaver aspects add stamina similar to kits,
-  //       but exact values aren't yet verified. Currently p.kit = null for those
-  //       subclasses so they use base stamina only (no aspect bonus).
-  const kitBonus = Math.max(bonus1, bonus2);
+  // Tactician Field Arsenal grants two kits and the hero benefits from BOTH:
+  // their flat stamina fields are SUMMED, not maxed (verified §9.2.3).
+  // Non-kit classes: kit is null → 0. Fury/Stormwight: kit = beast aspect name.
+  const kitBonus = getKitStamina(kit) + (kit2 ? getKitStamina(kit2) : 0);
   return base + (perLevel * (level - 1)) + kitBonus;
 }
 
@@ -1734,14 +1737,22 @@ function getHeroicResourceMax(level) {
   return 10;
 }
 
-// Applies universal characteristic bonuses for the given level.
-// Always operates on baseChars (wizard-set values) to stay idempotent.
-function computeCharacteristicsForLevel(baseChars, level) {
-  const bonus = (level >= 7 ? 2 : 0) + (level >= 4 ? 1 : 0);
-  const cap   = level >= 7 ? 4 : (level >= 4 ? 3 : 2);
+// Characteristic increases at levels 4/7/10, verified against Forge Steel
+// exports: at 4th and 10th level, +1 to each of the class's two PRIMARY
+// characteristics; at 7th level, +1 to ALL five. (Confirmed: L4 Tactician gains
+// Might+Reason only; L7 Censor gains all five → M+2 P+2 on primaries, +1 on the
+// rest.) Always operates on baseChars (the wizard-set level-1 values) so it
+// stays idempotent. Takes the class to know its primaries.
+function computeCharacteristicsForLevel(baseChars, level, cls) {
+  const primaries = (typeof CLASS_PRIMARY_CHARACTERISTICS !== 'undefined'
+    && CLASS_PRIMARY_CHARACTERISTICS[cls]) || [];
   const result = {};
   for (const stat of ['MGT', 'AGL', 'REA', 'INU', 'PRS']) {
-    result[stat] = Math.min(cap, (baseChars[stat] ?? 0) + bonus);
+    let v = baseChars[stat] ?? 0;
+    if (level >= 4  && primaries.includes(stat)) v += 1; // 4th level
+    if (level >= 7)                              v += 1; // 7th level (all)
+    if (level >= 10 && primaries.includes(stat)) v += 1; // 10th level
+    result[stat] = v;
   }
   return result;
 }
