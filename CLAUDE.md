@@ -347,8 +347,26 @@ follow the naming used in commit messages and in-file section comments (e.g. `//
   `firebase functions:secrets:set ANTHROPIC_API_KEY`, then
   `firebase deploy --only functions,storage`
 
-Nothing else is in progress — pick the next slice of work and say which phase/file
-you're extending so this file can be updated to match.
+- **Forge Steel character import (buildspec Part IV)**: `.ds-hero` (JSON) import
+  on the character list. `ds-hero-import.js` is the projection engine — scope
+  filtering before any summation (selected-only subclasses/kits/options, level
+  filter, asymmetric Bonus formula `valuePerLevel×(level−1)` vs
+  `valuePerEchelon×echelon`, multi-kit flat-field summation, absolute Speed
+  override, `replacesTags` resource-gain resolution, negative characteristics,
+  per-ancestry base speed with Memonek=7, resource identity collected across all
+  levels while gains stay level-scoped, class-ability slots enumerated for gaps
+  but resolved in-scope, unknown types carried display-only, `sourceUnknown`
+  for non-core content). `character-import.js` is the file-picker → review →
+  commit UI; re-import keys on `forgeSteelId` and updates in place; only the
+  ~15KB projected record is stored (raw 123KB+ export optionally retained at
+  `users/{uid}/heroImports/` owner-only). Imported abilities render read-only in
+  abilities.js. Tests: `node scripts/test-ds-hero.js` (§13 tests 20–54, all
+  passing) — deployed and verified live.
+
+All four buildspec Parts (I–IV) are complete and deployed. Six `.ds-hero`
+fixtures live in `test/fixtures/`. Nothing is in progress — pick the next slice
+of work and say which phase/file you're extending so this file can be updated to
+match.
 
 ## Known Firebase Gotchas
 - Node engine must be `"22"` in functions/package.json
