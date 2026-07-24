@@ -272,6 +272,14 @@ async function loadAbilityCards(char) {
   const container = document.getElementById('ability-cards-container');
   container.innerHTML = '<p class="loading-text">Loading abilities...</p>';
 
+  // Forge Steel imports carry self-contained ability definitions (§9.6) — they
+  // are not compendium-backed, so render them directly rather than resolving
+  // Forge Steel IDs against /abilities.
+  if (char.imported && Array.isArray(char.importedAbilities)) {
+    renderImportedAbilityCards(char, container);
+    return;
+  }
+
   if (!char.class) {
     renderFilterBar(BASIC_ACTIONS);
     renderAbilityCards(BASIC_ACTIONS, char);
@@ -841,6 +849,50 @@ function initAbilityFilters() {
     updateBucketFilterUI();
     if (AppState.currentCharacter) loadAbilityCards(AppState.currentCharacter);
   });
+}
+
+// ── Imported (Forge Steel) ability cards — self-contained, read-only ─────────
+
+function renderImportedAbilityCards(char, container) {
+  const esc2 = s => String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const abilities = char.importedAbilities || [];
+
+  renderFilterBar(BASIC_ACTIONS); // keep the filter bar shell consistent
+
+  if (!abilities.length) {
+    container.innerHTML = '<p class="empty-text" style="padding:20px">No abilities were selected in this Forge Steel export. Choose them in Forge Steel and re-import.</p>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="imported-banner">Imported from Forge Steel${char.sourceUnknown ? ' — includes non-compendium content' : ''}. Cards are read-only.</div>
+    ${abilities.map(a => {
+      const roll = (a.sections || []).map(s => s.roll).find(Boolean);
+      const text = (a.sections || []).filter(s => s.text).map(s => esc2(s.text)).join('<br>');
+      const costLabel = a.isSignature ? 'SIGNATURE' : (a.cost ? `${a.cost} pt` : 'FREE');
+      return `
+        <div class="ability-card imported-card">
+          <div class="ability-card-header">
+            <span class="ability-card-name">${esc2(a.name)}</span>
+            <span class="ability-cost-badge">${costLabel}</span>
+          </div>
+          <div class="ability-card-meta">
+            ${a.type ? `<span class="ability-type-badge">${esc2(a.type)}</span>` : ''}
+            ${a.keywords?.length ? `<span class="ability-keywords">${a.keywords.map(esc2).join(', ')}</span>` : ''}
+          </div>
+          ${a.distance || a.target ? `<div class="ability-card-line">${esc2(a.distance)}${a.distance && a.target ? ' · ' : ''}${esc2(a.target)}</div>` : ''}
+          ${roll ? `
+            <div class="ability-tiers">
+              <div class="ability-tier">≤11 <span>${esc2(roll.tier1)}</span></div>
+              <div class="ability-tier">12–16 <span>${esc2(roll.tier2)}</span></div>
+              <div class="ability-tier">17+ <span>${esc2(roll.tier3)}</span></div>
+            </div>` : ''}
+          ${text ? `<div class="ability-card-effect">${text}</div>` : ''}
+        </div>
+      `;
+    }).join('')}
+  `;
 }
 
 // Wire filters once DOM is ready
