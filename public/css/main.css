@@ -5783,6 +5783,48 @@ button.condition-chip:hover {
 .campaign-pick-staleness { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
 .campaign-pick-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
 .picker-archived-section { display: flex; flex-direction: column; gap: 10px; }
+/* ── Bestiary browser ─────────────────────────────────────────────────── */
+.monster-detail-modal { max-width: 560px; }
+.mb-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin: 10px 0;
+}
+.mb-stat {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated, #1a1f2b);
+  border-radius: 8px;
+  padding: 6px 8px;
+  text-align: center;
+}
+.mb-stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-dim);
+  font-family: var(--font-condensed);
+}
+.mb-stat-val { font-family: var(--font-mono); font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.mb-enc-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.mb-enc-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-elevated, #1a1f2b);
+  border: 1px solid var(--border-subtle, #232838);
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+.mb-enc-option:hover { border-color: var(--color-available, #1ABC9C); }
+.mb-enc-option .kn-entity-meta { margin-left: 0; }
+
 .campaign-delete-btn { color: var(--color-danger); }
 .campaign-delete-btn:hover { border-color: var(--color-danger); }
 .delete-campaign-modal { max-width: 520px; }

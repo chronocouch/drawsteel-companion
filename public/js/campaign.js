@@ -340,6 +340,86 @@ async function openCampaignFromPicker(campaign) {
   await openCampaignScreen();
 }
 
+// ── Bestiary ─────────────────────────────────────────────────────────────────
+//
+// The bestiary used to be reachable only from inside an open encounter, which
+// made monsters feel like they weren't part of the campaign at all. This opens
+// it directly, and lets a monster be added to any encounter from the statblock.
+
+async function openBestiary() {
+  const campaign = AppState.currentCampaign;
+  if (!campaign) { showToast('Open a campaign first.', 'danger'); return; }
+  await MonsterSearch.showMonsterBrowser((monster) => pickEncounterForMonster(campaign, monster));
+}
+
+// Encounters that can actually take monsters: combat/custom, not yet complete
+function monsterCapableEncounters(campaign) {
+  return (campaign._encounters || []).filter(e =>
+    (e.type === 'combat' || e.type === 'custom' || !e.type) && e.status !== 'complete');
+}
+
+function pickEncounterForMonster(campaign, monster) {
+  const options = monsterCapableEncounters(campaign);
+
+  if (!options.length) {
+    showModal(`
+      <div class="kn-entity-modal">
+        <h2>No encounter to add to</h2>
+        <p class="respite-desc">
+          ${esc(monster.name)} needs somewhere to go. Create a combat encounter first —
+          then it will show up here.
+        </p>
+        <div class="kn-modal-footer">
+          <button class="btn btn-ghost" id="mb-enc-back">← Bestiary</button>
+          <button class="btn btn-primary" id="mb-enc-create">+ New Encounter</button>
+        </div>
+      </div>
+    `);
+    document.getElementById('mb-enc-back')?.addEventListener('click', () => openBestiary());
+    document.getElementById('mb-enc-create')?.addEventListener('click', () => {
+      hideModal();
+      showAddEncounterModal();
+    });
+    return;
+  }
+
+  showModal(`
+    <div class="kn-entity-modal">
+      <h2>Add ${esc(monster.name)} to…</h2>
+      <div class="mb-enc-list">
+        ${options.map(e => `
+          <button class="mb-enc-option" data-enc-id="${e.id}">
+            <span class="kn-entity-name">${esc(e.name || 'Unnamed Encounter')}</span>
+            <span class="kn-entity-meta">
+              ${(e.groups || []).length} group${(e.groups || []).length !== 1 ? 's' : ''}
+              · ${e.budgetSpent || 0}/${e.encounterBudget || 0} EV
+              · ${esc((e.status || 'draft').toUpperCase())}
+            </span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="kn-modal-footer">
+        <button class="btn btn-ghost" id="mb-enc-back">← Bestiary</button>
+      </div>
+    </div>
+  `);
+
+  document.getElementById('mb-enc-back')?.addEventListener('click', () => openBestiary());
+  document.querySelectorAll('.mb-enc-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const enc = options.find(e => e.id === btn.dataset.encId);
+      if (!enc) return;
+      // Reuse the builder's own count/squad prompt so minion-of-four defaults
+      // and EV preview stay identical to adding from inside the editor
+      MonsterSearch.showCountPrompt(monster, (m, count, isSquad) => {
+        hideModal();
+        addMonsterGroup(campaign, enc, m, count, isSquad);
+        showToast(`${count}× ${m.name} added to "${enc.name}".`, 'success');
+      });
+    });
+  });
+}
+
 // ── Permanent deletion (archived campaigns only) ─────────────────────────────
 //
 // Irreversible, so the Director types the campaign name to confirm — the same
@@ -2726,6 +2806,9 @@ document.getElementById('picker-archived-toggle')
     _pickerShowArchived = !_pickerShowArchived;
     await renderCampaignPicker();
   });
+
+document.getElementById('bestiary-btn')
+  ?.addEventListener('click', openBestiary);
 
 // ── J1: Start Encounter from Campaign ────────────────────────────────────────
 

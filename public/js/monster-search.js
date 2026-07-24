@@ -120,7 +120,11 @@ const MonsterSearch = (() => {
 
   // ── Main search modal ──────────────────────────────────────────────────────
 
-  async function showMonsterSearch(onSelect) {
+  // opts.onRowClick overrides what a result tap does. Encounter building keeps
+  // the default (count prompt -> onSelect); the Bestiary browser shows a
+  // read-only statblock instead.
+  async function showMonsterSearch(onSelect, opts = {}) {
+    const rowHandler = opts.onRowClick || ((m) => showCountPrompt(m, onSelect));
     if (!_loaded) {
       showToast('Loading monster data…', 'info');
       await init();
@@ -180,7 +184,7 @@ const MonsterSearch = (() => {
       if (resultsEl) resultsEl.innerHTML = buildResultsHTML(filtered);
       if (countEl)   countEl.textContent = `${Math.min(filtered.length, 80)} of ${_cache.length} monsters`;
 
-      wireResultRows(onSelect);
+      wireResultRows(rowHandler);
     }
 
     // ── Role pills ───────────────────────────────────────────────────────────
@@ -199,17 +203,17 @@ const MonsterSearch = (() => {
     document.getElementById('ms-level-max')?.addEventListener('input', refreshResults);
 
     // ── Wire initial result rows ─────────────────────────────────────────────
-    wireResultRows(onSelect);
+    wireResultRows(rowHandler);
   }
 
   // ── Wire result row clicks → count/squad prompt ───────────────────────────
 
-  function wireResultRows(onSelect) {
+  function wireResultRows(rowHandler) {
     document.querySelectorAll('.ms-result-row').forEach(row => {
       row.addEventListener('click', () => {
         const monster = _cache.find(m => m.id === row.dataset.monsterId);
         if (!monster) return;
-        showCountPrompt(monster, onSelect);
+        rowHandler(monster);
       });
     });
   }
@@ -292,9 +296,108 @@ const MonsterSearch = (() => {
     });
   }
 
+  // ── Bestiary browser — read-only, no encounter required ───────────────────
+  //
+  // The encounter builder was the only way to reach the bestiary, which made
+  // monsters feel unreachable from the campaign. This opens the same search
+  // with statblock detail instead of a count prompt. `onAdd`, when supplied,
+  // adds an "Add to Encounter" action to the detail view.
+
+  async function showMonsterBrowser(onAdd) {
+    return showMonsterSearch(null, {
+      onRowClick: (m) => showMonsterDetail(m, onAdd),
+    });
+  }
+
+  function statRow(label, value) {
+    return `<div class="mb-stat"><span class="mb-stat-label">${label}</span><span class="mb-stat-val">${value}</span></div>`;
+  }
+
+  function showMonsterDetail(monster, onAdd) {
+    const ch  = monster.characteristics || {};
+    const mod = v => (v >= 0 ? `+${v}` : `${v}`);
+    const list = (arr, fmt) => (arr || []).length
+      ? (arr).map(fmt).join(', ') : '<span class="imp-dim">none</span>';
+
+    showModal(`
+      <div class="monster-detail-modal">
+        <h2>${esc(monster.name)}</h2>
+        <div class="ms-count-meta">
+          <span class="ms-level-badge">Lv ${monster.level}</span>
+          <span class="ms-role-tag">${esc(orgRoleLabel(monster))}</span>
+          <span class="ms-ev">${esc(evLabel(monster))}</span>
+          ${monster.faction ? `<span class="ms-role-tag">${esc(monster.faction)}</span>` : ''}
+        </div>
+
+        <div class="mb-stat-grid">
+          ${statRow('Stamina', monster.stamina ?? '—')}
+          ${statRow('Speed', monster.speed ?? '—')}
+          ${statRow('Size', esc(monster.size || '—'))}
+          ${statRow('Stability', monster.stability ?? 0)}
+          ${statRow('Free Strike', monster.freeStrike ?? 0)}
+        </div>
+
+        <div class="mb-stat-grid">
+          ${statRow('Might', mod(ch.MGT ?? 0))}
+          ${statRow('Agility', mod(ch.AGL ?? 0))}
+          ${statRow('Reason', mod(ch.REA ?? 0))}
+          ${statRow('Intuition', mod(ch.INU ?? 0))}
+          ${statRow('Presence', mod(ch.PRS ?? 0))}
+        </div>
+
+        <div class="imp-section">
+          <div class="imp-section-title">Keywords</div>
+          <div class="imp-line">${list(monster.keywords, k => esc(k))}</div>
+        </div>
+
+        ${(monster.immunities || []).length || (monster.weaknesses || []).length ? `
+          <div class="imp-section">
+            <div class="imp-section-title">Immunities &amp; Weaknesses</div>
+            <div class="imp-line">
+              ${list(monster.immunities, i => `${esc(i.type)} ${i.value}`)}
+              ${(monster.weaknesses || []).length ? ` · weak: ${(monster.weaknesses).map(w => `${esc(w.type)} ${w.value}`).join(', ')}` : ''}
+            </div>
+          </div>` : ''}
+
+        ${(monster.movementTypes || []).length ? `
+          <div class="imp-section">
+            <div class="imp-section-title">Movement</div>
+            <div class="imp-line">${list(monster.movementTypes, m => esc(m))}</div>
+          </div>` : ''}
+
+        ${(monster.abilities || []).length ? `
+          <div class="imp-section">
+            <div class="imp-section-title">Abilities (${monster.abilities.length})</div>
+            ${monster.abilities.map(a => `<div class="imp-line">${esc(a)}</div>`).join('')}
+          </div>` : ''}
+
+        ${(monster.maliceFeatures || []).length ? `
+          <div class="imp-section">
+            <div class="imp-section-title">Faction Malice Features</div>
+            ${monster.maliceFeatures.map(m => `<div class="imp-line">${esc(m)}</div>`).join('')}
+          </div>` : ''}
+
+        <div class="kn-modal-footer">
+          <button class="btn btn-ghost" id="mb-back-btn">← Bestiary</button>
+          ${onAdd ? '<button class="btn btn-primary" id="mb-add-btn">Add to Encounter…</button>' : ''}
+        </div>
+      </div>
+    `);
+
+    document.getElementById('mb-back-btn')?.addEventListener('click', () => showMonsterBrowser(onAdd));
+    document.getElementById('mb-add-btn')?.addEventListener('click', () => onAdd(monster));
+  }
+
+  // Minimal escape for the detail view (campaign.js owns the app-wide one)
+  function esc(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+  }
+
   // ── Public API ─────────────────────────────────────────────────────────────
 
-  return { init, showMonsterSearch, getById };
+  return { init, showMonsterSearch, showMonsterBrowser, showMonsterDetail, showCountPrompt, getById };
 
 })();
 
