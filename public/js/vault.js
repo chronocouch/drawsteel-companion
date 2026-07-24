@@ -7,6 +7,12 @@
  * retained verbatim. That is a byte operation, not a parse — state is never
  * derived from it.
  *
+ * Layout — one vault directory, one folder per campaign (named by the
+ * campaign's app-owned slug), so several campaigns never collide:
+ *   <vault>/<Campaign Slug>/Sessions/S07 - 2026-07-18.md
+ *   <vault>/<Campaign Slug>/NPCs|Threads|Locations|Factions/<Entity>.md
+ *   <vault>/<Campaign Slug>/_Dashboard.md
+ *
  * File System Access API is Chromium-only (Chrome/Edge/Opera desktop).
  * Where unsupported, the vault UI is hidden and the same generated markdown
  * is offered as a zip download. Never import.
@@ -207,14 +213,27 @@ const Vault = (() => {
     return `[${(items || []).map(i => JSON.stringify(String(i))).join(', ')}]`;
   }
 
-  function entityPath(entity) {
-    const dir = ENTITY_DIRS[entity.entityType] || 'NPCs';
-    return `Campaign/${dir}/${entity.slug}.md`;
+  // Each campaign writes into its OWN folder, named by the campaign's
+  // app-owned slug, so several campaigns can share one vault without
+  // overwriting each other's session notes and entity files. Falls back to the
+  // original flat 'Campaign' folder if a slug is somehow missing.
+  function campaignFolder(campaignSlug) {
+    const s = campaignSlug == null ? '' : String(campaignSlug).trim();
+    return s || 'Campaign';
   }
 
-  function sessionNotePath(note) {
+  function entityPath(entity, campaignSlug) {
+    const dir = ENTITY_DIRS[entity.entityType] || 'NPCs';
+    return `${campaignFolder(campaignSlug)}/${dir}/${entity.slug}.md`;
+  }
+
+  function sessionNotePath(note, campaignSlug) {
     const n = String(note.sessionNumber ?? 0).padStart(2, '0');
-    return `Campaign/Sessions/S${n} - ${note.dateStr || 'undated'}.md`;
+    return `${campaignFolder(campaignSlug)}/Sessions/S${n} - ${note.dateStr || 'undated'}.md`;
+  }
+
+  function dashboardPath(campaignSlug) {
+    return `${campaignFolder(campaignSlug)}/_Dashboard.md`;
   }
 
   // §7.3 — headings fixed, order fixed, real wikilinks
@@ -414,7 +433,7 @@ const Vault = (() => {
     SENTINEL_START, SENTINEL_END,
     isSupported, attach, detach, status, requestPermission,
     writeNote, writeEntityNoteFile, pendingCount, flushPending,
-    slugify, wikilink, entityPath, sessionNotePath,
+    slugify, wikilink, campaignFolder, entityPath, sessionNotePath, dashboardPath,
     generateSessionNote, generateEntityHead, mergePreservedTail, generateDashboard,
     buildZip, downloadZip, crc32,
   };

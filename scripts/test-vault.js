@@ -102,6 +102,33 @@ check('crc32 known vector', Vault.crc32(new TextEncoder().encode('123456789')) =
 
 // ── Slug stability ───────────────────────────────────────────────────────────
 
+// ── Per-campaign folders — two campaigns must never collide ─────────────────
+
+console.log('\nPer-campaign vault folders');
+const npc = { entityType: 'npc', slug: 'Harim' };
+const thread = { entityType: 'thread', slug: 'Missing Merchants' };
+const s7 = { sessionNumber: 7, dateStr: '2026-07-18' };
+
+check('entity path is namespaced by campaign',
+  Vault.entityPath(npc, 'The Shattered Isles'), 'The Shattered Isles/NPCs/Harim.md');
+check('thread goes to its own subfolder',
+  Vault.entityPath(thread, 'The Shattered Isles'), 'The Shattered Isles/Threads/Missing Merchants.md');
+check('session note is namespaced',
+  Vault.sessionNotePath(s7, 'The Shattered Isles'), 'The Shattered Isles/Sessions/S07 - 2026-07-18.md');
+check('dashboard is namespaced',
+  Vault.dashboardPath('The Shattered Isles'), 'The Shattered Isles/_Dashboard.md');
+
+// The collision this whole change exists to prevent
+check('same entity in two campaigns writes to different files',
+  Vault.entityPath(npc, 'Campaign A') !== Vault.entityPath(npc, 'Campaign B'), true);
+check('same session number in two campaigns writes to different files',
+  Vault.sessionNotePath(s7, 'Campaign A') !== Vault.sessionNotePath(s7, 'Campaign B'), true);
+
+// Missing slug must not produce a path starting with '/' or 'undefined/'
+check('missing slug falls back to the flat Campaign folder',
+  Vault.entityPath(npc, undefined), 'Campaign/NPCs/Harim.md');
+check('blank slug falls back too', Vault.entityPath(npc, '   '), 'Campaign/NPCs/Harim.md');
+
 console.log('\nSlugs');
 check('slug strips filesystem-hostile chars', Vault.slugify('Who: hired/the*bandits?') === 'Who hiredthebandits');
 check('slug keeps display case + spaces', Vault.slugify('Missing Merchants') === 'Missing Merchants');

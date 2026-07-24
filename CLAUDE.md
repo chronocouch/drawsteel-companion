@@ -349,7 +349,9 @@ follow the naming used in commit messages and in-file section comments (e.g. `//
   transcripts in Cloud Storage at `campaigns/{id}/transcripts/{noteId}.txt`
   (storage.rules, 1 MB text cap), write-only Obsidian vault via File System
   Access API (vault.js — sentinel-preserving entity notes, zip fallback for
-  non-Chromium), Knowledge screen in campaign.js/knowledge.js (entity CRUD,
+  non-Chromium; one folder per campaign named by the campaign's `slug`:
+  `<vault>/<Campaign Slug>/Sessions|NPCs|Threads|Locations|Factions/` plus
+  `_Dashboard.md`), Knowledge screen in campaign.js/knowledge.js (entity CRUD,
   ingest → review → commit, staleness dashboard), encounter completionRecord
   bridge. Tests: `node scripts/test-vault.js`. — code complete; **pending
   operator setup**: Firebase Storage "Get Started" in console, then

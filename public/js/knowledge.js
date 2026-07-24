@@ -804,6 +804,11 @@ function renderStalenessTab(body) {
 
 // ── Vault write helpers ──────────────────────────────────────────────────────
 
+// The campaign's own vault folder — keeps multiple campaigns from colliding
+function knCampaignSlug() {
+  return Knowledge.campaign?.slug || Vault.slugify(Knowledge.campaign?.name || '') || 'Campaign';
+}
+
 function knEntityHead(e) {
   const appearances = Knowledge.notes
     .filter(n => (n.entitiesTouched || []).includes(e.id))
@@ -817,7 +822,7 @@ function knNoteSlug(n) {
 }
 
 async function knWriteEntityToVault(e) {
-  return Vault.writeEntityNoteFile(Vault.entityPath(e), knEntityHead(e));
+  return Vault.writeEntityNoteFile(Vault.entityPath(e, knCampaignSlug()), knEntityHead(e));
 }
 
 async function knWriteSessionNoteToVault(n) {
@@ -833,7 +838,8 @@ async function knWriteSessionNoteToVault(n) {
     encountersRun: (n.encountersRun || []).map(name => `ENC - ${Vault.slugify(name)}`),
     sections: n.sections || {},
   });
-  const result = await Vault.writeNote(Vault.sessionNotePath({ sessionNumber: n.sessionNumber, dateStr: n.dateStr }), md);
+  const result = await Vault.writeNote(
+    Vault.sessionNotePath({ sessionNumber: n.sessionNumber, dateStr: n.dateStr }, knCampaignSlug()), md);
   if (result.written && !n.writtenToVault) {
     await db.collection('campaigns').doc(Knowledge.campaign.id)
       .collection('sessionNotes').doc(n.id).update({ writtenToVault: true });
@@ -853,7 +859,7 @@ async function knWriteDashboardToVault() {
     clockRunning: st.clockRunning,
     recentNotes: Knowledge.notes.slice(0, 5).map(n => ({ slug: knNoteSlug(n) })),
   });
-  return Vault.writeNote('Campaign/_Dashboard.md', md);
+  return Vault.writeNote(Vault.dashboardPath(knCampaignSlug()), md);
 }
 
 // Full-vault snapshot for the zip fallback (Firefox/Safari) — same markdown,
@@ -861,13 +867,13 @@ async function knWriteDashboardToVault() {
 function knGenerateAllMarkdown() {
   const files = [];
   for (const e of Knowledge.entities) {
-    files.push({ path: Vault.entityPath(e), content: Vault.mergePreservedTail(knEntityHead(e), null) });
+    files.push({ path: Vault.entityPath(e, knCampaignSlug()), content: Vault.mergePreservedTail(knEntityHead(e), null) });
   }
   for (const n of Knowledge.notes) {
     const slugsFor = (type, ids) => Knowledge.entities
       .filter(x => x.entityType === type && (ids || []).includes(x.id)).map(x => x.slug);
     files.push({
-      path: Vault.sessionNotePath({ sessionNumber: n.sessionNumber, dateStr: n.dateStr }),
+      path: Vault.sessionNotePath({ sessionNumber: n.sessionNumber, dateStr: n.dateStr }, knCampaignSlug()),
       content: Vault.generateSessionNote({
         sessionNumber: n.sessionNumber, dateStr: n.dateStr,
         partyLevel: n.partyLevel, victories: n.victories,
@@ -882,7 +888,7 @@ function knGenerateAllMarkdown() {
   }
   const st = knStaleness();
   files.push({
-    path: 'Campaign/_Dashboard.md',
+    path: Vault.dashboardPath(knCampaignSlug()),
     content: Vault.generateDashboard({
       campaignName: Knowledge.campaign?.name || 'Campaign',
       currentSession: st.current, threshold: st.threshold,
