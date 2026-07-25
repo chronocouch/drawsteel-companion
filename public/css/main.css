@@ -5651,6 +5651,32 @@ button.condition-chip:hover {
   color: var(--text-secondary);
 }
 .kn-vault-pending { color: var(--color-gold); }
+.kn-vault-help {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--text-dim);
+  background: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.kn-vault-help:hover { color: var(--text-primary); border-color: var(--text-primary); }
+.vault-help-modal { max-width: 560px; }
+.vault-help-modal p { line-height: 1.55; margin: 8px 0; color: var(--text-secondary); }
+.vault-help-steps { margin: 10px 0 10px 20px; line-height: 1.6; color: var(--text-secondary); }
+.vault-help-steps li { margin-bottom: 8px; }
+.vault-help-modal code {
+  background: var(--bg-elevated, #1a1f2b);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.vault-help-modal a { color: var(--color-available, #1ABC9C); }
 .kn-toolbar { display: flex; align-items: center; gap: 8px; }
 .kn-entity-group {
   background: var(--bg-card, #161a24);

@@ -352,6 +352,46 @@ async function openBestiary() {
   await MonsterSearch.showMonsterBrowser((monster) => pickEncounterForMonster(campaign, monster));
 }
 
+// From inside the encounter editor: browse the bestiary with full statblocks,
+// and adding a monster targets THIS encounter directly (no encounter picker).
+// The editor overlay is torn down while the bestiary is open and rebuilt after.
+function openBestiaryForEncounter(campaign, enc) {
+  document.getElementById('encounter-editor-overlay')?.remove();
+
+  const reopenEditor = () => {
+    document.getElementById('encounter-editor-overlay')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'encounter-editor-overlay';
+    overlay.className = 'encounter-editor-overlay';
+    document.getElementById('campaign-screen')?.appendChild(overlay);
+    renderEncounterEditor(campaign, enc, overlay);
+  };
+
+  MonsterSearch.showMonsterBrowser((monster) => {
+    // 'Add to Encounter…' on a statblock → count/squad prompt for this encounter
+    MonsterSearch.showCountPrompt(monster, (m, count, isSquad) => {
+      hideModal();
+      reopenEditor();
+      addMonsterGroup(campaign, enc, m, count, isSquad);
+    });
+  });
+
+  // The bestiary can be dismissed without adding anything (✕ or backdrop tap).
+  // The modal is a persistent element that toggles a `hidden` class, so watch
+  // that class: when it goes hidden and the editor isn't already back, rebuild
+  // it so the Director isn't stranded on the empty campaign screen. (The add
+  // path reopens the editor itself before this fires, so it's a no-op there.)
+  const overlay = document.getElementById('modal-overlay');
+  if (overlay) {
+    const obs = new MutationObserver(() => {
+      if (!overlay.classList.contains('hidden')) return;
+      obs.disconnect();
+      if (!document.getElementById('encounter-editor-overlay')) reopenEditor();
+    });
+    obs.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+  }
+}
+
 // Encounters that can actually take monsters: combat/custom, not yet complete
 function monsterCapableEncounters(campaign) {
   return (campaign._encounters || []).filter(e =>
@@ -2308,7 +2348,7 @@ function renderEncounterEditor(campaign, enc, overlay) {
             ${buildRosterHTML(enc, heroes)}
           </div>
           <div class="enc-roster-actions">
-            <button class="btn btn-ghost btn-small" id="enc-add-monster-btn">+ Add Monster</button>
+            <button class="btn btn-primary btn-small" id="enc-add-enemies-btn">🐉 Add Enemies</button>
             <button class="btn btn-ghost btn-small" id="enc-add-npc-btn">+ Custom NPC</button>
           </div>
           <div id="enc-custom-npc-form" class="enc-custom-npc-form hidden">
@@ -2637,17 +2677,8 @@ function wireEncounterEditor(campaign, enc, overlay) {
     queueSave(campaign, enc);
   });
 
-  document.getElementById('enc-add-monster-btn')?.addEventListener('click', () => {
-    MonsterSearch.showMonsterSearch((monster, count, isSquad) => {
-      // Monster search replaces the modal; re-show editor overlay after selection
-      document.getElementById('encounter-editor-overlay')?.remove();
-      const newOverlay = document.createElement('div');
-      newOverlay.id = 'encounter-editor-overlay';
-      newOverlay.className = 'encounter-editor-overlay';
-      document.getElementById('campaign-screen')?.appendChild(newOverlay);
-      renderEncounterEditor(campaign, enc, newOverlay);
-      addMonsterGroup(campaign, enc, monster, count, isSquad);
-    });
+  document.getElementById('enc-add-enemies-btn')?.addEventListener('click', () => {
+    openBestiaryForEncounter(campaign, enc);
   });
 
   document.getElementById('enc-add-npc-btn')?.addEventListener('click', () => {

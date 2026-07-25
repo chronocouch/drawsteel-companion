@@ -125,12 +125,13 @@ async function renderKnowledgeScreen() {
 function knVaultStatusHTML(s) {
   const pending = Vault.pendingCount();
   const pendingHTML = pending ? `<span class="kn-vault-pending">${pending} write${pending !== 1 ? 's' : ''} queued</span>` : '';
+  const help = `<button class="kn-vault-help" id="kn-vault-help" title="What is the vault?">?</button>`;
   if (s.state === 'unsupported') {
-    return `<span class="kn-vault-label">Vault: not supported in this browser</span>
+    return `<span class="kn-vault-label">Vault: not supported in this browser</span> ${help}
       <button class="btn btn-ghost btn-small" id="kn-zip-btn">⬇ Download Zip</button>`;
   }
   if (s.state === 'detached') {
-    return `<span class="kn-vault-label">Vault: not attached</span> ${pendingHTML}
+    return `<span class="kn-vault-label">Vault: not attached</span> ${pendingHTML} ${help}
       <button class="btn btn-ghost btn-small" id="kn-attach-btn">📁 Attach Vault</button>
       <button class="btn btn-ghost btn-small" id="kn-zip-btn">⬇ Zip</button>`;
   }
@@ -138,9 +139,68 @@ function knVaultStatusHTML(s) {
     return `<span class="kn-vault-label">Vault: ${esc(s.name)} — permission needed</span> ${pendingHTML}
       <button class="btn btn-primary btn-small" id="kn-reattach-btn">Re-attach</button>`;
   }
-  return `<span class="kn-vault-label">Vault: ${esc(s.name)} ✓</span> ${pendingHTML}
+  return `<span class="kn-vault-label">Vault: ${esc(s.name)} ✓</span> ${pendingHTML} ${help}
     <button class="btn btn-ghost btn-small" id="kn-detach-btn">Detach</button>
     <button class="btn btn-ghost btn-small" id="kn-zip-btn">⬇ Zip</button>`;
+}
+
+// One-time setup guide, tailored to what this browser can actually do.
+function showVaultHelpModal() {
+  const supported = Vault.isSupported();
+  const chromiumSteps = `
+    <ol class="vault-help-steps">
+      <li><strong>Install Obsidian</strong> (free) if you don't have it —
+        <a href="https://obsidian.md" target="_blank" rel="noopener">obsidian.md</a>.
+        It's a local Markdown notes app; your campaign notes become normal
+        <code>.md</code> files you fully own.</li>
+      <li><strong>Create a vault</strong> in Obsidian: open it, choose
+        <em>Create new vault</em>, pick a folder anywhere on your computer
+        (e.g. <code>Documents/Draw Steel</code>), and name it.</li>
+      <li><strong>Attach it here:</strong> tap <em>📁 Attach Vault</em> above and
+        select that same folder. Your browser asks once for read/write
+        permission — that grant is remembered.</li>
+      <li>From then on, every session note and NPC you commit is written into
+        <code>&lt;your vault&gt;/${esc(Knowledge.campaign?.slug || 'This Campaign')}/</code>
+        as Markdown, with real <code>[[wikilinks]]</code> so Obsidian's graph and
+        backlinks work.</li>
+    </ol>
+    <p class="imp-dim">
+      The app only ever <strong>writes</strong> to the vault — it never reads your
+      notes back. Anything you hand-write under the
+      <code>Director's Notes</code> heading in a file is preserved untouched when
+      the app regenerates that file. Vault attachment needs a Chromium browser
+      (Chrome, Edge, or Opera) on desktop.
+    </p>`;
+
+  const zipFallback = `
+    <p>Your current browser can't attach a folder directly (that needs Chrome,
+      Edge, or Opera on desktop). You can still use the vault:</p>
+    <ol class="vault-help-steps">
+      <li><strong>Install Obsidian</strong> (free) —
+        <a href="https://obsidian.md" target="_blank" rel="noopener">obsidian.md</a> —
+        and create a vault folder.</li>
+      <li>Tap <em>⬇ Download Zip</em> above to export this campaign's notes as
+        Markdown, then unzip them into your vault folder.</li>
+      <li>Re-download and re-extract whenever you want to refresh — or switch to
+        a Chromium browser for automatic writes.</li>
+    </ol>`;
+
+  showModal(`
+    <div class="vault-help-modal">
+      <h2>The Obsidian Vault</h2>
+      <p>
+        The vault is <strong>optional</strong>. Everything the app tracks lives in
+        the cloud regardless — the vault just mirrors your session notes, NPCs,
+        threads, locations, and a dashboard into plain Markdown files you keep on
+        your own computer, readable in <a href="https://obsidian.md" target="_blank" rel="noopener">Obsidian</a>.
+      </p>
+      ${supported ? chromiumSteps : zipFallback}
+      <div class="kn-modal-footer">
+        <button class="btn btn-primary" id="vault-help-close">Got it</button>
+      </div>
+    </div>
+  `);
+  document.getElementById('vault-help-close')?.addEventListener('click', hideModal);
 }
 
 function wireVaultStatusButtons() {
@@ -167,6 +227,7 @@ function wireVaultStatusButtons() {
     const files = knGenerateAllMarkdown();
     Vault.downloadZip(files, `${Vault.slugify(Knowledge.campaign?.name || 'campaign')}-vault.zip`);
   });
+  document.getElementById('kn-vault-help')?.addEventListener('click', showVaultHelpModal);
 }
 
 function renderKnowledgeTab() {
