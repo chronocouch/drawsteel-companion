@@ -372,10 +372,17 @@
   border-radius: var(--radius-sm);
   box-shadow: var(--elevation-card);
   overflow: hidden;
+  cursor: pointer;          /* the whole card is the hit target */
   transition: box-shadow var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
               opacity var(--duration-base) var(--ease-standard);
 }
-.ability-card:hover { box-shadow: var(--elevation-raised); }
+.ability-card:hover {
+  box-shadow: var(--elevation-raised);
+  border-color: var(--line-strong);
+}
+/* Controls inside the card keep their own affordance */
+.ability-card button { cursor: pointer; }
 
 /* MARKUP CONTRACT — matches abilities.js buildCard() exactly:
      .ability-card > .card-header > .card-header-left  > .card-name

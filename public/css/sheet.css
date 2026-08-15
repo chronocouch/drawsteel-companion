@@ -59,8 +59,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-2xs) var(--space-lg);
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
   background: var(--surface-bar);
   border-bottom: 1px solid var(--line-soft);
   color: var(--ink-muted);
@@ -89,15 +89,15 @@
 .ability-filter-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-sm) 0;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
 }
 
 .ability-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--space-sm);
-  padding: var(--space-sm);
+  gap: var(--space-md);
+  padding: var(--space-lg);
   align-items: start;
 }
 
