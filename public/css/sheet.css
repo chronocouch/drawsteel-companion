@@ -1,0 +1,281 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — CHARACTER SHEET  (migrated from main.css)
+   The playing surface. Class names unchanged from the original stylesheet,
+   so no JS was touched.
+
+   components.css holds the shared sheet primitives (header, action economy,
+   recovery row, ability card, badges, stats grid, tabs). THIS file holds
+   what is specific to the live app and had no equivalent there: power-roll
+   banner, condition chips, HP threshold states, kit modifiers, hero tokens,
+   and the app's own grid/section classes.
+
+   Uses NO legacy shim aliases — this section is off the shim.
+
+   ACCENT: --class-accent is the character's identity colour and is allowed
+   here, on the sheet only, as a mark — the card bracket, the matched tier,
+   the power-roll dice, the tab underline. It is never a button, never a
+   background fill, never the meaning of "selected".
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ SCROLL SURFACE ═══════════════════════════════════════════════════════ */
+.sheet-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--space-4xl);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+
+/* ═══ HP THRESHOLD STATES ══════════════════════════════════════════════════
+   Winded / dying / dead. On paper these cannot rely on a glow, so the
+   numeral changes colour and the bar changes fill. */
+.hp-display { display: flex; flex-direction: column; align-items: center; gap: var(--space-3xs); min-width: 120px; }
+
+.hp-display.hp-warning .hp-numbers #hp-current { color: var(--state-warning-ink); }
+.hp-display.hp-warning .hp-bar-fill            { background: var(--stamina-winded); }
+
+.hp-display.hp-danger .hp-numbers #hp-current {
+  color: var(--state-danger);
+  animation: hp-pulse 1.5s var(--ease-standard) infinite;
+}
+.hp-display.hp-danger .hp-bar-fill { background: var(--stamina-dying); }
+
+.hp-display.hp-dead .hp-numbers #hp-current {
+  color: var(--state-danger);
+  animation: hp-pulse 1s var(--ease-standard) infinite;
+}
+.hp-display.hp-dead .hp-numbers #hp-max { color: var(--ink-faint); }
+.hp-display.hp-dead .hp-bar-fill { background: var(--stamina-dying); width: 0% !important; }
+
+@keyframes hp-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .45 } }
+
+
+/* ═══ POWER ROLL BANNER ════════════════════════════════════════════════════
+   The tier legend under the tab bar. The three tier chips were hand-rolled
+   rgba fills; they are the glyph-font pills' colour scheme now. */
+.power-roll-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-lg);
+  background: var(--surface-bar);
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-muted);
+}
+.prb-label {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.prb-dice { font: var(--type-numeric-sm); color: var(--class-accent); }
+.prb-sep  { color: var(--line-strong); }
+.prb-tier {
+  padding: var(--space-3xs) var(--space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  font: var(--type-numeric-sm);
+  font-size: var(--size-2xs);
+}
+.prb-t1 { background: var(--surface-sunken);     color: var(--tier-1); border-color: var(--line-soft); }
+.prb-t2 { background: var(--econ-maneuver-bg);   color: var(--tier-2); border-color: var(--econ-maneuver); }
+.prb-t3 { background: var(--econ-action-bg);     color: var(--tier-3); border-color: var(--econ-action); }
+
+
+/* ═══ ABILITY LIST ═════════════════════════════════════════════════════════ */
+.ability-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-sm) 0;
+}
+
+.ability-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  align-items: start;
+}
+
+.ability-section-header {
+  grid-column: 1 / -1;
+  margin-top: var(--space-2xs);
+  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+  border-top: 1px solid var(--line-soft);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-faint);
+}
+.ability-section-header:first-child { border-top: none; margin-top: 0; }
+.ability-section-anytime { color: var(--econ-triggered-ink); }
+.ability-section-spent   { color: var(--ink-faint); opacity: .6; }
+
+/* Expanded card — the identity mark strengthens, the card does not glow */
+.ability-card.expanded { border-color: var(--class-accent); }
+
+.card-distance { font: var(--type-prose-sm); color: var(--ink-muted); }
+
+/* The tier the roll actually hit */
+.tier2 {
+  border-color: var(--class-accent);
+  background: var(--accent-wash);
+}
+.tier2 .tier-label { color: var(--class-accent); }
+
+
+/* ═══ BADGES — app-specific variants ═══════════════════════════════════════ */
+.badge-free-triggered { background: var(--econ-triggered-bg); color: var(--econ-triggered-ink); border: 1px solid var(--econ-triggered); }
+.badge-encounter      { background: var(--state-warning-bg);  color: var(--state-warning-ink);  border: 1px solid var(--state-warning); }
+.badge-turn           { background: var(--econ-maneuver-bg);  color: var(--econ-maneuver-ink);  border: 1px solid var(--econ-maneuver); }
+.badge-used           { opacity: .5; }
+/* Dashed = granted by something else (ancestry, kit) rather than chosen */
+.badge-ancestry       { background: var(--accent-wash);       color: var(--accent-ink);         border: 1px dashed var(--line-accent); }
+.badge-kit            { background: var(--surface-sunken);    color: var(--ink-muted);          border: 1px dashed var(--line-accent); }
+
+
+/* ═══ RESOURCE PIPS ════════════════════════════════════════════════════════ */
+.pip-filled { background: var(--class-accent); }
+.pip-empty  { background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong); }
+.ability-card.unaffordable .pip-filled { background: var(--state-danger); }
+.ability-card.unaffordable .pip-empty  { background: var(--state-danger-bg); }
+
+
+/* ═══ RECOVERY ROW EXTRAS ══════════════════════════════════════════════════ */
+.recovery-actions { display: flex; align-items: center; gap: var(--space-xs); margin-left: auto; }
+
+.recovery-pip {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  transition: background var(--duration-base) var(--ease-standard),
+              opacity var(--duration-base) var(--ease-standard);
+}
+.recovery-pip.pip-full  { background: var(--recovery-pip); }
+.recovery-pip.pip-empty { background: var(--recovery-pip-off); box-shadow: none; opacity: 1; }
+
+.btn-catch-breath {
+  padding: var(--space-xs) var(--space-md);
+  white-space: nowrap;
+  cursor: pointer;
+  background: var(--surface-page);
+  border: 1px solid var(--state-available);
+  border-radius: var(--radius-xs);
+  color: var(--state-available-ink);
+  font: var(--type-ui-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+}
+.btn-catch-breath:hover:not(:disabled) { background: var(--state-available-bg); }
+.btn-catch-breath:disabled { color: var(--ink-faint); border-color: var(--line-soft); cursor: not-allowed; }
+.cyb-preview { font: var(--type-numeric-sm); margin-left: var(--space-3xs); opacity: .75; }
+
+
+/* ═══ CONDITIONS ═══════════════════════════════════════════════════════════ */
+.stats-section-title {
+  padding: var(--space-md) 0 var(--space-xs);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.conditions-hint {
+  margin-left: var(--space-sm);
+  font: var(--type-flavor);
+  font-size: var(--size-3xs);
+  text-transform: lowercase;
+  color: var(--ink-faint);
+}
+.conditions-grid { display: flex; flex-wrap: wrap; gap: var(--space-xs); padding: var(--space-sm) var(--space-lg); }
+.auto-conditions { display: flex; gap: var(--space-xs); padding: 0 var(--space-lg) var(--space-sm); }
+
+.condition-chip {
+  padding: var(--space-2xs) var(--space-md);
+  cursor: pointer;
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-pill);
+  color: var(--ink-muted);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              background var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+}
+button.condition-chip:hover { border-color: var(--state-danger); color: var(--ink-body); }
+.condition-chip.active {
+  background: var(--state-danger-bg);
+  border-color: var(--state-danger);
+  color: var(--state-danger-ink);
+}
+.condition-chip.active[data-condition="Bleeding"] { animation: condition-bleed 1.8s var(--ease-standard) infinite; }
+
+/* Derived, not toggleable — italic and non-interactive */
+.auto-chip { cursor: default; font-style: italic; }
+.auto-chip:hover { border-color: var(--line-soft); color: var(--ink-muted); }
+
+.winded-active {
+  background: var(--state-warning-bg);
+  border-color: var(--state-warning);
+  color: var(--state-warning-ink);
+}
+.dying-active {
+  background: var(--state-danger-bg);
+  border-color: var(--state-danger);
+  color: var(--state-danger-ink);
+  animation: condition-bleed 1.2s var(--ease-standard) infinite;
+}
+
+@keyframes condition-bleed { 0%, 100% { opacity: 1 } 50% { opacity: .6 } }
+
+
+/* ═══ KIT MODIFIERS ════════════════════════════════════════════════════════ */
+.kit-modifiers { margin-bottom: var(--space-sm); }
+.kit-mod { margin-bottom: var(--space-2xs); font: var(--type-prose-sm); color: var(--ink-body); }
+.kit-mod strong { color: var(--accent-ink); }
+.kit-mod-active strong { color: var(--class-accent); }
+.kit-mod-none { color: var(--ink-faint) !important; font-style: italic; }
+
+
+/* ═══ HERO TOKENS BAR ══════════════════════════════════════════════════════ */
+.hero-tokens-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-lg);
+  background: var(--surface-bar);
+  border-bottom: 1px solid var(--line-soft);
+}
+.hero-tokens-label {
+  flex: 1;
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--state-available-ink);
+}
+
+
+/* ═══ RESPONSIVE ═══════════════════════════════════════════════════════════ */
+/* Moved here from main.css's "Mobile touch improvements" block so every
+   sheet rule lives in one file. */
+@media (max-width: 480px) {
+  .ability-cards { grid-template-columns: 1fr; }
+  .card-header   { padding-left: var(--space-xl); min-height: 50px; }
+  .card-tiers    { grid-template-columns: 1fr; }
+  .sheet-name    { font-size: var(--size-lg); }
+  .hp-numbers    { font-size: var(--size-lg); }
+  .hp-display    { min-width: 90px; }
+
+  /* Recovery row: labels and pips drop, the counter and action stay */
+  .recovery-row      { padding: var(--space-xs) var(--space-sm); gap: var(--space-sm); }
+  .btn-catch-breath  { padding: var(--space-xs) var(--space-sm); font-size: var(--size-2xs); }
+  .recovery-label    { display: none; }
+  .recovery-pips     { display: none; }
+}

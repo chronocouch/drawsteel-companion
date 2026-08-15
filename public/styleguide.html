@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/components-app.css">
 <link rel="stylesheet" href="css/wizard.css">
+<link rel="stylesheet" href="css/sheet.css">
 <style>
 /* Styleguide chrome only — not part of the system. */
 .sg { max-width: var(--content-max); margin: 0 auto; padding: var(--space-4xl) var(--space-xl); }
@@ -384,14 +385,8 @@ table.sg-table { width: 100%; border-collapse: collapse; }
         </div>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat"><span class="stat-glyph">M</span><span class="stat-value">+2</span><span class="stat-key">Might</span></div>
-        <div class="stat"><span class="stat-glyph">A</span><span class="stat-value">+1</span><span class="stat-key">Agility</span></div>
-        <div class="stat"><span class="stat-glyph">R</span><span class="stat-value">&minus;1</span><span class="stat-key">Reason</span></div>
-        <div class="stat"><span class="stat-glyph">I</span><span class="stat-value">+3</span><span class="stat-key">Intuition</span></div>
-        <div class="stat"><span class="stat-glyph">P</span><span class="stat-value">+0</span><span class="stat-key">Presence</span></div>
-      </div>
-    </div>
+      <p class="sg-note" style="padding:0 var(--space-lg) var(--space-lg);margin:0">The characteristics row is <code>.characteristics-grid</code> / <code>.char-stat-block</code> in the app and migrates with the Stats tab. It is deliberately not shown here — an earlier draft demoed a five-column <code>.stats-grid</code>, which is a component that exists under that name nowhere in the codebase.</p>
+        </div>
   </section>
 
   <!-- ═══════════════ SURFACES ═══════════════ -->

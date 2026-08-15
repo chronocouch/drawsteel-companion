@@ -130,70 +130,10 @@ html, body {
   margin-top: 16px;
 }
 
-/* ── Buttons ────────────────────────────────────────────────────────────── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-condensed);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s, transform 0.1s;
-  white-space: nowrap;
-}
-
-.btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-.btn-primary {
-  background: var(--class-accent);
-  color: var(--text-inverse);
-}
-.btn-primary:hover { filter: brightness(1.1); }
-
-.btn-secondary {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  border: 1px solid var(--border-visible);
-}
-.btn-secondary:hover { background: var(--bg-card-hover); }
-
-.btn-ghost {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-subtle);
-}
-.btn-ghost:hover { color: var(--text-primary); border-color: var(--border-visible); }
-
-.btn-danger {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
-  border: 1px solid var(--color-danger);
-}
-
-.btn-large { padding: 14px 28px; font-size: 16px; }
-.btn-small { padding: 8px 14px; font-size: 13px; min-height: 34px; }
-.btn-icon  { padding: 8px; font-size: 18px; min-width: 40px; min-height: 40px; }
-.btn-sm    { padding: 6px 10px; font-size: 11px; min-height: 28px; }
-.btn-fab   { border-radius: 24px; padding: 12px 24px; }
-
-.btn-end-turn {
-  background: var(--color-available);
-  color: var(--text-inverse);
-  font-size: 16px;
-  padding: 14px;
-  width: 100%;
-  border-radius: 0;
-  letter-spacing: 0.1em;
-}
-.btn-end-turn:hover { filter: brightness(1.1); }
+/* ── Buttons ──────────────────────────────────────────────────────────────
+   MIGRATED to css/components.css. .btn-primary is --accent now, not
+   --class-accent. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
 
 /* ── App header (character select) ─────────────────────────────────────── */
 .app-header {
@@ -295,611 +235,57 @@ html, body {
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
-/* ── Character sheet header ─────────────────────────────────────────────── */
-.sheet-header {
-  display: flex;
-  align-items: center;
-  height: var(--header-height);
-  padding: 0 8px 0 4px;
-  background: var(--bg-surface);
-  border-bottom: 2px solid var(--class-accent);
-  flex-shrink: 0;
-  gap: 8px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.sheet-header-left {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
-}
-
-.sheet-identity {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.sheet-name {
-  font-family: var(--font-display);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sheet-class {
-  font-size: 12px;
-  color: var(--class-accent);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.sheet-header-center {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.hp-display {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  min-width: 120px;
-}
-
-.hp-numbers {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-  font-family: var(--font-mono);
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.hp-sep { color: var(--text-dim); font-size: 16px; }
-.hp-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; margin-left: 4px; font-family: var(--font-condensed); font-weight: 700; }
-
-/* Sheet header HP bar */
-.sheet-header .hp-bar-track {
-  width: 100%;
-  height: 4px;
-  background: var(--border-subtle);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.sheet-header .hp-bar-fill {
-  height: 100%;
-  background: var(--color-available);
-  border-radius: 2px;
-  transition: width 0.4s ease, background 0.3s ease;
-  width: 100%;
-}
-
-/* HP states affect the bar fill color and number color */
-.hp-display.hp-warning .hp-numbers #hp-current { color: var(--color-warning); }
-.hp-display.hp-warning .sheet-header .hp-bar-fill { background: var(--color-warning); }
-.hp-display.hp-danger  .hp-numbers #hp-current { color: var(--color-danger); animation: hp-pulse 1.5s ease-in-out infinite; }
-.hp-display.hp-danger  .sheet-header .hp-bar-fill { background: var(--color-danger); }
-.hp-display.hp-dead    .hp-numbers #hp-current { color: var(--color-danger); animation: hp-pulse 1s ease-in-out infinite; }
-.hp-display.hp-dead    .hp-numbers #hp-max     { color: var(--text-dim); }
-.hp-display.hp-dead    .sheet-header .hp-bar-fill { background: var(--color-danger); width: 0% !important; }
-
-.sheet-header-right {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.resource-display {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-visible);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.resource-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 20px;
-  width: 32px;
-  height: 40px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.1s, color 0.1s;
-}
-.resource-btn:hover { background: var(--bg-card-hover); color: var(--text-primary); }
-.resource-btn:active { background: var(--border-visible); }
-
-.resource-count {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 8px;
-  min-width: 44px;
-}
-
-#resource-current {
-  font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--class-accent);
-}
-
-.resource-name {
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-
-/* ── Session indicator ──────────────────────────────────────────────────── */
-.session-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: var(--session-bar);
-  padding: 0 16px;
-  background: rgba(26, 188, 156, 0.08);
-  border-bottom: 1px solid rgba(26, 188, 156, 0.2);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  color: var(--color-available);
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-
-.session-pulse {
-  width: 8px;
-  height: 8px;
-  background: var(--color-available);
-  border-radius: 50%;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(26,188,156,0.4); }
-  50%       { opacity: 0.7; box-shadow: 0 0 0 6px rgba(26,188,156,0); }
-}
-
-/* ── Action economy bar ─────────────────────────────────────────────────── */
-.action-economy {
-  display: flex;
-  align-items: center;
-  height: var(--economy-bar);
-  padding: 0 8px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
-  gap: 4px;
-  overflow-x: auto;
-  flex-shrink: 0;
-}
-
-.bucket {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-available);
-  background: var(--color-available-bg);
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.bucket.spent {
-  border-color: var(--border-subtle);
-  background: var(--bg-surface);
-  opacity: 0.4;
-}
-
-.bucket-icon { font-size: 14px; color: var(--color-available); }
-.bucket.spent .bucket-icon { color: var(--text-dim); }
-.bucket-label { font-size: 9px; color: var(--text-secondary); letter-spacing: 0.06em; text-transform: uppercase; }
-
-/* ── Sheet tabs ─────────────────────────────────────────────────────────── */
-.sheet-tabs {
-  display: flex;
-  height: 48px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-}
-
-.tab-btn {
-  flex: 1;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-condensed);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.tab-btn:hover { color: var(--text-primary); }
-.tab-btn.active {
-  color: var(--class-accent);
-  border-bottom-color: var(--class-accent);
-}
-
-/* ── Sheet content ──────────────────────────────────────────────────────── */
-.sheet-content {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 80px;
-}
-
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
-
-/* ── Ability filter bar ─────────────────────────────────────────────────── */
-.ability-filter-bar {
-  display: flex;
-  gap: 6px;
-  padding: 8px 8px 0;
-  flex-wrap: wrap;
-}
-
-.filter-pill {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border-visible);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-  white-space: nowrap;
-}
-
-.filter-pill:hover {
-  background: var(--bg-card-hover);
-  color: var(--text-primary);
-}
-
-.filter-pill.active {
-  background: var(--color-available);
-  border-color: var(--color-available);
-  color: var(--text-inverse);
-}
-
-/* ── Power Roll banner ──────────────────────────────────────────────────── */
-.power-roll-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 16px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-.prb-label {
-  font-family: var(--font-condensed);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-
-.prb-dice {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--class-accent);
-}
-
-.prb-sep { color: var(--border-visible); }
-
-.prb-tier {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 3px;
-}
-
-.prb-t1 { background: rgba(85,92,115,0.25); color: var(--text-secondary); }
-.prb-t2 { background: rgba(52,152,219,0.18); color: #5dade2; }
-.prb-t3 { background: rgba(26,188,156,0.18); color: var(--color-available); }
-
-/* ── Ability cards ──────────────────────────────────────────────────────── */
-.ability-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 6px;
-  padding: 8px;
-  align-items: start; /* cards don't stretch to equal row height */
-}
-
-.ability-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--class-accent);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  transition: border-color 0.15s, opacity 0.2s;
-}
-
-.ability-card.unaffordable {
-  opacity: 0.65;
-  border-left-color: var(--border-visible);
-}
-
-.ability-card.spent {
-  opacity: 0.35;
-  border-left-color: var(--border-subtle);
-}
-
-.ability-card.expanded {
-  border-color: var(--class-accent);
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  cursor: pointer;
-  gap: 8px;
-}
-
-.card-header:hover { background: var(--bg-card-hover); }
-
-.card-header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  flex: 1;
-}
-
-.card-name {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  line-height: 1.2;
-}
-
-.card-distance {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.card-header-right {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
-  flex-shrink: 0;
-  max-width: 50%;
-}
-
-.card-body {
-  padding: 4px 12px 10px;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.card-summary {
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-.card-keywords {
-  margin-top: 4px;
-  font-size: 10px;
-  color: var(--text-dim);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* ── Card expanded state ────────────────────────────────────────────────── */
-.card-expanded {
-  padding: 12px;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-}
-
-.card-tiers {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.tier {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 8px;
-}
-
-.tier2 {
-  border-color: var(--class-accent);
-  background: rgba(var(--class-accent-rgb, 41, 128, 185), 0.08);
-}
-
-.tier-label {
-  display: block;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 4px;
-}
-
-.tier2 .tier-label { color: var(--class-accent); }
-
-.tier-text {
-  font-family: var(--font-serif);
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.7;
-}
-
-/* ── Card effect / spend sections ───────────────────────────────────────── */
-.card-effect {
-  margin-bottom: 10px;
-  padding: 8px 10px;
-  background: var(--bg-elevated);
-  border-left: 2px solid var(--border-visible);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-}
-
-.card-spend {
-  border-left-color: var(--class-accent);
-}
-
-.card-section-label {
-  display: block;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 3px;
-}
-
-.card-spend .card-section-label {
-  color: var(--class-accent);
-}
-
-.card-effect-text {
-  font-family: var(--font-serif);
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.65;
-  margin: 0;
-}
-
-.kit-modifiers { margin-bottom: 10px; }
-.kit-mod { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
-.kit-mod strong { color: var(--color-gold); }
-
-.card-flavor {
-  font-family: var(--font-serif);
-  font-size: 13px;
-  color: var(--text-dim);
-  font-style: italic;
-  margin-top: 10px;
-  line-height: 1.7;
-}
-
-.btn-use-ability {
-  width: 100%;
-  margin-bottom: 10px;
-  background: var(--class-accent);
-  color: var(--text-inverse);
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 10px;
-  font-family: var(--font-condensed);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: filter 0.15s;
-}
-.btn-use-ability:hover { filter: brightness(1.1); }
-
-/* ── Badges ─────────────────────────────────────────────────────────────── */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-family: var(--font-condensed);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-}
-
-.badge-action        { background: var(--badge-action-bg);    color: var(--badge-action);    border: 1px solid var(--badge-action); }
-.badge-maneuver      { background: var(--badge-maneuver-bg);  color: var(--badge-maneuver);  border: 1px solid var(--badge-maneuver); }
-.badge-triggered     { background: var(--color-purple-bg);    color: var(--color-purple);    border: 1px solid var(--color-purple); }
-.badge-free-triggered{ background: var(--color-purple-bg);    color: var(--color-purple);    border: 1px solid var(--color-purple); }
-.badge-free          { background: var(--bg-elevated);        color: var(--text-secondary);  border: 1px solid var(--border-visible); }
-.badge-spent         { background: var(--badge-spent-bg);     color: var(--badge-spent);     border: 1px solid var(--badge-spent); }
-.badge-signature     { background: var(--color-gold-bg);      color: var(--color-gold);      border: 1px solid var(--color-gold); }
-.badge-encounter     { background: rgba(230, 126, 34, 0.12);  color: #E67E22;                border: 1px solid #E67E22; }
-.badge-turn          { background: rgba(52, 152, 219, 0.12);  color: #3498DB;                border: 1px solid #3498DB; }
-.badge-used          { opacity: 0.5; }
-.badge-ancestry      { background: rgba(200,168,75,0.08);     color: var(--text-gold);       border: 1px dashed var(--border-warm); }
-.badge-kit           { background: rgba(90,84,72,0.2);        color: var(--text-dim);        border: 1px dashed var(--border-warm); }
-
-/* ── Resource pips ──────────────────────────────────────────────────────── */
-.resource-pips {
-  display: flex;
-  gap: 3px;
-  align-items: center;
-}
-
-.pip {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  transition: background 0.2s;
-}
-
-.pip-filled { /* background set inline via class-accent */ }
-.pip-empty { background: var(--border-visible); }
-
-.ability-card.unaffordable .pip-filled { background: var(--color-danger) !important; }
-.ability-card.unaffordable .pip-empty  { background: var(--color-danger-bg); }
-
-/* ── Stats grid ─────────────────────────────────────────────────────────── */
-.stats-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 0 16px 16px;
-}
-
-.stats-section-title {
-  font-family: var(--font-condensed);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  padding: 12px 0 6px;
-}
+/* ── Character sheet header ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Session indicator ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Action economy bar ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Sheet tabs ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Sheet content ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Ability filter bar ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Power Roll banner ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Ability cards ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Card expanded state ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Card effect / spend sections ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Badges ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Resource pips ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Stats grid ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
 
 /* ── Combat Profile ──────────────────────────────────────────────────────── */
 .combat-profile-block {
@@ -2635,209 +2021,13 @@ html, body {
 }
 .empty-state strong { color: var(--text-primary); }
 
-/* ── Recovery row ────────────────────────────────────────────────────────── */
+/* ── Recovery row ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
 
-.recovery-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
-  gap: 12px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-
-.recovery-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.recovery-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-}
-
-/* Recovery pip dots */
-.recovery-pips {
-  display: flex;
-  gap: 3px;
-  align-items: center;
-}
-
-.recovery-pip {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  transition: background 0.2s, opacity 0.2s;
-}
-
-.recovery-pip.pip-full {
-  background: var(--color-available);
-}
-
-.recovery-pip.pip-empty {
-  background: var(--border-visible);
-  opacity: 0.4;
-}
-
-.recovery-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
-
-.recovery-controls {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-visible);
-  border-radius: var(--radius-sm);
-}
-
-.recovery-adj {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 16px;
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-  transition: color 0.12s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.recovery-adj:hover { color: var(--text-primary); }
-
-.recovery-count {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 600;
-  padding: 0 4px;
-  color: var(--text-primary);
-}
-.recovery-sep { color: var(--text-dim); }
-
-.btn-catch-breath {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-visible);
-  color: var(--color-available);
-  font-family: var(--font-condensed);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-  white-space: nowrap;
-}
-.btn-catch-breath:hover:not(:disabled) {
-  background: var(--color-available-bg);
-  border-color: var(--color-available);
-}
-.btn-catch-breath:disabled {
-  color: var(--text-dim);
-  border-color: var(--border-subtle);
-  cursor: not-allowed;
-}
-
-.cyb-preview {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 400;
-  opacity: 0.7;
-  margin-left: 2px;
-}
-
-/* ── Condition chips ─────────────────────────────────────────────────────── */
-
-.conditions-hint {
-  font-size: 9px;
-  color: var(--text-dim);
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  margin-left: 8px;
-  text-transform: lowercase;
-  font-style: italic;
-}
-
-.conditions-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px 14px;
-}
-
-.auto-conditions {
-  display: flex;
-  gap: 6px;
-  padding: 0 14px 10px;
-}
-
-.condition-chip {
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border: 1px solid var(--border-visible);
-  background: var(--bg-elevated);
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-button.condition-chip:hover {
-  border-color: var(--color-danger);
-  color: var(--text-secondary);
-}
-
-.condition-chip.active {
-  background: var(--color-danger-bg);
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-}
-
-/* Bleeding specifically gets a pulse while active */
-.condition-chip.active[data-condition="Bleeding"] {
-  animation: condition-bleed 1.8s ease-in-out infinite;
-}
-@keyframes condition-bleed {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.3); }
-  50%       { box-shadow: 0 0 0 4px rgba(231, 76, 60, 0); }
-}
-
-.auto-chip {
-  cursor: default;
-  font-style: italic;
-}
-.auto-chip:hover { border-color: var(--border-visible); color: var(--text-dim); }
-
-.winded-active {
-  background: rgba(243, 156, 18, 0.1);
-  border-color: var(--color-warning);
-  color: var(--color-warning);
-}
-
-.dying-active {
-  background: var(--color-danger-bg);
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-  animation: condition-bleed 1.2s ease-in-out infinite;
-}
+/* ── Condition chips ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
 
 /* ── Toast notifications ─────────────────────────────────────────────────── */
 
@@ -2961,17 +2151,13 @@ button.condition-chip:hover {
   color: var(--text-primary);
 }
 
-/* ── HP health states ────────────────────────────────────────────────────── */
+/* ── HP health states ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
 
-@keyframes hp-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
-}
-
-/* ── Kit modifier active ─────────────────────────────────────────────────── */
-
-.kit-mod-active strong { color: var(--class-accent); }
-.kit-mod-none { color: var(--text-dim) !important; font-style: italic; }
+/* ── Kit modifier active ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
 
 /* ── Details tab ────────────────────────────────────────────────────────── */
 
@@ -3138,29 +2324,12 @@ button.condition-chip:hover {
 
 /* ── Mobile touch improvements ──────────────────────────────────────────── */
 @media (max-width: 480px) {
-  /* Stats */
-  .stats-grid { grid-template-columns: repeat(3, 1fr); }
-  .card-tiers { grid-template-columns: 1fr; }
-
-  /* Header */
-  .sheet-name { font-size: 16px; }
-  .hp-numbers { font-size: 17px; }
-  .hp-display { min-width: 90px; }
-
-  /* Wizard mobile overrides -> css/wizard.css */
-
-  /* Ability cards — single column on small phones, bigger tap targets */
-  .ability-cards { grid-template-columns: 1fr; }
-  .card-header { padding: 12px 10px; min-height: 50px; }
+  /* Sheet + wizard mobile overrides -> css/sheet.css, css/wizard.css */
 
   /* Class summary */
   .class-summary-stats { gap: 6px; }
 
-  /* Recovery row */
-  .recovery-row { padding: 6px 8px; gap: 8px; }
-  .btn-catch-breath { font-size: 11px; padding: 6px 8px; }
-  .recovery-label { display: none; }
-  .recovery-pips { display: none; }
+  /* Recovery row mobile -> css/sheet.css */
 
   /* Toasts sit above bottom FAB */
   .toast-container { bottom: 90px; }
@@ -3252,56 +2421,13 @@ button.condition-chip:hover {
    Phase 7 — Combat Enhancement
    ══════════════════════════════════════════════════════════════ */
 
-/* ── Ability section headers ────────────────────────────────────────────── */
-.ability-section-header {
-  grid-column: 1 / -1; /* span all grid columns */
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.15em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  padding: 8px 4px 4px;
-  margin-top: 4px;
-  border-top: 1px solid var(--border-subtle);
-}
-.ability-section-header:first-child {
-  border-top: none;
-  margin-top: 0;
-}
-.ability-section-anytime {
-  color: #9B59B6;
-}
-.ability-section-spent {
-  color: var(--text-dim);
-  opacity: 0.6;
-}
+/* ── Ability section headers ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
 
-/* ── Hero Tokens bar ────────────────────────────────────────────────────── */
-.hero-tokens-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 16px;
-  background: #1A1F2E;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.hero-tokens-label {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--color-available);
-  flex: 1;
-}
-#hero-token-count {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-  min-width: 28px;
-  text-align: center;
-}
+/* ── Hero Tokens bar ─────────────────────────────────────────────────────
+   MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
+   ──────────────────────────────────────────────────────────────────── */
 
 /* ── Active side banner ─────────────────────────────────────────────────── */
 .active-side-banner {

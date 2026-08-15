@@ -44,9 +44,32 @@
 
 .btn-danger { background: var(--state-danger); border-color: var(--state-danger); color: var(--ink-on-accent); }
 
-.btn-sm  { padding: var(--space-2xs) var(--space-sm); font-size: var(--size-2xs); }
-.btn-icon { width: 32px; height: 32px; padding: 0; }
+/* .btn-primary used to be var(--class-accent), which made the confirm button
+   a different colour for every character. Primary is --accent everywhere;
+   the class colour is an identity mark, not an affordance. */
+.btn-secondary { background: var(--surface-raised); color: var(--ink-body); border-color: var(--line-strong); }
+.btn-secondary:hover { background: var(--surface-page); }
+
+.btn-sm    { padding: var(--space-2xs) var(--space-sm); font-size: var(--size-2xs); }
+.btn-small { padding: var(--space-sm) var(--space-md); font-size: var(--size-sm); min-height: 34px; }
+.btn-large { padding: var(--space-md) var(--space-3xl); font-size: var(--size-lg); }
+.btn-icon  { width: 40px; height: 40px; padding: 0; font-size: var(--size-lg); }
 .btn-block { display: flex; width: 100%; }
+.btn-fab   { border-radius: var(--radius-pill); padding: var(--space-md) var(--space-2xl); box-shadow: var(--elevation-raised); }
+
+.btn-end-turn {
+  width: 100%;
+  padding: var(--space-md);
+  border-radius: 0;
+  background: var(--state-available);
+  border-color: var(--state-available);
+  color: var(--ink-on-accent);
+  font-size: var(--size-lg);
+}
+.btn-end-turn:hover { background: var(--state-available-ink); border-color: var(--state-available-ink); }
+
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
 
 /* ═══ BADGES ═══════════════════════════════════════════════════════════════ */
@@ -151,14 +174,17 @@
   letter-spacing: var(--tracking-caps);
   opacity: .7;
 }
-.hp-bar-track {
+/* Scoped to the sheet header on purpose: main.css's director-board section
+   declares BARE .hp-bar-track / .hp-bar-fill rules for the roster cards and
+   loads after this file, so an unscoped rule here loses on the sheet. */
+.sheet-header .hp-bar-track {
   height: 6px;
   margin-top: var(--space-2xs);
   background: var(--wash-on-reverse);
   border-radius: var(--radius-pill);
   overflow: hidden;
 }
-.hp-bar-fill {
+.sheet-header .hp-bar-fill {
   height: 100%;
   background: var(--stamina-fill);
   transition: width var(--duration-base) var(--ease-out),
@@ -351,38 +377,41 @@
 }
 .ability-card:hover { box-shadow: var(--elevation-raised); }
 
+/* MARKUP CONTRACT — matches abilities.js buildCard() exactly:
+     .ability-card > .card-header > .card-header-left  > .card-name
+                                                       > .card-distance
+                                  > .card-header-right > badges, .resource-pips
+                  > .card-body    > .card-summary, .card-keywords
+                  > .card-expanded (see below)
+   The book's bracket ornament is drawn as a ::before so no extra element —
+   and therefore no JS change — is needed to get it. */
 .card-header {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: var(--space-md);
-  padding: var(--space-md);
+  padding: var(--space-md) var(--space-md) var(--space-sm) var(--space-2xl);
   color: var(--ink-strong);
 }
-.card-header-left { flex: 1; min-width: 0; display: flex; gap: var(--space-sm); }
-.card-heading { flex: 1; min-width: 0; }
+.card-header::before {
+  content: '';
+  position: absolute;
+  left: var(--space-2xs);
+  top: var(--space-md);
+  width: 14px;
+  height: 40px;
+  background-color: var(--class-accent);
+  -webkit-mask-image: var(--ornament-bracket);
+          mask-image: var(--ornament-bracket);
+  -webkit-mask-repeat: no-repeat;  mask-repeat: no-repeat;
+  -webkit-mask-size: 14px 40px;    mask-size: 14px 40px;
+}
+
+.card-header-left { flex: 1; min-width: 0; }
 .card-name { display: block; font: var(--type-ability-name); color: var(--ink-strong); }
-.card-flavor-inline { display: block; font: var(--type-flavor); color: var(--ink-body); margin-top: var(--space-3xs); }
-
-/* Keywords rule — the book's heavy hairline under the keyword line */
-.card-meta {
-  display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md);
-  margin-top: var(--space-xs);
-  padding-bottom: var(--space-3xs);
-  border-bottom: 1px solid var(--line-reverse);
-}
-.card-keywords { font: var(--type-keyword); color: var(--ink-strong); }
-.card-action-type { font: var(--type-keyword); color: var(--ink-strong); white-space: nowrap; }
-
-.card-distance-row {
-  display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md);
-  margin-top: var(--space-2xs);
-  font: var(--type-prose-sm);
-  color: var(--ink-body);
-}
-
 .card-header-right { display: flex; align-items: center; gap: var(--space-xs); flex: none; }
 
-.card-body { padding: 0 var(--space-md) var(--space-md); }
+.card-body { padding: 0 var(--space-md) var(--space-md) var(--space-2xl); }
 .card-summary { font: var(--type-prose); color: var(--ink-body); }
 
 .resource-pips { display: flex; gap: var(--space-3xs); }
@@ -431,30 +460,20 @@
 .ability-card.unaffordable .card-header-right { filter: grayscale(1); }
 
 
-/* ═══ STATS ════════════════════════════════════════════════════════════════ */
+/* ═══ STATS TAB ════════════════════════════════════════════════════════════
+   .stats-grid is the Stats TAB CONTAINER — a vertical stack that
+   character.js fills with the combat profile, characteristics and ancestry
+   traits. An earlier draft of this file defined it as a five-column
+   characteristic row, which is a component that does not exist under this
+   name anywhere in the app; the real one is .characteristics-grid and
+   migrates with the Stats tab. */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   padding: 0 var(--space-lg) var(--space-lg);
 }
-.stat {
-  padding: var(--space-md) var(--space-2xs);
-  text-align: center;
-  background: var(--surface-page);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-}
-.stat-value { display: block; font: var(--type-numeric); color: var(--ink-strong); }
 .stat-glyph { display: block; font-family: var(--family-glyph); font-size: var(--size-lg); color: var(--ink-strong); }
-.stat-key {
-  display: block;
-  margin-top: var(--space-3xs);
-  font: var(--type-ui-caps);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-caps);
-  color: var(--ink-muted);
-}
 
 
 /* ═══ TABS ═════════════════════════════════════════════════════════════════ */
