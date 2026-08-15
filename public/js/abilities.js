@@ -927,20 +927,24 @@ function getAbilityDetailSurface() {
   let el = document.getElementById('ability-detail');
   if (el) return el;
 
-  el = document.createElement('aside');
+  el = document.createElement('div');
   el.id = 'ability-detail';
-  el.className = 'ability-detail hidden';
-  el.setAttribute('role', 'dialog');
-  el.setAttribute('aria-label', 'Ability detail');
+  el.className = 'ability-detail';
   el.innerHTML = `
-    <div class="ability-detail-head">
-      <span class="ability-detail-title"></span>
-      <button class="ability-detail-close" aria-label="Close">&times;</button>
-    </div>
-    <div class="ability-detail-body"></div>`;
+    <div class="ability-detail-dialog" role="dialog" aria-modal="true" aria-label="Ability detail">
+      <div class="ability-detail-head">
+        <span class="ability-detail-title"></span>
+        <button class="ability-detail-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="ability-detail-body"></div>
+    </div>`;
 
-  (document.getElementById('tab-abilities') || document.body).appendChild(el);
+  // Mounted on <body>, not inside the tab: a fixed overlay nested under a
+  // transformed or scrolling ancestor gets clipped and mis-stacked.
+  document.body.appendChild(el);
   el.querySelector('.ability-detail-close').addEventListener('click', closeAbilityDetail);
+  // Click the scrim (but not the dialog) to dismiss.
+  el.addEventListener('click', (e) => { if (e.target === el) closeAbilityDetail(); });
   return el;
 }
 
@@ -954,8 +958,7 @@ function closeAbilityDetail() {
   }
   _openAbilityCard.classList.remove('expanded');
   _openAbilityCard = null;
-  surface?.classList.add('hidden');
-  document.getElementById('tab-abilities')?.classList.remove('has-detail');
+  surface?.classList.remove('is-open');
   document.body.classList.remove('detail-open');
 }
 
@@ -972,10 +975,12 @@ function openAbilityDetail(card, ability) {
 
   card.classList.add('expanded');
   _openAbilityCard = card;
-  surface.classList.remove('hidden');
-  document.getElementById('tab-abilities')?.classList.add('has-detail');
+  surface.querySelector('.ability-detail-body').scrollTop = 0;
+  // Next frame, so the browser has a chance to paint the closed state and
+  // actually run the open transition instead of jumping straight to it.
+  requestAnimationFrame(() => surface.classList.add('is-open'));
   document.body.classList.add('detail-open');
-  surface.scrollTop = 0;
+  surface.querySelector('.ability-detail-close').focus({ preventScroll: true });
 }
 
 function toggleAbilityDetail(card, ability) {

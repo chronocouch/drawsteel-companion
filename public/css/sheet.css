@@ -133,88 +133,105 @@
 .tier2 .tier-label { color: var(--class-accent); }
 
 
-/* ═══ ABILITY DETAIL SURFACE ═══════════════════════════════════════════════
-   One interaction, two presentations. Desktop: a sticky panel beside the
-   grid, so the cards stay visible and you can still compare before choosing.
-   Mobile: a full-screen sheet, because on a phone comparison is impossible
-   anyway and focus is worth more.
+/* ═══ ABILITY DETAIL MODAL ═════════════════════════════════════════════════
+   A conventional centred dialog over a scrim, at every width. An earlier
+   version split desktop into a side panel to preserve comparing two
+   abilities; that squeezed the grid and read as a novel pattern, and the
+   comparison it bought was not worth either.
 
-   The expanded node is MOVED into this surface by abilities.js rather than
-   cloned, so the "Use This Ability" listener travels with it. */
-#tab-abilities.has-detail {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--rail-detail);
-  align-items: start;
-  column-gap: var(--space-lg);
-}
-#tab-abilities.has-detail > .ability-filter-bar,
-#tab-abilities.has-detail > .power-roll-banner { grid-column: 1 / -1; }
+   The scrim keeps the sheet visible behind, so you stay oriented. Dismiss
+   by clicking the scrim, the close button, or Escape.
 
+   The expanded node is MOVED here by abilities.js rather than cloned, so
+   the "Use This Ability" listener bound in buildCard() keeps working. */
 .ability-detail {
+  position: fixed;
+  inset: 0;
+  z-index: 200;                 /* same layer as the app's other modals */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  background: var(--surface-overlay);
+  /* Animate via opacity/visibility, not display — display is not
+     transitionable, which is why the first version had no easing. */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-standard),
+              visibility 0s linear var(--duration-base);
+}
+.ability-detail.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity var(--duration-base) var(--ease-out),
+              visibility 0s;
+}
+
+.ability-detail-dialog {
+  width: 100%;
+  max-width: var(--modal-max);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--surface-page);
   border: 1px solid var(--line-soft);
   border-top: 3px solid var(--class-accent);
   border-radius: var(--radius-sm);
-  box-shadow: var(--elevation-raised);
+  box-shadow: var(--elevation-modal);
+  transform: translateY(10px) scale(.985);
+  transition: transform var(--duration-base) var(--ease-standard);
 }
-.ability-detail.hidden { display: none; }
-
-@media (min-width: 700px) {
-  .ability-detail {
-    position: sticky;
-    top: var(--space-lg);
-    margin: var(--space-lg) var(--space-lg) var(--space-lg) 0;
-    max-height: calc(100vh - 220px);
-    overflow-y: auto;
-  }
+.ability-detail.is-open .ability-detail-dialog {
+  transform: none;
+  transition: transform var(--duration-base) var(--ease-out);
 }
 
 .ability-detail-head {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-md);
-  padding: var(--space-md) var(--space-md) var(--space-sm);
-  background: var(--surface-page);
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
   border-bottom: 1px solid var(--line-soft);
 }
-.ability-detail-title { font: var(--type-ability-name); color: var(--ink-strong); }
+.ability-detail-title { font: var(--type-ability-name); font-size: var(--size-xl); color: var(--ink-strong); }
 .ability-detail-close {
   flex: none;
-  width: 30px; height: 30px;
+  width: 32px; height: 32px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-xs);
   color: var(--ink-muted);
   font-size: var(--size-lg);
   line-height: 1;
+  transition: color var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
 }
 .ability-detail-close:hover { color: var(--ink-strong); border-color: var(--line-strong); }
 
-/* Inside the surface the expanded block is the whole content, so it drops
+.ability-detail-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+/* Inside the dialog the expanded block is the whole content, so it drops
    its card-interior chrome. */
 .ability-detail .card-expanded {
   background: transparent;
   border-top: none;
-  padding: var(--space-md);
+  padding: var(--space-lg);
 }
 
-/* ── Mobile: full-screen sheet ── */
+/* Phones: fill the screen rather than float a small card in the middle. */
 @media (max-width: 699px) {
-  #tab-abilities.has-detail { display: block; }
-  .ability-detail {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    margin: 0;
+  .ability-detail { padding: 0; }
+  .ability-detail-dialog {
+    max-width: none;
+    max-height: none;
+    height: 100%;
     border: none;
+    border-top: 3px solid var(--class-accent);
     border-radius: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
   }
-  .ability-detail-head { padding: var(--space-lg); }
   body.detail-open { overflow: hidden; }
 }
 

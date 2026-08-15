@@ -586,8 +586,15 @@
 
 /* ═══ RESPONSIVE ═══════════════════════════════════════════════════════════ */
 @media (max-width: 720px) {
-  .sheet-header { flex-wrap: wrap; }
-  .sheet-header-center, .sheet-header-right { flex: 1 1 100%; }
+  /* Two rows, not three. Identity gets its own line; stamina and the
+     resource then share one line — stamina left, resource right — instead
+     of each taking a full-width row and eating the viewport. */
+  .sheet-header { flex-wrap: wrap; row-gap: var(--space-sm); }
+  .sheet-header-left   { flex: 1 1 100%; }
+  .sheet-header-center { flex: 1 1 auto; min-width: 0; }
+  .sheet-header-right  { flex: 0 0 auto; }
+  .sheet-header-center .hp-numbers { justify-content: flex-start; }
+  .sheet-header-center .hp-display { align-items: stretch; }
   .action-economy { flex-wrap: wrap; }
   .bucket { flex: 1 1 30%; }
   .stats-grid { grid-template-columns: repeat(3, 1fr); }
