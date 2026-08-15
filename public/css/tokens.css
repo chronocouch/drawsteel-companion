@@ -1,0 +1,353 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — DESIGN TOKENS
+   ───────────────────────────────────────────────────────────────────────────
+   Direction: "Illuminated" — light theme, book-faithful.
+
+   Every colour below is sampled from Draw_Steel_Heroes_v1.pdf, not invented:
+     paper   #FFFEF6  — the actual page white (warm, near-white; the
+                        "millennial beige" impression comes from the ink and
+                        ornament, not the substrate)
+     ink     #0D0D0F  — body text, near-black with a faint cool cast
+     bronze  #866D4B  — THE accent. Side tabs, links, rules, ornament.
+                        The book has exactly one accent colour.
+     black   #000000  — potency chips, attribute chips, alternating side tabs
+
+   Everything else (semantic states, surfaces) is derived from those four so
+   it reads as native rather than bolted on.
+
+   ARCHITECTURE — two layers, do not skip a level:
+     1. PRIMITIVES  raw values. Never referenced by components.
+     2. SEMANTIC    role-named. This is the ONLY layer components may use.
+   A dark theme later = re-map layer 2 only. Layer 1 and all component CSS
+   stay untouched. That is the entire reason for the indirection.
+
+   RULE: if you are writing a hex code, a px font-size, or a px gap anywhere
+   outside this file, you are creating the drift this file exists to prevent.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+   FONT FACES
+   Berlingske Slab (the book's real type) is a paid Playtype licence we don't
+   hold. Source Serif 4 is the substitute — same transitional-serif skeleton,
+   similar bracket serifs and x-height. Nobody will notice; we would notice
+   Cinzel, which is Roman inscriptional and appears nowhere in the book.
+   ─────────────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* Official MCDM glyph font — tier pills, distance icons, attribute chips,
+   potency chips, diamond dividers.
+   © 2025 MCDM Productions, CC BY-SA 4.0.
+
+   MODIFIED: the block-attribute glyphs (keys a i m p r) shipped with their
+   letters off-centre inside the box and a right-hand gap of only ~110 units
+   — at 15px that is 1.7px, and `i` (a bare 124-unit stem) read as a black
+   slab rather than a letter. scripts/build-glyph-font.py re-centres each
+   letter and gives every one an even 200-unit inset, preserving the
+   original's few-unit box overlap so composite chips ("i<v") stay seamless.
+   The uppercase set is untouched. Original kept alongside for reference.
+
+   CC BY-SA 4.0 requires that this change is indicated and that the
+   derivative ships under the same licence — both are satisfied by the note
+   above, the build script, and .credit-glyphs in the component layer. */
+@font-face {
+  font-family: 'Draw Steel Glyphs';
+  src: url('../fonts/DrawSteelGlyphs-Even.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+:root {
+
+/* ╔═════════════════════════════════════════════════════════════════════════╗
+   ║  LAYER 1 — PRIMITIVES                                                   ║
+   ║  Raw values. Components must never reference these directly.            ║
+   ╚═════════════════════════════════════════════════════════════════════════╝ */
+
+  /* ── Paper ramp ─────────────────────────────────────────────────────────
+     Anchored on the sampled page white. Darker steps are the same hue
+     walked down in lightness, so surfaces never go grey or muddy. */
+  --paper-000:  #FFFEF6;   /* sampled: the book page itself */
+  --paper-050:  #FBF9EF;
+  --paper-100:  #F5F2E5;
+  --paper-200:  #EDE9D9;
+  --paper-300:  #E3DECB;
+  --paper-400:  #D5CFB8;
+  --paper-500:  #C2BAA0;
+
+  /* ── Ink ramp ───────────────────────────────────────────────────────────
+     Anchored on sampled body ink. */
+  --ink-900:    #0D0D0F;   /* sampled: body text */
+  --ink-800:    #1A1A18;
+  --ink-700:    #33322C;
+  --ink-600:    #565349;
+  --ink-500:    #756F60;
+  --ink-400:    #948D7B;
+  --ink-300:    #B5AE9B;
+
+  /* ── Bronze ramp ────────────────────────────────────────────────────────
+     Anchored on the sampled accent. The book's only accent colour. */
+  --bronze-700: #5E4C33;
+  --bronze-600: #6E5A3D;
+  --bronze-500: #866D4B;   /* sampled: side tabs, links, rules */
+  --bronze-400: #A18B66;
+  --bronze-300: #BCA982;
+  --bronze-200: #DCCEB0;
+  --bronze-100: #EFE6D2;
+  --bronze-050: #F7F2E5;
+
+  /* ── True black — the book's chip/tab black, distinct from ink ────────── */
+  --black:      #000000;
+  --black-900:  #12110E;
+
+  /* ── Semantic hues ──────────────────────────────────────────────────────
+     Not in the book (it has no state colours — it's print). Chosen at the
+     bronze's chroma and value so they sit beside it without shouting. */
+  --oxblood-600: #7A281D;  --oxblood-500: #8E2F22;  --oxblood-100: #F2DED8;
+  --verdigris-600:#0F5B50; --verdigris-500:#14685C; --verdigris-100:#D9EAE5;
+  --lapis-600:   #234B6B;  --lapis-500:   #2A5A80;  --lapis-100:   #DBE6EF;
+  --amethyst-600:#5A3479;  --amethyst-500:#6A3E8E;  --amethyst-100:#E7DDF0;
+  --ochre-600:   #855614;  --ochre-500:   #9A6516;  --ochre-100:   #F4E6CE;
+  --moss-600:    #2A5F3C;  --moss-500:    #326F46;  --moss-100:    #DCEADF;
+
+  /* ── Type primitives ────────────────────────────────────────────────────*/
+  --family-serif:     'Source Serif 4', 'Iowan Old Style', Georgia, serif;
+  --family-condensed: 'Barlow Condensed', 'Helvetica Neue', sans-serif;
+  --family-mono:      'JetBrains Mono', ui-monospace, monospace;
+  --family-glyph:     'Draw Steel Glyphs';
+
+  /* Type scale — 1.15 ratio at the dense end, opening up at display sizes.
+     Ten steps. There were 23 ad-hoc sizes before this. */
+  --size-3xs:  10px;
+  --size-2xs:  11px;
+  --size-xs:   12px;
+  --size-sm:   13px;
+  --size-md:   15px;   /* prose default — rule text, ability effects */
+  --size-lg:   17px;
+  --size-xl:   20px;
+  --size-2xl:  24px;
+  --size-3xl:  30px;
+  --size-4xl:  40px;
+
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semi:    600;
+  --weight-bold:    700;
+
+  --leading-tight:  1.15;
+  --leading-snug:   1.35;
+  --leading-normal: 1.5;
+  --leading-prose:  1.62;   /* tier text, effect paragraphs */
+
+  --tracking-tight:  -0.01em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.06em;
+  --tracking-caps:    0.11em;   /* uppercase condensed labels */
+
+  /* ── Space scale — 2px base, ten steps ──────────────────────────────────
+     Replaces 18 ad-hoc padding/margin/gap values. Migration note: former
+     10px snaps to --space-sm (8) or --space-md (12); former 14px snaps to
+     --space-md (12) or --space-lg (16). Pick by density, never split. */
+  --space-3xs:  2px;
+  --space-2xs:  4px;
+  --space-xs:   6px;
+  --space-sm:   8px;
+  --space-md:   12px;
+  --space-lg:   16px;
+  --space-xl:   20px;
+  --space-2xl:  24px;
+  --space-3xl:  32px;
+  --space-4xl:  48px;
+
+  /* ── Radius — the book is printed; corners are essentially square ───────*/
+  --radius-none: 0;
+  --radius-xs:   2px;
+  --radius-sm:   3px;
+  --radius-md:   4px;
+  --radius-pill: 999px;
+
+  /* ── Duration & easing ──────────────────────────────────────────────────*/
+  --duration-fast:  120ms;
+  --duration-base:  200ms;
+  --duration-slow:  340ms;
+  --ease-standard:  cubic-bezier(.2,0,.2,1);
+  --ease-out:       cubic-bezier(0,0,.2,1);
+
+
+/* ╔═════════════════════════════════════════════════════════════════════════╗
+   ║  LAYER 2 — SEMANTIC                                                     ║
+   ║  Role-named. Components use ONLY these.                                 ║
+   ╚═════════════════════════════════════════════════════════════════════════╝ */
+
+  /* ── Surfaces ───────────────────────────────────────────────────────────
+     The card is the book page (--paper-000). The app background sits one
+     step darker so pages lift off it — the opposite of a dark theme, and
+     the reason this reads as paper rather than as "a white website". */
+  --surface-app:       var(--paper-100);
+  --surface-page:      var(--paper-000);   /* cards, sheets, modals */
+  --surface-raised:    var(--paper-050);
+  --surface-inset:     var(--paper-200);   /* expanded card interiors */
+  --surface-sunken:    var(--paper-300);   /* spent/disabled fills, tracks */
+  --surface-bar:       var(--paper-200);   /* toolbars, tab strips, econ bar */
+  --surface-reverse:   var(--black-900);   /* the book's black spread */
+  --surface-accent:    var(--bronze-500);  /* the book's bronze side tab */
+  --surface-overlay:   rgba(13,13,15,.42);
+
+  /* Translucent fills used on top of the reversed (black) header, where a
+     solid paper token would be wrong. Tokenised so nothing hand-rolls rgba. */
+  --wash-on-reverse-weak:   rgba(255,254,246,.10);
+  --wash-on-reverse:        rgba(255,254,246,.16);
+  --wash-on-reverse-strong: rgba(255,254,246,.28);
+  --wash-accent:            rgba(134,109,75,.18);
+
+  /* ── Ink ────────────────────────────────────────────────────────────────*/
+  --ink-strong:        var(--ink-900);     /* ability names, headings */
+  --ink-body:          var(--ink-800);     /* rule text, effects */
+  --ink-muted:         var(--ink-600);     /* labels, secondary meta */
+  --ink-faint:         var(--ink-400);     /* keywords, decorative, disabled */
+  --ink-on-reverse:    var(--paper-050);   /* text on black surfaces */
+  --ink-on-accent:     var(--paper-000);   /* text on bronze */
+  --ink-link:          var(--bronze-600);  /* the book underlines links in bronze */
+
+  /* ── Lines ──────────────────────────────────────────────────────────────*/
+  --line-hair:         var(--paper-300);   /* barely-there internal splits */
+  --line-soft:         var(--paper-400);   /* standard card + panel borders */
+  --line-strong:       var(--ink-300);     /* emphasised dividers */
+  --line-accent:       var(--bronze-400);  /* bronze rules, ornament strokes */
+  --line-reverse:      var(--black);       /* the heavy rule under keywords */
+
+  /* ── Accent ─────────────────────────────────────────────────────────────*/
+  --accent:            var(--bronze-500);
+  --accent-hover:      var(--bronze-600);
+  --accent-ink:        var(--bronze-700);  /* accent used AS text — passes AA */
+  --accent-wash:       var(--bronze-100);  /* tinted fills behind accent text */
+  --accent-hairline:   var(--bronze-300);
+
+  /* ── States ─────────────────────────────────────────────────────────────*/
+  --state-available:    var(--verdigris-500);
+  --state-available-ink:var(--verdigris-600);
+  --state-available-bg: var(--verdigris-100);
+
+  --state-spent:        var(--ink-500);   /* ink-400 fails 3:1 on sunken */
+  --state-spent-bg:     var(--surface-sunken);
+
+  --state-danger:       var(--oxblood-500);
+  --state-danger-ink:   var(--oxblood-600);
+  --state-danger-bg:    var(--oxblood-100);
+
+  --state-heal:         var(--moss-500);
+  --state-heal-ink:     var(--moss-600);
+  --state-heal-bg:      var(--moss-100);
+
+  --state-warning:      var(--ochre-500);
+  --state-warning-ink:  var(--ochre-600);
+  --state-warning-bg:   var(--ochre-100);
+
+  --state-focus:        var(--lapis-500);
+  --focus-ring:         0 0 0 2px var(--paper-000), 0 0 0 4px var(--lapis-500);
+
+  /* ── Action economy ─────────────────────────────────────────────────────
+     One hue per bucket, matching the glyph the bucket carries.
+     The -ink token is for TEXT on the matching -bg (all verified ≥4.5:1).
+     The bare token is for icons, borders and fills only — at 3:1 it is a
+     non-text contrast target, which is the correct bar for those. */
+  --econ-action:        var(--verdigris-500);
+  --econ-action-ink:    var(--verdigris-600);
+  --econ-action-bg:     var(--verdigris-100);
+  --econ-maneuver:      var(--lapis-500);
+  --econ-maneuver-ink:  var(--lapis-600);
+  --econ-maneuver-bg:   var(--lapis-100);
+  --econ-triggered:     var(--amethyst-500);
+  --econ-triggered-ink: var(--amethyst-600);
+  --econ-triggered-bg:  var(--amethyst-100);
+  --econ-free:          var(--bronze-500);
+  --econ-free-ink:      var(--bronze-700);
+  --econ-free-bg:       var(--bronze-100);
+  --econ-strike:        var(--ochre-500);
+  --econ-strike-ink:    var(--ochre-600);
+  --econ-strike-bg:     var(--ochre-100);
+
+  /* ── Power roll tiers ───────────────────────────────────────────────────
+     The book renders these as outlined glyph pills, not coloured text.
+     Colour is a screen affordance only — keep it quiet. */
+  --tier-1:             var(--ink-600);   /* ink-500 fails 4.5:1 on inset */
+  --tier-2:             var(--lapis-500);
+  --tier-3:             var(--verdigris-500);
+
+  /* ── Resources ──────────────────────────────────────────────────────────*/
+  --stamina-fill:       var(--oxblood-500);
+  --stamina-track:      var(--surface-sunken);
+  --stamina-winded:     var(--ochre-500);
+  --stamina-dying:      var(--oxblood-600);
+  --recovery-pip:       var(--verdigris-500);
+  --recovery-pip-off:   var(--surface-sunken);
+  --victory-mark:       var(--bronze-500);
+  --victory-mark-off:   var(--paper-400);
+  --malice:             var(--black);
+
+  /* ── Class accent — set per character at runtime ────────────────────────
+     Overridden inline by buildCard(); the fallback is bronze, not blue. */
+  --class-accent:       var(--bronze-500);
+
+  /* ── Elevation ──────────────────────────────────────────────────────────
+     Paper doesn't glow. Shadows are short, warm-tinted, and mostly a
+     1px "printed edge" rather than a drop shadow. */
+  --elevation-flat:    none;
+  --elevation-page:    0 1px 0 rgba(94,76,51,.16);
+  --elevation-card:    0 1px 0 rgba(94,76,51,.14), 0 2px 6px rgba(94,76,51,.07);
+  --elevation-raised:  0 2px 0 rgba(94,76,51,.13), 0 8px 20px rgba(94,76,51,.10);
+  --elevation-modal:   0 10px 40px rgba(13,13,15,.26);
+
+  /* ── Type roles ─────────────────────────────────────────────────────────
+     Shorthand bundles. Use these on components rather than re-specifying
+     family + size + weight + tracking at every call site. */
+  --type-hero-name:    var(--weight-bold) var(--size-2xl)/var(--leading-tight) var(--family-serif);
+  --type-ability-name: var(--weight-bold) var(--size-lg)/var(--leading-tight) var(--family-serif);
+  --type-section:      var(--weight-bold) var(--size-xl)/var(--leading-snug) var(--family-serif);
+  --type-prose:        var(--weight-regular) var(--size-md)/var(--leading-prose) var(--family-serif);
+  --type-prose-sm:     var(--weight-regular) var(--size-sm)/var(--leading-normal) var(--family-serif);
+  --type-flavor:       italic var(--weight-regular) var(--size-md)/var(--leading-snug) var(--family-serif);
+  --type-inline-label: var(--weight-bold) var(--size-md)/var(--leading-prose) var(--family-serif);
+  --type-keyword:      var(--weight-semi) var(--size-sm)/var(--leading-snug) var(--family-serif);
+  --type-ui-label:     var(--weight-semi) var(--size-xs)/var(--leading-snug) var(--family-condensed);
+  --type-ui-caps:      var(--weight-bold) var(--size-2xs)/var(--leading-snug) var(--family-condensed);
+  --type-numeric:      var(--weight-bold) var(--size-xl)/var(--leading-tight) var(--family-mono);
+  --type-numeric-sm:   var(--weight-medium) var(--size-sm)/var(--leading-tight) var(--family-mono);
+
+  /* ── Layout rails ───────────────────────────────────────────────────────*/
+  --bar-header:        64px;
+  --bar-session:       36px;
+  --bar-economy:       52px;
+  --bar-tabs:          44px;
+  --rail-tab:          26px;   /* the book's outer side tab */
+  --measure-prose:     66ch;   /* max line length for rule text */
+  --content-max:       1100px;
+  --card-grid-min:     280px;  /* ability grid column floor */
+  --rail-picker:       420px;  /* wizard left-hand chooser column */
+  --rail-sidebar:      300px;  /* campaign info sidebar */
+  --rail-party:        220px;  /* campaign party column */
+  --modal-max:         680px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLYPH KEYMAP — reference, not CSS.
+   The MCDM font maps icons onto ASCII. Use .glyph{font-family:var(--family-glyph)}
+   and the key below as its text content.
+
+     DISTANCE     melee t · ranged g · self f · area e · aoe o
+                  burst b · special c · versatile l
+     TIERS        ≤11 ! · 12–16 @ · 17+ #      (also ¼½¾ / ÁÉÍ / áéí variants)
+     ATTRIBUTES   rounded A I M P R  ·  block a i m p r
+     POTENCY      weak w · average v · strong s   (pair with attribute + '<')
+     ACTION       activation ( = outlined ! box · triggered ) = solid ! box
+                  (the printed chart's "[ ( ]" notation means "the ( key",
+                  not a bracket pair — [ and ] are plain block bars)
+     MISC         trait * · targets x · malice/villain d · notes n N
+     DIVIDERS     ¡ ¢ £ ¥ ° ©   (rule, chevron, and diamond variants)
+     NUMBERS      0-9 render as block chips · extras - < = > × ÷
+
+   Always pair a glyph with a text label or aria-label. The font is
+   decorative; screen readers get nothing from "t".
+   ═══════════════════════════════════════════════════════════════════════════ */

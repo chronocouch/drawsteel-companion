@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draw Steel Companion — Design System</title>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/components-app.css">
+<style>
+/* Styleguide chrome only — not part of the system. */
+.sg { max-width: var(--content-max); margin: 0 auto; padding: var(--space-4xl) var(--space-xl); }
+.sg-lede { max-width: var(--measure-prose); }
+.sg-lede h1 { margin-bottom: var(--space-md); }
+.sg-lede p { margin-bottom: var(--space-md); }
+.sg-section { margin-top: var(--space-4xl); padding-top: var(--space-2xl); border-top: 2px solid var(--line-strong); }
+.sg-section > h2 { margin-bottom: var(--space-sm); }
+.sg-note { max-width: var(--measure-prose); color: var(--ink-muted); font: var(--type-prose-sm); margin-bottom: var(--space-xl); }
+.sg-sub { margin: var(--space-2xl) 0 var(--space-md); }
+.sg-grid { display: grid; gap: var(--space-md); }
+.sg-row { display: flex; flex-wrap: wrap; gap: var(--space-md); align-items: center; }
+.sg-stack { display: flex; flex-direction: column; gap: var(--space-md); }
+.sg-demo { padding: var(--space-lg); background: var(--surface-app); border: 1px dashed var(--line-soft); border-radius: var(--radius-sm); }
+code { font-family: var(--family-mono); font-size: var(--size-xs); color: var(--accent-ink); }
+
+.ramp { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 2px; }
+.chip { padding: var(--space-md) var(--space-sm); border-radius: var(--radius-xs); }
+.chip b { display: block; font: var(--type-ui-caps); text-transform: uppercase; letter-spacing: var(--tracking-caps); }
+.chip span { font-family: var(--family-mono); font-size: var(--size-3xs); opacity: .8; }
+
+table.sg-table { width: 100%; border-collapse: collapse; }
+.sg-table th { text-align: left; font: var(--type-ui-caps); text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--ink-muted); padding: var(--space-sm); border-bottom: 1px solid var(--line-strong); }
+.sg-table td { padding: var(--space-sm); border-bottom: 1px solid var(--line-hair); vertical-align: middle; }
+.sg-table td code { white-space: nowrap; }
+.ratio { font-family: var(--family-mono); font-size: var(--size-xs); }
+.ratio.pass::after { content: ' AA'; color: var(--state-heal-ink); }
+.ratio.fail { color: var(--state-danger-ink); font-weight: 700; }
+.ratio.fail::after { content: ' FAIL'; }
+
+.spacebar { background: var(--accent); height: 14px; border-radius: var(--radius-xs); }
+.glyphgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px,1fr)); gap: var(--space-sm); }
+.glyphcell { padding: var(--space-md); background: var(--surface-page); border: 1px solid var(--line-soft); border-radius: var(--radius-xs); text-align: center; }
+.glyphcell .g { font-family: var(--family-glyph); font-size: var(--size-2xl); line-height: 1.2; color: var(--ink-strong); display: block; }
+.glyphcell .k { font-family: var(--family-mono); font-size: var(--size-3xs); color: var(--accent-ink); }
+.glyphcell .n { display: block; font: var(--type-ui-caps); text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--ink-muted); margin-top: var(--space-3xs); }
+.elev { padding: var(--space-lg); background: var(--surface-page); border-radius: var(--radius-sm); font: var(--type-ui-label); }
+</style>
+</head>
+<body>
+<div class="sg">
+
+  <div class="sg-lede">
+    <h1>Draw Steel Companion</h1>
+    <p class="prose">The design system. Every colour here is sampled from <code>Draw_Steel_Heroes_v1.pdf</code> rather than invented: paper <code>#FFFEF6</code>, ink <code>#0D0D0F</code>, bronze <code>#866D4B</code>, chip black <code>#000000</code>. The book has exactly one accent colour, and so do we.</p>
+    <p class="prose">Components read <em>only</em> from the semantic layer. If you are writing a hex code, a px font-size, or an off-scale gap anywhere outside <code>tokens.css</code>, you are re-creating the drift this system exists to prevent — <code>scripts/check-design-system.py</code> will fail the build.</p>
+    <div class="divider"><span class="divider-mark">¥</span></div>
+  </div>
+
+  <!-- ═══════════════ COLOUR ═══════════════ -->
+  <section class="sg-section">
+    <h2>Colour</h2>
+    <p class="sg-note">Layer 1 primitives are raw ramps — never reference them from a component. Layer 2 semantic roles are the whole public API.</p>
+
+    <h3 class="sg-sub">Paper</h3>
+    <div class="ramp" id="ramp-paper"></div>
+    <h3 class="sg-sub">Ink</h3>
+    <div class="ramp" id="ramp-ink"></div>
+    <h3 class="sg-sub">Bronze — the single accent</h3>
+    <div class="ramp" id="ramp-bronze"></div>
+    <h3 class="sg-sub">State hues</h3>
+    <div class="ramp" id="ramp-state"></div>
+
+    <h3 class="sg-sub">Verified pairings</h3>
+    <p class="sg-note">Computed live from the loaded stylesheet. These are the same pairings the linter enforces — if one goes red here, it is already failing CI.</p>
+    <table class="sg-table"><thead><tr><th>Text</th><th>On</th><th>Sample</th><th>Ratio</th></tr></thead><tbody id="contrast-body"></tbody></table>
+  </section>
+
+  <!-- ═══════════════ TYPE ═══════════════ -->
+  <section class="sg-section">
+    <h2>Type</h2>
+    <p class="sg-note">Source Serif 4 substitutes for Berlingske Slab, the book's real face (a paid Playtype licence we don't hold). Same transitional-serif skeleton and bracket serifs. Barlow Condensed carries uppercase UI chrome; JetBrains Mono carries every number.</p>
+
+    <h3 class="sg-sub">Roles</h3>
+    <table class="sg-table"><tbody>
+      <tr><td><code>--type-hero-name</code></td><td style="font:var(--type-hero-name)">Vessa Thorncoil</td></tr>
+      <tr><td><code>--type-section</code></td><td style="font:var(--type-section)">9-Clarity Ability</td></tr>
+      <tr><td><code>--type-ability-name</code></td><td style="font:var(--type-ability-name)">Unmake the Moment</td></tr>
+      <tr><td><code>--type-flavor</code></td><td style="font:var(--type-flavor)">You move fast enough to turn around and watch your foes feel the aftermath.</td></tr>
+      <tr><td><code>--type-keyword</code></td><td style="font:var(--type-keyword)">Area, Charge, Psionic, Telekinesis</td></tr>
+      <tr><td><code>--type-prose</code></td><td style="font:var(--type-prose)">Until the end of the encounter, the first time each target would take damage, you can spend a Clarity to reduce that damage by 5.</td></tr>
+      <tr><td><code>--type-prose-sm</code></td><td style="font:var(--type-prose-sm)">Ranged 10 · Three creatures</td></tr>
+      <tr><td><code>--type-inline-label</code></td><td><span style="font:var(--type-inline-label)">Effect:</span> <span style="font:var(--type-prose)">bold run-in label, the book's convention.</span></td></tr>
+      <tr><td><code>--type-ui-label</code></td><td style="font:var(--type-ui-label);text-transform:uppercase;letter-spacing:var(--tracking-caps)">Abilities · Details · Stats</td></tr>
+      <tr><td><code>--type-ui-caps</code></td><td style="font:var(--type-ui-caps);text-transform:uppercase;letter-spacing:var(--tracking-caps)">Signature · 1 / Encounter</td></tr>
+      <tr><td><code>--type-numeric</code></td><td style="font:var(--type-numeric)">24 / 36</td></tr>
+      <tr><td><code>--type-numeric-sm</code></td><td style="font:var(--type-numeric-sm)">+3 · 17+ · 5/8</td></tr>
+    </tbody></table>
+
+    <h3 class="sg-sub">Scale</h3>
+    <table class="sg-table" id="type-scale"><tbody></tbody></table>
+  </section>
+
+  <!-- ═══════════════ SPACE ═══════════════ -->
+  <section class="sg-section">
+    <h2>Space, radius, elevation</h2>
+    <p class="sg-note">Ten steps on a 2px base. The previous stylesheet used eighteen ad-hoc values including 9px, 7px, 11px and 5px. When migrating: former 10px snaps to 8 or 12, former 14px to 12 or 16 — choose by density, never split the difference.</p>
+    <table class="sg-table" id="space-scale"><tbody></tbody></table>
+
+    <h3 class="sg-sub">Radius</h3>
+    <div class="sg-row">
+      <div class="sg-demo" style="border-radius:var(--radius-none)"><code>--radius-none</code></div>
+      <div class="sg-demo" style="border-radius:var(--radius-xs)"><code>--radius-xs</code></div>
+      <div class="sg-demo" style="border-radius:var(--radius-sm)"><code>--radius-sm</code></div>
+      <div class="sg-demo" style="border-radius:var(--radius-md)"><code>--radius-md</code></div>
+      <div class="sg-demo" style="border-radius:var(--radius-pill)"><code>--radius-pill</code></div>
+    </div>
+
+    <h3 class="sg-sub">Elevation</h3>
+    <p class="sg-note">Paper doesn't glow. Shadows are short and warm-tinted — mostly a printed edge, not a drop shadow.</p>
+    <div class="sg-row">
+      <div class="elev" style="box-shadow:var(--elevation-page)"><code>--elevation-page</code></div>
+      <div class="elev" style="box-shadow:var(--elevation-card)"><code>--elevation-card</code></div>
+      <div class="elev" style="box-shadow:var(--elevation-raised)"><code>--elevation-raised</code></div>
+      <div class="elev" style="box-shadow:var(--elevation-modal)"><code>--elevation-modal</code></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ GLYPHS ═══════════════ -->
+  <section class="sg-section">
+    <h2>Glyphs</h2>
+    <p class="sg-note">The official MCDM glyph font, mapped onto ASCII keys. These replace the unicode stand-ins (⚔ ◈ ⟳ ◎ ✦) the app used before. Always pair a glyph with a text label or <code>aria-label</code> — a screen reader hears "t", not "melee".</p>
+    <div class="glyphgrid" id="glyphgrid"></div>
+    <p class="credit-glyphs" style="margin-top:var(--space-lg)">Draw Steel Glyphs © 2025 MCDM Productions, licensed CC BY-SA 4.0. Modified: block-attribute glyphs (<code>a i m p r</code>) re-centred with an even 200-unit inset — see <code>scripts/build-glyph-font.py</code>. Shared under the same licence.</p>
+  </section>
+
+  <!-- ═══════════════ ORNAMENT ═══════════════ -->
+  <section class="sg-section">
+    <h2>Ornament</h2>
+    <p class="sg-note">Three marks, all traced from the book. The bracket is a CSS mask, so it inherits <code>currentColor</code> and its cutouts show whatever surface sits behind it.</p>
+
+    <h3 class="sg-sub">Ability bracket</h3>
+    <div class="sg-demo sg-row">
+      <div style="display:flex;gap:var(--space-md);align-items:stretch;height:72px;color:var(--ink-strong)">
+        <span class="ornament-bracket"></span>
+        <div><span class="card-name">Beacon of Grace (9 Piety)</span><span class="card-flavor-inline">You ignite a foe with holy radiance, rewarding allies who attack them.</span></div>
+      </div>
+      <div style="display:flex;gap:var(--space-md);align-items:stretch;height:72px;color:var(--accent)">
+        <span class="ornament-bracket"></span><div style="font:var(--type-prose-sm);align-self:center">inherits currentColor</div>
+      </div>
+    </div>
+
+    <h3 class="sg-sub">Diamond dividers <code>¡ ¢ £ ¥ ° ©</code></h3>
+    <div class="sg-demo">
+      <div class="divider"><span class="divider-mark">¡</span></div>
+      <div class="divider"><span class="divider-mark">£</span></div>
+      <div class="divider"><span class="divider-mark">¥</span></div>
+      <div class="divider"><span class="divider-mark">©</span></div>
+    </div>
+
+    <h3 class="sg-sub">Side tab &amp; reversed band</h3>
+    <div class="sg-demo" style="display:flex;gap:var(--space-lg)">
+      <div style="position:relative;height:150px;flex:1;background:var(--surface-page);border:1px solid var(--line-soft)">
+        <span class="side-tab">Talent</span>
+      </div>
+      <div style="position:relative;height:150px;flex:1;background:var(--surface-page);border:1px solid var(--line-soft)">
+        <span class="side-tab side-tab--reverse">Classes</span>
+      </div>
+      <div class="band-reverse" style="flex:2;padding:var(--space-lg);display:flex;align-items:center">
+        <p class="prose" style="font:var(--type-prose)">The book drops to a full black page when it wants you to stop skimming. Use <code style="color:var(--bronze-300)">.band-reverse</code> the same way — sparingly.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ CONTROLS ═══════════════ -->
+  <section class="sg-section">
+    <h2>Controls</h2>
+    <h3 class="sg-sub">Buttons</h3>
+    <div class="sg-demo sg-row">
+      <button class="btn btn-primary">Use This Ability</button>
+      <button class="btn">Secondary</button>
+      <button class="btn btn-reverse">Reverse</button>
+      <button class="btn btn-ghost">Ghost</button>
+      <button class="btn btn-danger">Delete Hero</button>
+      <button class="btn btn-sm">Small</button>
+      <button class="btn btn-icon">&larr;</button>
+      <button class="btn" disabled>Disabled</button>
+    </div>
+
+    <h3 class="sg-sub">Badges &amp; chips</h3>
+    <div class="sg-demo sg-row">
+      <span class="badge badge-action">Main Action</span>
+      <span class="badge badge-maneuver">Maneuver</span>
+      <span class="badge badge-triggered">Triggered</span>
+      <span class="badge badge-free">Free Triggered</span>
+      <span class="badge badge-strike">Free Strike</span>
+      <span class="badge badge-signature">Signature</span>
+      <span class="badge badge-frequency">1 / Encounter</span>
+      <span class="badge badge-spent">Spent</span>
+      <span class="chip-potency">i&lt;w</span>
+      <span class="chip-potency">i&lt;v</span>
+      <span class="chip-potency">i&lt;s</span>
+    </div>
+
+    <h3 class="sg-sub">Tier pills</h3>
+    <div class="sg-demo sg-row">
+      <span class="glyph glyph-tier tier-pill--glyph">!</span>
+      <span class="glyph glyph-tier tier-pill--glyph">@</span>
+      <span class="glyph glyph-tier tier-pill--glyph">#</span>
+      <span style="width:var(--space-2xl)"></span>
+      <span class="tier-1"><span class="tier-pill">&le;11</span></span>
+      <span class="tier-2"><span class="tier-pill">12&ndash;16</span></span>
+      <span class="tier-3"><span class="tier-pill">17+</span></span>
+      <span class="sg-note" style="margin:0">glyph pills (book-accurate) &middot; CSS fallback</span>
+    </div>
+
+    <h3 class="sg-sub">Filter pills &amp; tabs</h3>
+    <div class="sg-demo" style="padding:0">
+      <div class="ability-filters">
+        <button class="filter-pill active">All</button>
+        <button class="filter-pill">Signature</button>
+        <button class="filter-pill">Heroic</button>
+        <button class="filter-pill">Available</button>
+        <button class="filter-pill">Triggered</button>
+      </div>
+      <div class="sheet-tabs">
+        <button class="tab-btn active">Abilities</button>
+        <button class="tab-btn">Stats</button>
+        <button class="tab-btn">Details</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ SHEET ═══════════════ -->
+  <section class="sg-section">
+    <h2>The sheet</h2>
+    <p class="sg-note">Live composition — header, session indicator, action economy, recovery, filters, cards, stats. This is the whole playing surface in one screen.</p>
+
+    <div style="border:1px solid var(--line-soft);border-radius:var(--radius-sm);overflow:hidden">
+      <header class="sheet-header">
+        <div class="sheet-header-left">
+          <button class="btn btn-ghost btn-icon">&larr;</button>
+          <div class="sheet-identity">
+            <span class="sheet-name">Vessa Thorncoil</span>
+            <span class="sheet-class">Level 3 Talent &middot; Chronopathy</span>
+          </div>
+        </div>
+        <div class="sheet-header-center">
+          <div class="hp-display">
+            <div class="hp-numbers">
+              <span class="hp-current">24</span><span class="hp-sep">/</span><span class="hp-max">36</span><span class="hp-label">Stamina</span>
+            </div>
+            <div class="hp-bar-track"><div class="hp-bar-fill" style="width:66%"></div></div>
+          </div>
+        </div>
+        <div class="sheet-header-right">
+          <div class="resource-display">
+            <button class="resource-btn">&minus;</button>
+            <div class="resource-count"><span class="resource-current">5</span><span class="resource-name">Clarity</span></div>
+            <button class="resource-btn">+</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="session-indicator"><span class="session-pulse"></span><span>In Session</span></div>
+
+      <div class="action-economy">
+        <div class="bucket" data-bucket="action"><span class="bucket-icon" aria-hidden="true">c</span><span class="bucket-label">Action</span></div>
+        <div class="bucket spent" data-bucket="maneuver"><span class="bucket-icon" aria-hidden="true">b</span><span class="bucket-label">Maneuver</span></div>
+        <div class="bucket" data-bucket="triggered"><span class="bucket-icon" aria-hidden="true">)</span><span class="bucket-label">Triggered</span></div>
+        <div class="bucket" data-bucket="free-triggered"><span class="bucket-icon" aria-hidden="true">(</span><span class="bucket-label">Free Trig.</span></div>
+        <div class="bucket" data-bucket="free-strike"><span class="bucket-icon" aria-hidden="true">t</span><span class="bucket-label">Free Strike</span></div>
+      </div>
+
+      <div class="recovery-row">
+        <div class="recovery-group">
+          <span class="recovery-label">Recoveries</span>
+          <div class="recovery-pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip off"></i><i class="pip off"></i><i class="pip off"></i></div>
+          <div class="recovery-controls">
+            <button class="recovery-adj">&minus;</button>
+            <span class="recovery-count">5<span class="recovery-sep">/</span>8</span>
+            <button class="recovery-adj">+</button>
+          </div>
+        </div>
+        <div class="recovery-group">
+          <span class="recovery-label">Victories</span>
+          <div class="victory-track"><i class="victory-mark"></i><i class="victory-mark"></i><i class="victory-mark off"></i><i class="victory-mark off"></i><i class="victory-mark off"></i></div>
+        </div>
+      </div>
+
+      <div class="ability-filters">
+        <button class="filter-pill active">All</button>
+        <button class="filter-pill">Signature</button>
+        <button class="filter-pill">Heroic</button>
+        <button class="filter-pill">Available</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:var(--space-md);padding:0 var(--space-lg) var(--space-lg)">
+
+        <!-- collapsed, affordable -->
+        <div class="ability-card affordable">
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="ornament-bracket"></span>
+              <div class="card-heading">
+                <span class="card-name">Ripple in Time</span>
+                <span class="card-flavor-inline">The blow lands a heartbeat before you throw it.</span>
+                <div class="card-meta">
+                  <span class="card-keywords">Magic, Psionic, Ranged, Strike</span>
+                  <span class="card-action-type">Main action</span>
+                </div>
+                <div class="card-distance-row">
+                  <span><span class="glyph glyph-dist" aria-hidden="true">g</span>Ranged 10</span>
+                  <span><span class="glyph glyph-dist" aria-hidden="true">x</span>One creature</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-header-right"><span class="badge badge-signature">Signature</span></div>
+          </div>
+          <div class="card-body"><p class="card-summary">5 + <span class="glyph glyph-attr">i</span> psychic damage; slide 2.</p></div>
+        </div>
+
+        <!-- expanded -->
+        <div class="ability-card affordable">
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="ornament-bracket"></span>
+              <div class="card-heading">
+                <span class="card-name">Unmake the Moment (9 Clarity)</span>
+                <span class="card-flavor-inline">You already lost. You simply haven't caught up to it.</span>
+                <div class="card-meta">
+                  <span class="card-keywords">Area, Magic, Psionic</span>
+                  <span class="card-action-type">Main action</span>
+                </div>
+                <div class="card-distance-row">
+                  <span><span class="glyph glyph-dist" aria-hidden="true">e</span>5 &times; 2 line within 1</span>
+                  <span><span class="glyph glyph-dist" aria-hidden="true">x</span>Each enemy in the area</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-header-right">
+              <span class="badge badge-frequency">1 / Encounter</span>
+              <span class="resource-pips"><i></i><i></i><i></i><i class="off"></i><i class="off"></i></span>
+            </div>
+          </div>
+          <div class="card-expanded">
+            <div class="card-tiers">
+              <div class="tier tier-1"><span class="tier-label glyph glyph-tier tier-pill--glyph">!</span><span class="tier-text">4 + <span class="glyph glyph-attr">i</span> psychic damage; slowed (EoT).</span></div>
+              <div class="tier tier-2"><span class="tier-label glyph glyph-tier tier-pill--glyph">@</span><span class="tier-text">7 + <span class="glyph glyph-attr">i</span> psychic damage; <span class="chip-potency">i&lt;v</span> slowed (save ends).</span></div>
+              <div class="tier tier-3"><span class="tier-label glyph glyph-tier tier-pill--glyph">#</span><span class="tier-text">10 + <span class="glyph glyph-attr">i</span> psychic damage; slowed and can't use triggered actions (save ends).</span></div>
+            </div>
+            <div class="card-effect">
+              <span class="card-section-label">Effect:</span><span class="card-effect-text">Until the end of the encounter, the first time each target would take damage, you can spend a Clarity to reduce that damage by 5.</span>
+            </div>
+            <div class="card-effect card-spend">
+              <span class="card-section-label">Spend 2 Clarity:</span><span class="card-effect-text">You also teleport each target up to 3 squares before the damage is resolved.</span>
+            </div>
+            <button class="btn btn-primary btn-block btn-use-ability">Use This Ability</button>
+            <p class="card-flavor">"You already lost. I'm simply showing you when."</p>
+          </div>
+        </div>
+
+        <!-- spent -->
+        <div class="ability-card spent">
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="ornament-bracket"></span>
+              <div class="card-heading">
+                <span class="card-name">Fold the Instant</span>
+                <div class="card-meta">
+                  <span class="card-keywords">Magic, Psionic</span>
+                  <span class="card-action-type">Maneuver</span>
+                </div>
+                <div class="card-distance-row">
+                  <span><span class="glyph glyph-dist" aria-hidden="true">f</span>Self</span>
+                  <span><span class="glyph glyph-dist" aria-hidden="true">x</span>Self</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-header-right"><span class="badge badge-spent">Spent</span></div>
+          </div>
+          <div class="card-body"><p class="card-summary">Shift up to your speed; you have concealment until the start of your next turn.</p></div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat"><span class="stat-glyph">M</span><span class="stat-value">+2</span><span class="stat-key">Might</span></div>
+        <div class="stat"><span class="stat-glyph">A</span><span class="stat-value">+1</span><span class="stat-key">Agility</span></div>
+        <div class="stat"><span class="stat-glyph">R</span><span class="stat-value">&minus;1</span><span class="stat-key">Reason</span></div>
+        <div class="stat"><span class="stat-glyph">I</span><span class="stat-value">+3</span><span class="stat-key">Intuition</span></div>
+        <div class="stat"><span class="stat-glyph">P</span><span class="stat-value">+0</span><span class="stat-key">Presence</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ SURFACES ═══════════════ -->
+  <section class="sg-section">
+    <h2>Panels, callouts, toasts</h2>
+    <div class="sg-grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Combat Profile</span><button class="btn btn-sm">Edit</button></div>
+        <div class="panel-body"><p style="font:var(--type-prose)">Panels carry secondary structure — runner panels, campaign lists, kit stats.</p></div>
+      </div>
+      <div>
+        <div class="callout">
+          <div class="callout-title">Telling Friend from Foe</div>
+          <p style="font:var(--type-prose)">The book's sidebar: heavy rules top and bottom, a condensed uppercase title, warm ground.</p>
+        </div>
+        <div class="callout callout-reverse">
+          <div class="callout-title">Director's Note</div>
+          <p style="font:var(--type-prose)">The reversed variant, for the one thing on screen that must not be skimmed.</p>
+        </div>
+      </div>
+    </div>
+    <div class="sg-row" style="margin-top:var(--space-lg)">
+      <div class="toast">Ability used — 2 Clarity spent.</div>
+      <div class="toast toast-success">Hero saved.</div>
+      <div class="toast toast-danger">Could not reach the campaign.</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ WIZARD ═══════════════ -->
+  <section class="sg-section">
+    <h2>The wizard</h2>
+    <p class="sg-note">The creation flow currently runs an orange accent unrelated to the rest of the app. It uses <code>--accent</code> here like everything else — a selected card must not change colour just because a different screen is showing it.</p>
+
+    <div style="border:1px solid var(--line-soft);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface-app)">
+      <div class="wizard-header">
+        <button class="btn btn-icon">&larr;</button>
+        <div class="wizard-progress"><div class="wizard-progress-fill" style="width:18%"></div></div>
+        <span class="wizard-step-count">Step 2 of 11</span>
+      </div>
+
+      <div class="wizard-body">
+        <h2 class="wizard-title">Choose Your Ancestry</h2>
+        <p class="wizard-subtitle">Where does your lineage lie?</p>
+
+        <div class="wizard-split">
+          <div class="picker-list">
+            <button class="picker-card"><span class="picker-name">Devil</span><span class="picker-desc">Born of infernal lineage, devils carry innate magic and an unsettling charisma.</span></button>
+            <button class="picker-card"><span class="picker-name">Dragon Knight</span><span class="picker-desc">Warriors who merged with draconic power through an ancient ritual of bonding.</span></button>
+            <button class="picker-card selected"><span class="picker-name">Dwarf</span><span class="picker-desc">Ancient and resilient, shaped by stone and forge. Endurance personified.</span></button>
+            <button class="picker-card"><span class="picker-name">Hakaan</span><span class="picker-desc">The great giants of the world — raw power and unshakeable resolve.</span></button>
+          </div>
+
+          <div>
+            <div class="trait-signature">
+              <div class="trait-signature-head">
+                <span class="badge badge-signature">Signature Trait · Free</span>
+                <span class="option-name">Runic Carving</span>
+              </div>
+              <p class="option-desc">In 10 minutes, carve a magic rune providing one of: Detection, Light, or Voice.</p>
+            </div>
+
+            <div class="budget-bar">
+              <span class="budget-label">Trait Points Remaining</span>
+              <span class="budget-value">3<span class="of"> / 3</span></span>
+            </div>
+
+            <button class="option-row">
+              <span class="option-box"></span>
+              <span><span class="option-name">Grounded</span><span class="option-desc">+1 bonus to stability.</span></span>
+              <span class="option-cost">1 pt</span>
+            </button>
+            <button class="option-row selected">
+              <span class="option-box"></span>
+              <span><span class="option-name">Stand Tough</span><span class="option-desc">Your Might is treated as 1 higher for resisting potencies. Edge on Might tests to resist environmental effects.</span></span>
+              <span class="option-cost">1 pt</span>
+            </button>
+            <button class="option-row">
+              <span class="option-box"></span>
+              <span><span class="option-name">Great Fortitude</span><span class="option-desc">You can't be made weakened.</span></span>
+              <span class="option-cost">2 pts</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="field-group" style="margin-top:var(--space-3xl)">
+          <div class="field-label"><b>Environment</b><span>Where did your community live?</span></div>
+          <div class="picker-grid">
+            <button class="picker-card"><span class="picker-name">Nomadic</span><span class="picker-meta">Skill: Navigate</span><span class="picker-desc">Your people travel from place to place to survive.</span></button>
+            <button class="picker-card selected"><span class="picker-name">Secluded</span><span class="picker-meta">Skill: Read Person</span><span class="picker-desc">Your community occupied one close-quarters structure.</span></button>
+            <button class="picker-card"><span class="picker-name">Urban</span><span class="picker-meta">Skill: Alertness</span><span class="picker-desc">You grew up in a city, always surrounded by crowds and conflict.</span></button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label"><b>Choose Skills</b><span>Pick 2 from Exploration or Interpersonal</span><span class="choice-count">1 / 2 selected</span></div>
+          <div class="chip-set">
+            <button class="chip">Alertness</button><button class="chip">Brag</button>
+            <button class="chip selected">Climb</button><button class="chip">Endurance</button>
+            <button class="chip">Flirt</button><button class="chip">Handle Animals</button>
+            <button class="chip">Hide</button><button class="chip">Intimidate</button>
+            <button class="chip">Jump</button><button class="chip">Track</button>
+          </div>
+        </div>
+
+        <div class="field-group" style="max-width:420px">
+          <div class="summary-group-label is-done">Signature &check;</div>
+          <div class="summary-row"><span class="summary-name">I Work Better Alone</span><span class="summary-meta">Action</span></div>
+          <div class="summary-group-label is-done" style="margin-top:var(--space-md)">3pt Heroic &check;</div>
+          <div class="summary-row"><span class="summary-name">Disorienting Strike (3 Insight)</span><span class="summary-meta">Action</span></div>
+        </div>
+
+        <div class="kv-list" style="max-width:520px">
+          <div class="kv-row"><span class="kv-key">Skills</span><span class="kv-value">Rumors + 1 exploration + 1 interpersonal</span></div>
+          <div class="kv-row"><span class="kv-key">Languages</span><span class="kv-value">+2</span></div>
+          <div class="kv-row"><span class="kv-key">Resources</span><span class="kv-value">One interpersonal perk</span></div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn">Back</button>
+        <button class="btn btn-primary">Continue</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ CAMPAIGN ═══════════════ -->
+  <section class="sg-section">
+    <h2>Campaign &amp; director</h2>
+    <p class="sg-note">Three columns, hairline-separated. The emoji icons currently in the toolbar (🐉 📖 ⛺) have no equivalent in the glyph font and don't survive the light theme — these are text-only, with the malice skull where it genuinely applies.</p>
+
+    <div style="border:1px solid var(--line-soft);border-radius:var(--radius-sm);overflow:hidden">
+      <div class="app-toolbar">
+        <button class="btn btn-icon">&larr;</button>
+        <span class="app-toolbar-title">Testy</span>
+        <span class="spacer"></span>
+        <button class="btn btn-sm"><span class="glyph" aria-hidden="true">d</span> Bestiary</button>
+        <button class="btn btn-sm">Knowledge</button>
+        <button class="btn btn-sm">Respite</button>
+      </div>
+      <div class="status-strip">No heroes yet — add your party below</div>
+
+      <div class="campaign-layout">
+        <div class="campaign-col">
+          <div class="campaign-col-head"><span class="campaign-col-title">Party</span><button class="btn btn-sm">+ Hero</button></div>
+          <div class="empty-state"><span class="divider-mark glyph">¥</span>No heroes yet.<br>Add your party members above.</div>
+        </div>
+
+        <div class="campaign-col">
+          <div class="campaign-col-head"><span class="campaign-col-title">Encounters</span><button class="btn btn-sm">+ Encounter</button></div>
+          <div class="campaign-col-body">
+            <div class="list-row">
+              <div class="list-reorder"><button>&#9650;</button>1<button>&#9660;</button></div>
+              <div class="list-main">
+                <div class="list-name">Goblins!</div>
+                <div class="list-meta">1 group · 12/? EV · 1V expected</div>
+              </div>
+              <div class="list-actions">
+                <span class="badge badge-action">Combat</span>
+                <span class="badge badge-spent">Draft</span>
+                <span class="badge badge-signature">Standard</span>
+                <button class="btn btn-ghost btn-sm">&times;</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="campaign-col">
+          <div class="campaign-col-head"><span class="campaign-col-title">Info</span></div>
+          <div class="campaign-col-body">
+            <div class="kv-list">
+              <div class="kv-row"><span class="kv-key">Campaign</span><span class="kv-value">Testy</span></div>
+              <div class="kv-row"><span class="kv-key">Advancement</span><span class="kv-value">Director</span></div>
+              <div class="kv-row"><span class="kv-key">Heroes</span><span class="kv-value">0</span></div>
+              <div class="kv-row"><span class="kv-key">Encounters</span><span class="kv-value">1</span></div>
+            </div>
+            <div class="divider"><span class="divider-mark">¢</span></div>
+            <h4>Campaign Stats</h4>
+            <div class="stat-tiles">
+              <div class="stat-tile"><span class="stat-tile-value">0</span><span class="stat-tile-label">Encounters completed</span></div>
+              <div class="stat-tile"><span class="stat-tile-value">0</span><span class="stat-tile-label">Total victories</span></div>
+              <div class="stat-tile"><span class="stat-tile-value">0</span><span class="stat-tile-label">Sessions played</span></div>
+              <div class="stat-tile"><span class="stat-tile-value">0</span><span class="stat-tile-label">Respites taken</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ MODALS ═══════════════ -->
+  <section class="sg-section">
+    <h2>Modals &amp; bestiary</h2>
+    <p class="sg-note">Both modals share one shell. The statblock reuses the same glyph vocabulary as the ability card — attributes as block chips, no bespoke styling.</p>
+
+    <div class="sg-grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));align-items:start">
+
+      <div class="modal">
+        <div class="modal-head">
+          <div><div class="modal-title">Monster Search</div></div>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="input-row">
+            <input class="input" placeholder="Search by name…">
+            <label>Lv</label><input class="input input-sm" value="1">
+            <span style="color:var(--ink-faint)">–</span><input class="input input-sm" value="10">
+          </div>
+          <div class="chip-set" style="margin-top:var(--space-md)">
+            <button class="chip selected">All</button><button class="chip">Ambusher</button>
+            <button class="chip">Artillery</button><button class="chip">Brute</button>
+            <button class="chip">Controller</button><button class="chip">Defender</button>
+            <button class="chip">Harrier</button><button class="chip">Solo</button>
+          </div>
+          <p class="result-count">80 of 416 monsters</p>
+          <button class="monster-row">
+            <span class="monster-level">Lv 2</span>
+            <span class="monster-name">Abyssal Hyena</span>
+            <span class="monster-role">Minion Brute</span>
+            <span class="monster-numbers"><span><b>EV</b> 4</span><span><b>HP</b> 7</span></span>
+          </button>
+          <button class="monster-row">
+            <span class="monster-level">Lv 6</span>
+            <span class="monster-name">Aeolyxria the Uncanny</span>
+            <span class="monster-role">Elite Controller</span>
+            <span class="monster-numbers"><span><b>EV</b> 32</span><span><b>HP</b> 140</span></span>
+          </button>
+          <button class="monster-row">
+            <span class="monster-level">Lv 1</span>
+            <span class="monster-name">Angulotl Dart</span>
+            <span class="monster-role">Minion Artillery</span>
+            <span class="monster-numbers"><span><b>EV</b> 3</span><span><b>HP</b> 3</span></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">Angulotl Dart</div>
+            <div class="modal-subtitle">
+              <span class="monster-level">Lv 1</span>
+              <span class="monster-role">Minion Artillery</span>
+              <span class="monster-numbers"><span><b>EV</b> 3 per 4</span></span>
+            </div>
+          </div>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="statline">
+            <div class="statline-cell"><span class="statline-value">3</span><span class="statline-key">Stamina</span></div>
+            <div class="statline-cell"><span class="statline-value">5</span><span class="statline-key">Speed</span></div>
+            <div class="statline-cell"><span class="statline-value">1S</span><span class="statline-key">Size</span></div>
+            <div class="statline-cell"><span class="statline-value">0</span><span class="statline-key">Stability</span></div>
+            <div class="statline-cell"><span class="statline-value">2</span><span class="statline-key">Free Strike</span></div>
+          </div>
+          <div class="statline">
+            <div class="statline-cell"><span class="stat-glyph">m</span><span class="statline-value">+0</span><span class="statline-key">Might</span></div>
+            <div class="statline-cell"><span class="stat-glyph">a</span><span class="statline-value">+2</span><span class="statline-key">Agility</span></div>
+            <div class="statline-cell"><span class="stat-glyph">r</span><span class="statline-value">+1</span><span class="statline-key">Reason</span></div>
+            <div class="statline-cell"><span class="stat-glyph">i</span><span class="statline-value">+0</span><span class="statline-key">Intuition</span></div>
+            <div class="statline-cell"><span class="stat-glyph">p</span><span class="statline-value">+0</span><span class="statline-key">Presence</span></div>
+          </div>
+          <div class="statblock-section"><h4>Keywords</h4><p>Angulotl, Humanoid</p></div>
+          <div class="statblock-section"><h4>Immunities &amp; Weaknesses</h4><p>poison 2</p></div>
+          <div class="statblock-section"><h4>Faction Malice Features</h4>
+            <ul><li><span class="glyph glyph-malice" aria-hidden="true">d</span> Leapfrog</li><li><span class="glyph glyph-malice" aria-hidden="true">d</span> Resonating Croak</li><li><span class="glyph glyph-malice" aria-hidden="true">d</span> Rainfall</li></ul>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn">&larr; Bestiary</button>
+          <button class="btn btn-primary">Add to Encounter…</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider" style="margin-top:var(--space-4xl)"><span class="divider-mark">¥</span></div>
+  <p class="credit-glyphs">Draw Steel Glyphs © 2025 MCDM Productions, CC BY-SA 4.0. Draw Steel is © MCDM Productions. Colours sampled from Draw Steel Heroes v1 for interoperability.</p>
+</div>
+
+<script>
+(function () {
+  const cs = getComputedStyle(document.documentElement);
+  const val = n => cs.getPropertyValue(n).trim();
+
+  /* resolve a token that may chain through var() */
+  function hex(name, depth) {
+    depth = depth || 0;
+    let v = val(name);
+    if (depth > 12) return null;
+    const m = v.match(/^var\((--[\w-]+)\)$/);
+    if (m) return hex(m[1], depth + 1);
+    return /^#[0-9a-f]{6}$/i.test(v) ? v : null;
+  }
+  const lum = h => {
+    const c = [1, 3, 5].map(i => {
+      let x = parseInt(h.substr(i, 2), 16) / 255;
+      return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a, b) => {
+    const la = lum(a), lb = lum(b), hi = Math.max(la, lb), lo = Math.min(la, lb);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+
+  /* ── ramps ── */
+  const ramps = {
+    'ramp-paper':  ['--paper-000','--paper-050','--paper-100','--paper-200','--paper-300','--paper-400','--paper-500'],
+    'ramp-ink':    ['--ink-300','--ink-400','--ink-500','--ink-600','--ink-700','--ink-800','--ink-900'],
+    'ramp-bronze': ['--bronze-050','--bronze-100','--bronze-200','--bronze-300','--bronze-400','--bronze-500','--bronze-600','--bronze-700'],
+    'ramp-state':  ['--oxblood-500','--verdigris-500','--lapis-500','--amethyst-500','--ochre-500','--moss-500','--black']
+  };
+  for (const id in ramps) {
+    const el = document.getElementById(id);
+    el.innerHTML = ramps[id].map(t => {
+      const h = hex(t);
+      const onDark = lum(h) < 0.35;
+      return `<div class="chip" style="background:${h};color:${onDark ? '#FFFEF6' : '#0D0D0F'}">
+                <b>${t.replace('--','')}</b><span>${h.toUpperCase()}</span></div>`;
+    }).join('');
+  }
+
+  /* ── contrast table — mirrors scripts/check-design-system.py ── */
+  const PAIRS = [
+    ['--ink-body','--surface-page',4.5], ['--ink-body','--surface-app',4.5],
+    ['--ink-body','--surface-inset',4.5], ['--ink-strong','--surface-page',4.5],
+    ['--ink-muted','--surface-page',4.5], ['--ink-muted','--surface-bar',4.5],
+    ['--ink-faint','--surface-page',3.0], ['--ink-link','--surface-page',4.5],
+    ['--accent-ink','--surface-page',4.5], ['--accent-ink','--accent-wash',4.5],
+    ['--ink-on-reverse','--surface-reverse',4.5], ['--ink-on-accent','--surface-accent',4.5],
+    ['--state-available-ink','--state-available-bg',4.5],
+    ['--state-danger-ink','--state-danger-bg',4.5],
+    ['--state-warning-ink','--state-warning-bg',4.5],
+    ['--state-heal-ink','--state-heal-bg',4.5],
+    ['--state-spent','--state-spent-bg',3.0],
+    ['--tier-1','--surface-inset',4.5], ['--tier-2','--surface-inset',4.5], ['--tier-3','--surface-inset',4.5],
+    ['--econ-action-ink','--econ-action-bg',4.5], ['--econ-maneuver-ink','--econ-maneuver-bg',4.5],
+    ['--econ-triggered-ink','--econ-triggered-bg',4.5], ['--econ-free-ink','--econ-free-bg',4.5],
+    ['--econ-strike-ink','--econ-strike-bg',4.5], ['--accent','--surface-page',3.0]
+  ];
+  document.getElementById('contrast-body').innerHTML = PAIRS.map(([f, b, min]) => {
+    const fh = hex(f), bh = hex(b), r = ratio(fh, bh), ok = r >= min;
+    return `<tr>
+      <td><code>${f}</code></td><td><code>${b}</code></td>
+      <td style="background:${bh};color:${fh};padding:var(--space-sm) var(--space-md);font:var(--type-prose-sm)">Power roll 17+</td>
+      <td class="ratio ${ok ? 'pass' : 'fail'}">${r.toFixed(2)}:1 <span style="opacity:.5">need ${min}</span></td></tr>`;
+  }).join('');
+
+  /* ── type scale ── */
+  const SIZES = ['3xs','2xs','xs','sm','md','lg','xl','2xl','3xl','4xl'];
+  document.querySelector('#type-scale tbody').innerHTML = SIZES.map(s => {
+    const v = val('--size-' + s);
+    return `<tr><td><code>--size-${s}</code></td><td class="ratio">${v}</td>
+      <td style="font-family:var(--family-serif);font-size:var(--size-${s})">Draw Steel</td></tr>`;
+  }).join('');
+
+  /* ── space scale ── */
+  const SPACE = ['3xs','2xs','xs','sm','md','lg','xl','2xl','3xl','4xl'];
+  document.querySelector('#space-scale tbody').innerHTML = SPACE.map(s => {
+    const v = val('--space-' + s);
+    return `<tr><td><code>--space-${s}</code></td><td class="ratio">${v}</td>
+      <td><div class="spacebar" style="width:var(--space-${s})"></div></td></tr>`;
+  }).join('');
+
+  /* ── glyph keymap ── */
+  const GLYPHS = [
+    ['t','Melee'],['g','Ranged'],['f','Self'],['e','Area'],['o','Area of effect'],
+    ['b','Burst'],['c','Special'],['l','Versatile'],['x','Targets'],['*','Trait'],
+    ['!','Tier 1'],['@','Tier 2'],['#','Tier 3'],
+    ['(','Activation'],[')','Triggered'],['d','Malice'],
+    ['A','Agility'],['I','Intuition'],['M','Might'],['P','Presence'],['R','Reason'],
+    ['a','Agility (block)'],['i','Intuition (block)'],['m','Might (block)'],['p','Presence (block)'],['r','Reason (block)'],
+    ['w','Weak'],['v','Average'],['s','Strong'],
+    ['n','Note'],['N','Notes'],
+    ['¡','Divider 1'],['¢','Divider 2'],['£','Divider 3'],['¥','Divider 4'],['°','Divider 5'],['©','Divider 6']
+  ];
+  document.getElementById('glyphgrid').innerHTML = GLYPHS.map(([k, n]) =>
+    `<div class="glyphcell"><span class="g">${k.replace('&','&amp;').replace('<','&lt;')}</span>
+     <span class="k">key: <b>${k}</b></span><span class="n">${n}</span></div>`).join('');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,525 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — APP COMPONENTS
+   The surfaces outside the character sheet: the creation wizard, the
+   campaign/director view, modals, and the bestiary.
+   Depends on tokens.css + base.css. No raw values.
+
+   ACCENT POLICY — read before adding anything here.
+   The current app runs three unrelated accents: orange in the wizard,
+   the class colour on the sheet, gold in campaign/bestiary. That reads as
+   three products. The book uses one accent, and so does this system:
+
+     --accent (bronze)   all chrome, everywhere: wizard, campaign, modals,
+                         bestiary, primary buttons, progress, selection
+     --class-accent      ONLY on the character sheet, and only as an
+                         identity mark — card spine, tab underline, header
+                         rule. Never a button, never a selected state.
+
+   A selected picker card must not change colour between the wizard and the
+   bestiary just because a different screen is showing it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══ APP SHELL ════════════════════════════════════════════════════════════ */
+.app-shell { display: flex; flex-direction: column; min-height: 100%; background: var(--surface-app); }
+.app-scroll { flex: 1; overflow-y: auto; }
+
+.app-toolbar {
+  display: flex; align-items: center; gap: var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--surface-reverse);
+  color: var(--ink-on-reverse);
+  border-bottom: 2px solid var(--line-accent);
+}
+.app-toolbar .spacer { flex: 1; }
+.app-toolbar-title {
+  font: var(--type-ui-label);
+  font-size: var(--size-lg);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+.app-toolbar .btn {
+  background: transparent;
+  border-color: var(--wash-on-reverse-strong);
+  color: var(--ink-on-reverse);
+}
+.app-toolbar .btn:hover { background: var(--wash-on-reverse-weak); border-color: var(--accent); }
+
+/* Status strip under the toolbar — "No heroes yet", "Draft encounter", etc. */
+.status-strip {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--surface-bar);
+  border-bottom: 1px solid var(--line-soft);
+  font: var(--type-prose-sm);
+  color: var(--ink-muted);
+}
+
+
+/* ═══ STICKY ACTION BAR ════════════════════════════════════════════════════
+   The wizard's Back / Continue footer. Two children, equal weight, no gap —
+   it reads as one control rail rather than two floating buttons. */
+.action-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--surface-bar);
+  border-top: 1px solid var(--line-soft);
+  box-shadow: 0 -2px 8px rgb(94 76 51 / .08);
+}
+.action-bar > .btn { flex: 1; padding-block: var(--space-md); font-size: var(--size-sm); }
+
+
+/* ═══ WIZARD ═══════════════════════════════════════════════════════════════ */
+.wizard-header {
+  display: flex; align-items: center; gap: var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--surface-page);
+  border-bottom: 1px solid var(--line-soft);
+}
+.wizard-progress {
+  flex: 1;
+  height: 4px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.wizard-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+.wizard-step-count {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.wizard-title { font: var(--type-section); font-size: var(--size-3xl); color: var(--ink-strong); }
+.wizard-subtitle { font: var(--type-flavor); color: var(--ink-muted); margin-top: var(--space-2xs); }
+.wizard-body { padding: var(--space-2xl) var(--space-lg) var(--space-lg); }
+
+/* Two-column: scrolling chooser on the left, detail on the right. */
+.wizard-split {
+  display: grid;
+  grid-template-columns: var(--rail-picker) 1fr;
+  gap: var(--space-lg);
+  margin-top: var(--space-xl);
+  align-items: start;
+}
+
+/* Section label + helper, as used by the Culture step */
+.field-group { margin-bottom: var(--space-2xl); }
+.field-label {
+  display: flex; align-items: baseline; gap: var(--space-md); flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+}
+.field-label > b {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--accent-ink);
+}
+.field-label > span { font: var(--type-prose-sm); color: var(--ink-muted); }
+
+
+/* ═══ PICKER CARDS ═════════════════════════════════════════════════════════
+   One selectable primitive, three layouts. Selection is always the same:
+   accent border, accent name, tinted ground. Never a different colour per
+   screen. */
+.picker-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--space-sm);
+  align-items: start;
+}
+
+.picker-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              background var(--duration-fast) var(--ease-standard);
+}
+.picker-card:hover { border-color: var(--line-strong); background: var(--surface-raised); }
+.picker-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.picker-card[disabled] { opacity: .5; cursor: not-allowed; }
+
+.picker-name {
+  display: block;
+  font: var(--type-ability-name);
+  color: var(--ink-strong);
+}
+.picker-card.selected .picker-name { color: var(--accent-ink); }
+.picker-meta {
+  display: block;
+  margin-top: var(--space-3xs);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.picker-desc {
+  display: block;
+  margin-top: var(--space-2xs);
+  font: var(--type-prose-sm);
+  color: var(--ink-body);
+}
+
+
+/* ═══ TRAIT / POINT BUDGET ═════════════════════════════════════════════════ */
+.budget-bar {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-bar);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-sm);
+}
+.budget-label {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.budget-value { font: var(--type-numeric); font-size: var(--size-lg); color: var(--accent-ink); }
+.budget-value .of { font-size: var(--size-sm); color: var(--ink-muted); }
+.budget-bar.is-empty .budget-value { color: var(--state-danger-ink); }
+
+/* Checkbox row with a cost on the right */
+.option-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-md);
+  align-items: start;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+.option-row + .option-row { margin-top: var(--space-sm); }
+.option-row:hover { border-color: var(--line-strong); }
+.option-row.selected { border-color: var(--accent); background: var(--accent-wash); }
+.option-box {
+  width: 18px; height: 18px; margin-top: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+  background: var(--surface-page);
+}
+.option-row.selected .option-box {
+  background: var(--accent);
+  border-color: var(--accent);
+  position: relative;
+}
+.option-row.selected .option-box::after {
+  content: '';
+  position: absolute; inset: 3px 4px 5px 4px;
+  border: solid var(--ink-on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(42deg);
+}
+.option-name { display: block; font: var(--type-ability-name); font-size: var(--size-md); color: var(--ink-strong); }
+.option-desc { display: block; margin-top: var(--space-3xs); font: var(--type-prose-sm); color: var(--ink-body); }
+.option-cost {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--accent-ink);
+  white-space: nowrap;
+}
+.option-row[disabled] { opacity: .45; }
+
+/* Free / signature trait — the book's callout, not a coloured alert box */
+.trait-signature {
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  background: var(--surface-raised);
+  border-top: 2px solid var(--line-accent);
+  border-bottom: 2px solid var(--line-accent);
+}
+.trait-signature-head { display: flex; align-items: baseline; gap: var(--space-sm); flex-wrap: wrap; }
+
+
+/* ═══ CHOICE CHIPS ═════════════════════════════════════════════════════════
+   Skill pickers. Selected uses the accent, not a separate green. */
+.chip-set { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+.chip {
+  padding: var(--space-2xs) var(--space-md);
+  font: var(--type-ui-label);
+  background: var(--surface-page);
+  color: var(--ink-body);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-pill);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+.chip:hover { border-color: var(--line-strong); }
+.chip.selected { background: var(--accent-wash); border-color: var(--accent); color: var(--accent-ink); font-weight: var(--weight-semi); }
+.chip[disabled] { opacity: .45; cursor: not-allowed; }
+
+.choice-count {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+  padding: var(--space-3xs) var(--space-sm);
+  background: var(--surface-inset);
+  border-radius: var(--radius-pill);
+}
+.choice-count.is-complete { background: var(--state-available-bg); color: var(--state-available-ink); }
+
+
+/* ═══ KEY / VALUE ROWS ═════════════════════════════════════════════════════ */
+.kv-list { display: flex; flex-direction: column; }
+.kv-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-lg);
+  padding: var(--space-sm) 0;
+}
+.kv-row + .kv-row { border-top: 1px solid var(--line-hair); }
+.kv-key {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.kv-value { font: var(--type-prose-sm); color: var(--ink-strong); text-align: right; }
+
+/* Confirmation list — the wizard's right-hand summary */
+.summary-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); padding: var(--space-sm) 0; }
+.summary-row + .summary-group { margin-top: var(--space-md); }
+.summary-group-label {
+  display: flex; align-items: center; gap: var(--space-2xs);
+  padding-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--line-soft);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.summary-group-label.is-done { color: var(--state-available-ink); }
+.summary-name { font: var(--type-prose-sm); color: var(--ink-strong); }
+.summary-meta {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-faint);
+}
+
+
+/* ═══ CAMPAIGN ═════════════════════════════════════════════════════════════ */
+.campaign-layout {
+  display: grid;
+  grid-template-columns: var(--rail-party) 1fr var(--rail-sidebar);
+  min-height: 0;
+}
+/* Real borders rather than a 1px grid-gap showing a background through —
+   the gap trick puts a value off the space scale into the layout. */
+.campaign-col { background: var(--surface-app); display: flex; flex-direction: column; min-width: 0; }
+.campaign-col + .campaign-col { border-left: 1px solid var(--line-soft); }
+.campaign-col-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--line-soft);
+}
+.campaign-col-title {
+  font: var(--type-ui-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-strong);
+}
+.campaign-col-body { padding: var(--space-lg); }
+
+/* Reorderable encounter row */
+.list-row {
+  display: flex; align-items: center; gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+.list-row + .list-row { margin-top: var(--space-sm); }
+.list-reorder {
+  display: flex; flex-direction: column; align-items: center;
+  flex: none;
+  color: var(--ink-faint);
+  font: var(--type-numeric-sm);
+  padding-right: var(--space-md);
+  border-right: 1px solid var(--line-hair);
+}
+.list-reorder button { color: inherit; line-height: 1; font-size: var(--size-3xs); }
+.list-reorder button:hover { color: var(--accent); }
+.list-main { flex: 1; min-width: 0; }
+.list-name { font: var(--type-ability-name); font-size: var(--size-md); color: var(--ink-strong); }
+.list-meta { margin-top: var(--space-3xs); font: var(--type-prose-sm); color: var(--ink-muted); }
+.list-actions { display: flex; align-items: center; gap: var(--space-xs); flex: none; }
+
+/* Big-numeral stat tiles */
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-lg) var(--space-sm);
+  padding: var(--space-lg) 0;
+}
+.stat-tile { text-align: center; }
+.stat-tile-value { display: block; font: var(--type-numeric); font-size: var(--size-3xl); color: var(--accent-ink); }
+.stat-tile-label {
+  display: block;
+  margin-top: var(--space-2xs);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+  line-height: var(--leading-snug);
+}
+
+.empty-state {
+  padding: var(--space-3xl) var(--space-lg);
+  text-align: center;
+  font: var(--type-prose-sm);
+  color: var(--ink-faint);
+}
+.empty-state .divider-mark { display: block; margin-bottom: var(--space-md); color: var(--accent-hairline); font-size: var(--size-xl); }
+
+
+/* ═══ MODAL ════════════════════════════════════════════════════════════════ */
+.modal-scrim {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-lg);
+  background: var(--surface-overlay);
+}
+.modal {
+  width: 100%;
+  max-width: var(--modal-max);
+  max-height: 88vh;
+  display: flex; flex-direction: column;
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-modal);
+  overflow: hidden;
+}
+.modal-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md);
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
+}
+.modal-title { font: var(--type-section); color: var(--ink-strong); }
+.modal-subtitle { margin-top: var(--space-2xs); display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; }
+.modal-body { padding: 0 var(--space-lg) var(--space-lg); overflow-y: auto; }
+.modal-foot {
+  display: flex; justify-content: flex-end; gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--surface-bar);
+  border-top: 1px solid var(--line-soft);
+}
+.modal-close { width: 30px; height: 30px; flex: none; color: var(--ink-muted); font-size: var(--size-lg); line-height: 1; }
+.modal-close:hover { color: var(--ink-strong); }
+
+
+/* ═══ FORM CONTROLS ════════════════════════════════════════════════════════ */
+.input, .select {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  font: var(--type-prose-sm);
+  color: var(--ink-body);
+  background: var(--surface-page);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+}
+.input::placeholder { color: var(--ink-faint); }
+.input:focus-visible, .select:focus-visible { border-color: var(--accent); }
+.input-sm { width: 62px; text-align: center; font: var(--type-numeric-sm); }
+.input-row { display: flex; align-items: center; gap: var(--space-sm); }
+.input-row label {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.result-count { font: var(--type-prose-sm); color: var(--ink-muted); margin: var(--space-md) 0 var(--space-sm); }
+
+
+/* ═══ BESTIARY ═════════════════════════════════════════════════════════════ */
+.monster-row {
+  display: flex; align-items: center; gap: var(--space-md);
+  width: 100%; text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid transparent;
+  border-bottom-color: var(--line-hair);
+}
+.monster-row:hover { background: var(--surface-raised); border-color: var(--accent-hairline); }
+.monster-level {
+  flex: none;
+  min-width: 42px; text-align: center;
+  padding: var(--space-3xs) var(--space-2xs);
+  background: var(--surface-reverse);
+  color: var(--ink-on-reverse);
+  border-radius: var(--radius-xs);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+.monster-name { flex: 1; min-width: 0; font: var(--type-ability-name); font-size: var(--size-md); color: var(--ink-strong); }
+.monster-role {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.monster-numbers { display: flex; gap: var(--space-md); flex: none; font: var(--type-numeric-sm); color: var(--ink-body); }
+.monster-numbers b { color: var(--ink-muted); font-weight: var(--weight-medium); }
+
+/* Statblock header strip — Stamina / Speed / Size / Stability / Free Strike */
+.statline {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-sm);
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+.statline + .statline { border-top: none; }
+.statline-cell { text-align: center; }
+.statline-value { display: block; font: var(--type-numeric); color: var(--ink-strong); }
+.statline-key {
+  display: block;
+  margin-top: var(--space-3xs);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+
+.statblock-section { margin-top: var(--space-lg); }
+.statblock-section > h4 { margin-bottom: var(--space-2xs); }
+.statblock-section p, .statblock-section li { font: var(--type-prose-sm); color: var(--ink-body); }
+.statblock-section ul { list-style: none; }
+.statblock-section li + li { margin-top: var(--space-3xs); }
+
+
+/* ═══ RESPONSIVE ═══════════════════════════════════════════════════════════ */
+@media (max-width: 1080px) {
+  .campaign-layout { grid-template-columns: 1fr; }
+  .wizard-split { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .stat-tiles { grid-template-columns: repeat(2, 1fr); }
+  .statline { grid-template-columns: repeat(3, 1fr); row-gap: var(--space-md); }
+  .action-bar { padding: var(--space-sm); }
+}

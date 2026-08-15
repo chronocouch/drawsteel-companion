@@ -1,0 +1,548 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — COMPONENTS
+   Depends on tokens.css + base.css. No raw values. Every entry here is
+   rendered in styleguide.html; if you add a component, add it there too.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ BUTTONS ══════════════════════════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  font: var(--type-ui-label);
+  font-size: var(--size-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xs);
+  background: var(--surface-raised);
+  color: var(--ink-body);
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+}
+.btn:hover { background: var(--surface-page); border-color: var(--line-strong); }
+.btn:active { background: var(--surface-inset); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-accent);
+}
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.btn-reverse {
+  background: var(--surface-reverse);
+  border-color: var(--surface-reverse);
+  color: var(--ink-on-reverse);
+}
+
+.btn-ghost { background: transparent; border-color: transparent; color: var(--ink-muted); }
+.btn-ghost:hover { background: var(--surface-inset); border-color: transparent; }
+
+.btn-danger { background: var(--state-danger); border-color: var(--state-danger); color: var(--ink-on-accent); }
+
+.btn-sm  { padding: var(--space-2xs) var(--space-sm); font-size: var(--size-2xs); }
+.btn-icon { width: 32px; height: 32px; padding: 0; }
+.btn-block { display: flex; width: 100%; }
+
+
+/* ═══ BADGES ═══════════════════════════════════════════════════════════════ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  padding: var(--space-3xs) var(--space-xs);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+}
+.badge-action    { background: var(--econ-action-bg);    color: var(--econ-action-ink);    border-color: var(--econ-action); }
+.badge-maneuver  { background: var(--econ-maneuver-bg);  color: var(--econ-maneuver-ink);  border-color: var(--econ-maneuver); }
+.badge-triggered { background: var(--econ-triggered-bg); color: var(--econ-triggered-ink); border-color: var(--econ-triggered); }
+.badge-free      { background: var(--econ-free-bg);      color: var(--econ-free-ink);      border-color: var(--econ-free); }
+.badge-strike    { background: var(--econ-strike-bg);    color: var(--econ-strike-ink);    border-color: var(--econ-strike); }
+.badge-signature { background: var(--accent-wash);       color: var(--accent-ink);         border-color: var(--accent); }
+.badge-frequency { background: var(--state-warning-bg);  color: var(--state-warning-ink);  border-color: var(--state-warning); }
+.badge-spent     { background: var(--state-spent-bg);    color: var(--state-spent);        border-color: var(--line-soft); }
+
+/* Potency chip — the glyph font draws the black box itself, so this must
+   NOT add its own background or the chip doubles up. Content is the
+   attribute key + '<' + potency key, e.g. "i<v" for Intuition < average. */
+.chip-potency {
+  font-family: var(--family-glyph);
+  font-size: var(--size-md);
+  line-height: 1;
+  color: var(--malice);
+  white-space: nowrap;
+  vertical-align: -.06em;
+}
+
+
+/* ═══ TIER PILLS ═══════════════════════════════════════════════════════════
+   The book draws these as outlined rounded pills via the glyph font. Prefer
+   .tier-pill--glyph; .tier-pill is the no-font fallback. */
+.tier-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  padding: 0 var(--space-xs);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+  font: var(--type-numeric-sm);
+  font-size: var(--size-2xs);
+}
+.tier-pill--glyph {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  font-family: var(--family-glyph);
+  font-size: var(--size-lg);
+}
+.tier-1 .tier-pill, .tier-1 { color: var(--tier-1); }
+.tier-2 .tier-pill, .tier-2 { color: var(--tier-2); }
+.tier-3 .tier-pill, .tier-3 { color: var(--tier-3); }
+
+
+/* ═══ SHEET HEADER ═════════════════════════════════════════════════════════ */
+.sheet-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  min-height: var(--bar-header);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--surface-reverse);
+  color: var(--ink-on-reverse);
+  border-bottom: 2px solid var(--line-accent);
+}
+.sheet-header-left { display: flex; align-items: center; gap: var(--space-md); flex: 1 1 0; min-width: 0; }
+.sheet-identity { display: flex; flex-direction: column; min-width: 0; }
+.sheet-name {
+  font: var(--type-hero-name);
+  font-size: var(--size-xl);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sheet-class {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--bronze-300);
+}
+.sheet-header .btn-ghost { color: var(--ink-on-reverse); }
+.sheet-header .btn-ghost:hover { background: var(--wash-on-reverse-weak); }
+
+/* ── Stamina ────────────────────────────────────────────────────────────── */
+.sheet-header-center { flex: 0 1 240px; }
+.hp-numbers { display: flex; align-items: baseline; justify-content: center; gap: var(--space-3xs); }
+#hp-current, .hp-current { font: var(--type-numeric); }
+.hp-sep { font: var(--type-numeric-sm); opacity: .5; }
+#hp-max, .hp-max { font: var(--type-numeric-sm); opacity: .7; }
+.hp-label {
+  margin-left: var(--space-xs);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  opacity: .7;
+}
+.hp-bar-track {
+  height: 6px;
+  margin-top: var(--space-2xs);
+  background: var(--wash-on-reverse);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.hp-bar-fill {
+  height: 100%;
+  background: var(--stamina-fill);
+  transition: width var(--duration-base) var(--ease-out),
+              background var(--duration-base) var(--ease-standard);
+}
+.hp-display.is-winded .hp-bar-fill { background: var(--stamina-winded); }
+.hp-display.is-dying  .hp-bar-fill { background: var(--stamina-dying); }
+
+/* ── Resource ───────────────────────────────────────────────────────────── */
+.sheet-header-right { flex: 1 1 0; display: flex; justify-content: flex-end; }
+.resource-display {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--wash-accent);
+}
+.resource-btn {
+  width: 24px; height: 24px;
+  border: 1px solid var(--wash-on-reverse-strong);
+  border-radius: var(--radius-xs);
+  color: inherit;
+  font-size: var(--size-sm);
+  line-height: 1;
+}
+.resource-btn:hover { background: var(--wash-on-reverse-weak); }
+.resource-count { display: flex; flex-direction: column; align-items: center; line-height: var(--leading-tight); }
+#resource-current, .resource-current { font: var(--type-numeric); font-size: var(--size-lg); color: var(--bronze-200); }
+.resource-name {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  opacity: .7;
+}
+
+
+/* ═══ SESSION INDICATOR ════════════════════════════════════════════════════ */
+.session-indicator {
+  display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
+  height: var(--bar-session);
+  background: var(--state-available-bg);
+  color: var(--state-available-ink);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  border-bottom: 1px solid var(--line-soft);
+}
+.session-pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--state-available);
+  animation: pulse 2s var(--ease-standard) infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+
+
+/* ═══ ACTION ECONOMY ═══════════════════════════════════════════════════════ */
+.action-economy {
+  display: flex;
+  gap: var(--space-sm);
+  min-height: var(--bar-economy);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--surface-bar);
+  border-bottom: 1px solid var(--line-soft);
+}
+.bucket {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-2xs);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xs);
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.bucket-icon { font-family: var(--family-glyph); font-size: var(--size-md); line-height: 1; }
+.bucket-label {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+.bucket[data-bucket="action"]         { border-color: var(--econ-action);    color: var(--econ-action-ink);    background: var(--econ-action-bg); }
+.bucket[data-bucket="maneuver"]       { border-color: var(--econ-maneuver);  color: var(--econ-maneuver-ink);  background: var(--econ-maneuver-bg); }
+.bucket[data-bucket="triggered"]      { border-color: var(--econ-triggered); color: var(--econ-triggered-ink); background: var(--econ-triggered-bg); }
+.bucket[data-bucket="free-triggered"] { border-color: var(--econ-free);      color: var(--econ-free-ink);      background: var(--econ-free-bg); }
+.bucket[data-bucket="free-strike"]    { border-color: var(--econ-strike);    color: var(--econ-strike-ink);    background: var(--econ-strike-bg); }
+.bucket.spent,
+.bucket.spent[data-bucket] {
+  background: var(--state-spent-bg);
+  border-color: var(--line-soft);
+  border-style: dashed;
+  color: var(--state-spent);
+}
+
+
+/* ═══ RECOVERY ROW ═════════════════════════════════════════════════════════ */
+.recovery-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xl);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--surface-bar);
+  border-bottom: 1px solid var(--line-soft);
+}
+.recovery-group { display: flex; align-items: center; gap: var(--space-md); }
+.recovery-label {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.recovery-pips { display: flex; gap: var(--space-2xs); }
+.pip {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--recovery-pip);
+  border: 1px solid var(--line-soft);
+}
+.pip.off { background: var(--recovery-pip-off); }
+.recovery-controls { display: flex; align-items: center; gap: var(--space-xs); }
+.recovery-adj {
+  width: 22px; height: 22px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xs);
+  color: var(--ink-muted);
+  line-height: 1;
+}
+.recovery-adj:hover { background: var(--surface-page); color: var(--ink-strong); }
+.recovery-count { font: var(--type-numeric-sm); }
+.recovery-sep { opacity: .5; }
+
+/* Victories — diamonds, matching the book's marginal marks */
+.victory-track { display: flex; gap: var(--space-2xs); }
+.victory-mark {
+  width: 13px; height: 13px;
+  background: var(--victory-mark);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.victory-mark.off { background: var(--victory-mark-off); }
+
+
+/* ═══ FILTER PILLS ═════════════════════════════════════════════════════════ */
+.ability-filters { display: flex; flex-wrap: wrap; gap: var(--space-sm); padding: var(--space-md) var(--space-lg) var(--space-sm); }
+.filter-pill {
+  padding: var(--space-2xs) var(--space-md);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  background: var(--surface-page);
+  color: var(--ink-muted);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-pill);
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.filter-pill:hover { border-color: var(--line-strong); color: var(--ink-body); }
+.filter-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-on-accent);
+}
+
+
+/* ═══ ABILITY CARD ═════════════════════════════════════════════════════════
+   The card IS the book page: it sits on the app surface, carries the
+   bracket ornament, and reproduces the stat block's reading order —
+   name → flavor → keywords/action → distance/target → tiers → effect. */
+/* The sheet lays cards out as a grid, not a stack — 3-5 across on desktop,
+   collapsing to one column on a phone at the table. */
+.ability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-grid-min), 1fr));
+  gap: var(--space-md);
+  align-items: start;
+  padding: var(--space-sm) var(--space-lg) var(--space-lg);
+}
+.ability-group-label {
+  grid-column: 1 / -1;
+  margin-top: var(--space-sm);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-faint);
+}
+
+.ability-card {
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-card);
+  overflow: hidden;
+  transition: box-shadow var(--duration-fast) var(--ease-standard),
+              opacity var(--duration-base) var(--ease-standard);
+}
+.ability-card:hover { box-shadow: var(--elevation-raised); }
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  color: var(--ink-strong);
+}
+.card-header-left { flex: 1; min-width: 0; display: flex; gap: var(--space-sm); }
+.card-heading { flex: 1; min-width: 0; }
+.card-name { display: block; font: var(--type-ability-name); color: var(--ink-strong); }
+.card-flavor-inline { display: block; font: var(--type-flavor); color: var(--ink-body); margin-top: var(--space-3xs); }
+
+/* Keywords rule — the book's heavy hairline under the keyword line */
+.card-meta {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md);
+  margin-top: var(--space-xs);
+  padding-bottom: var(--space-3xs);
+  border-bottom: 1px solid var(--line-reverse);
+}
+.card-keywords { font: var(--type-keyword); color: var(--ink-strong); }
+.card-action-type { font: var(--type-keyword); color: var(--ink-strong); white-space: nowrap; }
+
+.card-distance-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md);
+  margin-top: var(--space-2xs);
+  font: var(--type-prose-sm);
+  color: var(--ink-body);
+}
+
+.card-header-right { display: flex; align-items: center; gap: var(--space-xs); flex: none; }
+
+.card-body { padding: 0 var(--space-md) var(--space-md); }
+.card-summary { font: var(--type-prose); color: var(--ink-body); }
+
+.resource-pips { display: flex; gap: var(--space-3xs); }
+.resource-pips i { width: 8px; height: 8px; border-radius: 50%; background: var(--class-accent); display: block; }
+.resource-pips i.off { background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong); }
+
+/* ── Expanded ───────────────────────────────────────────────────────────── */
+.card-expanded {
+  padding: var(--space-md);
+  background: var(--surface-inset);
+  border-top: 1px solid var(--line-soft);
+}
+.card-expanded.hidden { display: none; }
+
+.card-tiers { display: flex; flex-direction: column; }
+.tier { display: flex; align-items: baseline; gap: var(--space-md); padding: var(--space-xs) 0; }
+.tier + .tier { border-top: 1px solid var(--line-hair); }
+.tier-label { flex: none; }
+.tier-text { font: var(--type-prose); color: var(--ink-body); }
+
+.card-effect { margin-top: var(--space-md); }
+.card-section-label {
+  font: var(--type-inline-label);
+  color: var(--ink-strong);
+  margin-right: var(--space-2xs);
+}
+.card-effect-text { font: var(--type-prose); color: var(--ink-body); display: inline; }
+.card-spend {
+  margin-top: var(--space-md);
+  padding-left: var(--space-md);
+  border-left: 2px solid var(--accent);
+}
+.card-flavor {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--line-hair);
+  font: var(--type-flavor);
+  color: var(--ink-muted);
+}
+.btn-use-ability { margin-top: var(--space-lg); }
+
+/* ── States ─────────────────────────────────────────────────────────────── */
+.ability-card.spent { opacity: .6; }
+.ability-card.spent .card-name { color: var(--ink-muted); }
+.ability-card.unaffordable { opacity: .78; }
+.ability-card.unaffordable .card-header-right { filter: grayscale(1); }
+
+
+/* ═══ STATS ════════════════════════════════════════════════════════════════ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-sm);
+  padding: 0 var(--space-lg) var(--space-lg);
+}
+.stat {
+  padding: var(--space-md) var(--space-2xs);
+  text-align: center;
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+.stat-value { display: block; font: var(--type-numeric); color: var(--ink-strong); }
+.stat-glyph { display: block; font-family: var(--family-glyph); font-size: var(--size-lg); color: var(--ink-strong); }
+.stat-key {
+  display: block;
+  margin-top: var(--space-3xs);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+
+
+/* ═══ TABS ═════════════════════════════════════════════════════════════════ */
+.sheet-tabs {
+  display: flex;
+  height: var(--bar-tabs);
+  background: var(--surface-bar);
+  border-bottom: 1px solid var(--line-soft);
+}
+.tab-btn {
+  flex: 1;
+  font: var(--type-ui-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+  border-bottom: 2px solid transparent;
+}
+.tab-btn:hover { color: var(--ink-body); }
+.tab-btn.active { color: var(--ink-strong); border-bottom-color: var(--accent); background: var(--surface-page); }
+
+
+/* ═══ CALLOUT — the book's sidebar ═════════════════════════════════════════ */
+.callout {
+  margin-block: var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--surface-raised);
+  border-top: 2px solid var(--line-accent);
+  border-bottom: 2px solid var(--line-accent);
+}
+.callout-title {
+  font: var(--type-ui-caps);
+  font-size: var(--size-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--accent-ink);
+  margin-bottom: var(--space-sm);
+}
+.callout-reverse {
+  background: var(--surface-reverse);
+  color: var(--ink-on-reverse);
+  border-color: var(--accent);
+}
+.callout-reverse .callout-title { color: var(--bronze-300); }
+
+
+/* ═══ PANEL ════════════════════════════════════════════════════════════════ */
+.panel {
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-card);
+  overflow: hidden;
+}
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--surface-bar);
+  border-bottom: 1px solid var(--line-soft);
+}
+.panel-title {
+  font: var(--type-ui-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-strong);
+}
+.panel-body { padding: var(--space-lg); }
+
+
+/* ═══ TOAST ════════════════════════════════════════════════════════════════ */
+.toast {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--surface-reverse);
+  color: var(--ink-on-reverse);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--elevation-modal);
+  font: var(--type-prose-sm);
+}
+.toast-danger  { border-left-color: var(--state-danger); }
+.toast-success { border-left-color: var(--state-heal); }
+
+
+/* ═══ RESPONSIVE ═══════════════════════════════════════════════════════════ */
+@media (max-width: 720px) {
+  .sheet-header { flex-wrap: wrap; }
+  .sheet-header-center, .sheet-header-right { flex: 1 1 100%; }
+  .action-economy { flex-wrap: wrap; }
+  .bucket { flex: 1 1 30%; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .recovery-row { gap: var(--space-lg); }
+}

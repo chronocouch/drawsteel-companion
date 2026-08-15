@@ -1,0 +1,168 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — BASE
+   Reset, document defaults, ornament primitives, glyph utilities.
+   Depends on tokens.css. Contains no component styles and no raw values.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--surface-app);
+  color: var(--ink-body);
+  font: var(--type-prose);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The book sets rule text ragged-right with old-style figures in running
+   prose and lining figures in stat blocks. Match that. */
+p, li { font-variant-numeric: oldstyle-nums; }
+.stat-block, [class*="numeric"], .glyph-num { font-variant-numeric: lining-nums tabular-nums; }
+
+h1, h2, h3, h4 { color: var(--ink-strong); font-weight: var(--weight-bold); }
+h1 { font: var(--type-section); font-size: var(--size-3xl); }
+h2 { font: var(--type-section); }
+h3 { font: var(--type-ability-name); }
+h4 { font: var(--type-ui-caps); text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--ink-muted); }
+
+a { color: var(--ink-link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--accent-ink); }
+
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-xs); }
+
+::selection { background: var(--accent-wash); color: var(--ink-strong); }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--line-soft);
+  margin-block: var(--space-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+   GLYPHS
+   The MCDM font maps icons onto ASCII keys — see the keymap in tokens.css.
+   Always supply an accessible label; the glyph itself reads as a letter.
+     <span class="glyph" aria-hidden="true">g</span> Ranged 10
+   ─────────────────────────────────────────────────────────────────────────── */
+.glyph {
+  font-family: var(--family-glyph);
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  speak: never;
+  -webkit-font-smoothing: antialiased;
+  /* CRITICAL: keys are case-sensitive and only half the alphabet is mapped.
+     `d` is the malice skull; `D` is nothing. Any ancestor with
+     text-transform: uppercase (buttons, badges, labels — most of the UI)
+     silently destroys the glyph without these two resets. */
+  text-transform: none !important;
+  font-variant: normal;
+}
+
+.glyph-tier   { font-size: 1.05em; color: var(--ink-strong); vertical-align: -.06em; }
+.glyph-dist   { font-size: 1.15em; color: var(--ink-muted);  vertical-align: -.12em; margin-right: var(--space-2xs); }
+.glyph-attr   { font-size: .95em;  color: var(--ink-strong); vertical-align: -.05em; }
+.glyph-potency{ font-size: .95em;  color: var(--ink-strong); vertical-align: -.05em; }
+.glyph-malice { font-size: 1.2em;  color: var(--malice); }
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+   ORNAMENT — the ability bracket
+   Traced from the sourcebook's ability stat block: a hairline spine, a
+   chevron opening left, and a diamond medallion at the midpoint. Drawn as a
+   mask so it inherits currentColor and the cutouts show the surface behind.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --ornament-bracket:
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 60"><g fill="%23fff" fill-rule="evenodd"><path d="M20 0h2v60h-2z"/><path d="M20 4 L10.5 30 L20 56 v-7 L15 30 L20 11 z"/><path d="M10 22.5 L18 30 L10 37.5 L2 30 Z M10 26 L14.5 30 L10 34 L5.5 30 Z"/><path d="M10 27.6 L12.9 30 L10 32.4 L7.1 30 Z"/></g></svg>');
+}
+
+/* Fixed-aspect mark (22:60), anchored to the top of the block it labels —
+   the book does not stretch it to the block's full height. */
+.ornament-bracket {
+  flex: none;
+  width: 20px;
+  min-height: 56px;
+  align-self: stretch;
+  background-color: currentColor;
+  -webkit-mask-image: var(--ornament-bracket);
+          mask-image: var(--ornament-bracket);
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: left top;
+          mask-position: left top;
+  -webkit-mask-size: 20px 56px;
+          mask-size: 20px 56px;
+}
+
+/* ── Diamond divider — the book's section break ─────────────────────────────
+   Uses the real glyph when available, falls back to a CSS diamond. */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-block: var(--space-lg);
+  color: var(--accent);
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--line-accent), transparent);
+}
+.divider-mark {
+  font-family: var(--family-glyph);
+  font-size: var(--size-sm);
+  line-height: 1;
+}
+
+/* ── Reversed band — the book's black spread ────────────────────────────────*/
+.band-reverse {
+  background: var(--surface-reverse);
+  color: var(--ink-on-reverse);
+}
+.band-reverse a { color: var(--bronze-300); }
+
+/* ── Side tab — the book's outer-edge chapter tab ───────────────────────────*/
+.side-tab {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--rail-tab);
+  /* physical padding — `padding-block` maps to the inline axis once
+     writing-mode goes vertical, which clips the label */
+  padding: var(--space-lg) var(--space-2xs) var(--space-2xl);
+  background: var(--surface-accent);
+  color: var(--ink-on-accent);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  writing-mode: vertical-rl;
+  text-align: center;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 10px), 0 100%);
+}
+.side-tab--reverse { background: var(--surface-reverse); color: var(--ink-on-reverse); }
+
+/* ── Prose measure ──────────────────────────────────────────────────────────*/
+.prose { max-width: var(--measure-prose); }
+.prose p + p { margin-top: var(--space-md); }
+
+/* ── Attribution required by the glyph font's CC BY-SA 4.0 licence ──────────*/
+.credit-glyphs {
+  font: var(--type-ui-label);
+  color: var(--ink-faint);
+}
