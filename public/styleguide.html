@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/components-app.css">
+<link rel="stylesheet" href="css/wizard.css">
 <style>
 /* Styleguide chrome only — not part of the system. */
 .sg { max-width: var(--content-max); margin: 0 auto; padding: var(--space-4xl) var(--space-xl); }
@@ -25,9 +26,9 @@
 code { font-family: var(--family-mono); font-size: var(--size-xs); color: var(--accent-ink); }
 
 .ramp { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 2px; }
-.chip { padding: var(--space-md) var(--space-sm); border-radius: var(--radius-xs); }
-.chip b { display: block; font: var(--type-ui-caps); text-transform: uppercase; letter-spacing: var(--tracking-caps); }
-.chip span { font-family: var(--family-mono); font-size: var(--size-3xs); opacity: .8; }
+.swatch { padding: var(--space-md) var(--space-sm); border-radius: var(--radius-xs); }
+.swatch b { display: block; font: var(--type-ui-caps); text-transform: uppercase; letter-spacing: var(--tracking-caps); }
+.swatch span { font-family: var(--family-mono); font-size: var(--size-3xs); opacity: .8; }
 
 table.sg-table { width: 100%; border-collapse: collapse; }
 .sg-table th { text-align: left; font: var(--type-ui-caps); text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--ink-muted); padding: var(--space-sm); border-bottom: 1px solid var(--line-strong); }
@@ -422,25 +423,27 @@ table.sg-table { width: 100%; border-collapse: collapse; }
   <!-- ═══════════════ WIZARD ═══════════════ -->
   <section class="sg-section">
     <h2>The wizard</h2>
-    <p class="sg-note">The creation flow currently runs an orange accent unrelated to the rest of the app. It uses <code>--accent</code> here like everything else — a selected card must not change colour just because a different screen is showing it.</p>
+    <p class="sg-note"><b>Migrated</b> — these are the app's real class names, styled by <code>css/wizard.css</code>, not styleguide look-alikes. The flow used to run an orange accent, and JS set a per-item <code>--pick-color</code> that drove the selected border and name, so "selected" looked different on every step. Selection is now always <code>--accent</code>; <code>--pick-color</code> survives only as the left identity spine (red on Dwarf below).</p>
 
     <div style="border:1px solid var(--line-soft);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface-app)">
       <div class="wizard-header">
         <button class="btn btn-icon">&larr;</button>
-        <div class="wizard-progress"><div class="wizard-progress-fill" style="width:18%"></div></div>
-        <span class="wizard-step-count">Step 2 of 11</span>
+        <div class="wizard-progress">
+          <div class="progress-bar"><div class="progress-fill" style="width:18%"></div></div>
+          <span class="progress-label">Step 2 of 11</span>
+        </div>
       </div>
 
-      <div class="wizard-body">
-        <h2 class="wizard-title">Choose Your Ancestry</h2>
-        <p class="wizard-subtitle">Where does your lineage lie?</p>
+      <div class="wizard-content">
+        <h2 class="wizard-step-title">Choose Your Ancestry</h2>
+        <p class="wizard-step-sub">Where does your lineage lie?</p>
 
-        <div class="wizard-split">
-          <div class="picker-list">
-            <button class="picker-card"><span class="picker-name">Devil</span><span class="picker-desc">Born of infernal lineage, devils carry innate magic and an unsettling charisma.</span></button>
-            <button class="picker-card"><span class="picker-name">Dragon Knight</span><span class="picker-desc">Warriors who merged with draconic power through an ancient ritual of bonding.</span></button>
-            <button class="picker-card selected"><span class="picker-name">Dwarf</span><span class="picker-desc">Ancient and resilient, shaped by stone and forge. Endurance personified.</span></button>
-            <button class="picker-card"><span class="picker-name">Hakaan</span><span class="picker-desc">The great giants of the world — raw power and unshakeable resolve.</span></button>
+        <div class="wizard-two-col">
+          <div class="wizard-list">
+            <button class="wizard-pick-btn"><span class="pick-name">Devil</span><span class="pick-desc">Born of infernal lineage, devils carry innate magic and an unsettling charisma.</span></button>
+            <button class="wizard-pick-btn"><span class="pick-name">Dragon Knight</span><span class="pick-desc">Warriors who merged with draconic power through an ancient ritual of bonding.</span></button>
+            <button class="wizard-pick-btn selected" style="--pick-color:#8E2F22"><span class="pick-name">Dwarf</span><span class="pick-desc">Ancient and resilient, shaped by stone and forge. Endurance personified.</span></button>
+            <button class="wizard-pick-btn"><span class="pick-name">Hakaan</span><span class="pick-sub">Skill: Endurance</span><span class="pick-desc">The great giants of the world — raw power and unshakeable resolve.</span></button>
           </div>
 
           <div>
@@ -509,7 +512,7 @@ table.sg-table { width: 100%; border-collapse: collapse; }
         </div>
       </div>
 
-      <div class="action-bar">
+      <div class="wizard-footer">
         <button class="btn">Back</button>
         <button class="btn btn-primary">Continue</button>
       </div>
@@ -709,7 +712,7 @@ table.sg-table { width: 100%; border-collapse: collapse; }
     el.innerHTML = ramps[id].map(t => {
       const h = hex(t);
       const onDark = lum(h) < 0.35;
-      return `<div class="chip" style="background:${h};color:${onDark ? '#FFFEF6' : '#0D0D0F'}">
+      return `<div class="swatch" style="background:${h};color:${onDark ? '#FFFEF6' : '#0D0D0F'}">
                 <b>${t.replace('--','')}</b><span>${h.toUpperCase()}</span></div>`;
     }).join('');
   }

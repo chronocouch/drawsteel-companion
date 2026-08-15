@@ -1,0 +1,438 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — WIZARD  (migrated from main.css)
+   Character creation, all 11 steps. Class names are unchanged from the
+   original stylesheet, so no JS touched this file's markup.
+
+   Depends on tokens.css + base.css + components.css + components-app.css.
+   Uses NO legacy shim aliases — this section is off the shim.
+
+   ACCENT: selection is always --accent. The old stylesheet let JS set a
+   per-item --pick-color and used it for the selected border, the selected
+   name, and the focus ring, so "selected" was a different colour on every
+   step. --pick-color survives only as the left-hand identity spine; it no
+   longer decides what selection looks like.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ SHELL ════════════════════════════════════════════════════════════════ */
+.wizard-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  height: var(--bar-header);
+  padding: 0 var(--space-lg);
+  background: var(--surface-page);
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+
+.wizard-progress { flex: 1; display: flex; flex-direction: column; gap: var(--space-xs); }
+
+.progress-bar {
+  height: 4px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 10%;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+.progress-label {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+
+.wizard-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2xl) var(--space-lg);
+  background: var(--surface-app);
+}
+@media (min-width: 700px) {
+  .wizard-content { padding: var(--space-2xl) var(--space-3xl); }
+}
+
+.wizard-footer {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--surface-bar);
+  border-top: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+.wizard-footer .btn { flex: 1; padding-block: var(--space-md); }
+
+.wizard-placeholder {
+  text-align: center;
+  padding: var(--space-4xl) var(--space-2xl);
+  color: var(--ink-muted);
+}
+.wizard-placeholder h2 {
+  font: var(--type-section);
+  color: var(--ink-strong);
+  margin-bottom: var(--space-md);
+}
+
+/* ═══ STEP LAYOUT ══════════════════════════════════════════════════════════ */
+.wizard-step { max-width: 480px; margin: 0 auto; }
+@media (min-width: 700px)  { .wizard-step { max-width: 960px; } }
+@media (min-width: 1100px) { .wizard-step { max-width: 1160px; } }
+
+.wizard-step-title {
+  font: var(--type-section);
+  font-size: var(--size-3xl);
+  color: var(--ink-strong);
+  margin-bottom: var(--space-xs);
+}
+.wizard-step-sub {
+  font: var(--type-flavor);
+  color: var(--ink-muted);
+  margin-bottom: var(--space-2xl);
+}
+
+.wizard-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1.55fr;
+  gap: var(--space-lg);
+  align-items: start;
+}
+@media (max-width: 699px) { .wizard-two-col { grid-template-columns: 1fr; } }
+
+@media (min-width: 700px) {
+  .wizard-col-left {
+    max-height: calc(100vh - 240px);
+    overflow-y: auto;
+    padding-right: var(--space-xs);
+  }
+}
+
+.wizard-col-right {
+  position: sticky;
+  top: 0;
+  min-height: 160px;
+  padding: var(--space-lg);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-card);
+}
+
+.col-right-placeholder {
+  padding: var(--space-3xl) 0;
+  text-align: center;
+  font: var(--type-flavor);
+  font-size: var(--size-sm);
+  color: var(--ink-faint);
+}
+
+.wizard-hint {
+  margin-top: var(--space-md);
+  text-align: center;
+  font: var(--type-prose-sm);
+  color: var(--ink-faint);
+}
+
+
+/* ═══ PICK BUTTONS ═════════════════════════════════════════════════════════ */
+.wizard-grid { display: grid; gap: var(--space-sm); }
+.wizard-grid-2 { grid-template-columns: 1fr 1fr; }
+.wizard-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 699px) {
+  .wizard-grid-2, .wizard-grid-3 { grid-template-columns: 1fr; }
+}
+
+.wizard-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+.wizard-pick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3xs);
+  width: 100%;
+  text-align: left;
+  padding: var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  /* identity spine only — never the selection signal */
+  border-left: 3px solid var(--pick-color, var(--line-soft));
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+}
+.wizard-pick-btn:hover {
+  background: var(--surface-raised);
+  border-color: var(--line-strong);
+  border-left-color: var(--pick-color, var(--line-strong));
+}
+.wizard-pick-btn.selected {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  border-left-color: var(--pick-color, var(--accent));
+}
+.wizard-pick-btn:disabled,
+.wizard-pick-btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+.wizard-pick-row { flex-direction: row; align-items: baseline; gap: var(--space-md); }
+.wizard-pick-row .pick-desc { margin-top: 0; }
+
+.pick-name {
+  font: var(--type-ability-name);
+  font-size: var(--size-md);
+  color: var(--ink-strong);
+}
+.wizard-pick-btn.selected .pick-name { color: var(--accent-ink); }
+
+.pick-sub {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.pick-desc {
+  margin-top: var(--space-3xs);
+  font: var(--type-prose-sm);
+  color: var(--ink-body);
+}
+
+
+/* Small-phone overrides — moved here from main.css's "Mobile touch
+   improvements" block so every wizard rule lives in one file. */
+@media (max-width: 480px) {
+  .wizard-grid-2 { grid-template-columns: 1fr; }
+  .wizard-grid-3 { grid-template-columns: 1fr 1fr; }
+  .wizard-pick-btn { padding: var(--space-lg); }
+}
+
+
+/* ═══ TEXT INPUT (step 1, hero name) ═══════════════════════════════════════ */
+.wizard-text-input {
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--surface-page);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-strong);
+  font: var(--type-ability-name);
+  font-size: var(--size-2xl);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+.wizard-text-input:focus { border-color: var(--accent); }
+.wizard-text-input.input-error { border-color: var(--state-danger); }
+.wizard-text-input::placeholder { color: var(--ink-faint); font-weight: var(--weight-regular); }
+
+
+/* ═══ ABILITY PICKING (step 7) ═════════════════════════════════════════════ */
+.ability-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-sm);
+}
+
+.ability-pick-card {
+  padding: var(--space-md);
+  text-align: left;
+  cursor: pointer;
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              background var(--duration-fast) var(--ease-standard);
+}
+.ability-pick-card:hover { background: var(--surface-raised); border-color: var(--line-strong); }
+.ability-pick-card.selected {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.ability-pick-card.at-limit:not(.selected) { opacity: .45; cursor: not-allowed; }
+
+.ability-pool { margin-bottom: var(--space-md); }
+.ability-pool-readonly { opacity: .85; }
+.pool-title { font: var(--type-ability-name); font-size: var(--size-sm); color: var(--ink-strong); }
+
+.ability-pool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: var(--space-md) 0 var(--space-xs);
+  padding-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--line-soft);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.ability-pool-header:first-child { margin-top: 0; }
+
+.pool-quota {
+  padding: var(--space-3xs) var(--space-sm);
+  border-radius: var(--radius-pill);
+  background: var(--surface-inset);
+  color: var(--ink-muted);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+.pool-quota.quota-met { background: var(--state-available-bg); color: var(--state-available-ink); }
+
+.ability-pick-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-2xs);
+}
+.ability-pick-name {
+  font: var(--type-ability-name);
+  font-size: var(--size-sm);
+  color: var(--ink-strong);
+}
+.ability-pick-meta { display: flex; gap: var(--space-2xs); align-items: center; flex-shrink: 0; }
+.ability-pick-desc { font: var(--type-prose-sm); color: var(--ink-body); }
+
+.pick-card-name {
+  display: block;
+  margin-bottom: var(--space-3xs);
+  font: var(--type-ability-name);
+  font-size: var(--size-sm);
+  color: var(--ink-strong);
+}
+.pick-card-meta { display: flex; align-items: center; gap: var(--space-2xs); margin-bottom: var(--space-2xs); flex-wrap: wrap; }
+.pick-card-summary { font: var(--type-prose-sm); color: var(--ink-body); }
+
+/* Cost / type chips — these were four hand-rolled rgba fills. They are the
+   same badge as everywhere else now. */
+.ability-pick-type,
+.ability-pick-cost,
+.cost-badge {
+  padding: var(--space-3xs) var(--space-2xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  white-space: nowrap;
+}
+.ability-pick-type { background: var(--surface-inset);        color: var(--ink-muted);          border-color: var(--line-soft); }
+.ability-pick-cost { background: var(--econ-action-bg);       color: var(--econ-action-ink);    border-color: var(--econ-action); }
+.cost-sig          { background: var(--accent-wash);          color: var(--accent-ink);         border-color: var(--accent); }
+.cost-3pt          { background: var(--econ-action-bg);       color: var(--econ-action-ink);    border-color: var(--econ-action); }
+.cost-5pt          { background: var(--econ-triggered-bg);    color: var(--econ-triggered-ink); border-color: var(--econ-triggered); }
+
+
+/* ═══ SELECTION SUMMARY (step 7 right column) ══════════════════════════════ */
+.ability-selection-summary { font: var(--type-prose-sm); }
+
+.selection-group-label,
+.summary-section-title {
+  margin: var(--space-md) 0 var(--space-2xs);
+  padding-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--line-soft);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.selection-group-label:first-child,
+.summary-section-title:first-child { margin-top: 0; }
+.summary-check { color: var(--state-available-ink); }
+
+.selected-ability-row,
+.summary-ability {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) 0;
+  border-bottom: 1px solid var(--line-hair);
+}
+.selected-ability-row:last-child,
+.summary-ability:last-of-type { border-bottom: none; }
+
+.summary-ability-name { font: var(--type-prose-sm); font-weight: var(--weight-semi); color: var(--ink-strong); }
+.summary-ability-type {
+  flex-shrink: 0;
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-faint);
+}
+.selection-empty,
+.summary-empty { font: var(--type-flavor); font-size: var(--size-sm); color: var(--ink-faint); }
+
+
+/* ═══ CAREER / CLASS DETAIL PANELS ═════════════════════════════════════════ */
+.career-detail-name {
+  font: var(--type-ability-name);
+  color: var(--ink-strong);
+  margin-bottom: var(--space-xs);
+}
+.career-detail-desc,
+.class-right-desc {
+  font: var(--type-flavor);
+  color: var(--ink-muted);
+  margin-bottom: var(--space-md);
+}
+.class-right-desc { margin-top: var(--space-sm); }
+
+.career-detail-rows { display: flex; flex-direction: column; }
+.career-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--line-hair);
+}
+.career-detail-row:last-child { border-bottom: none; }
+/* Scoped deliberately: main.css also styles a bare .career-detail-label
+   inside the career LIST card (a different component that happens to share
+   the name) and loads after this file. Without the parent selector, that
+   rule wins here. Drop the scoping once the career-card section migrates. */
+.career-detail-rows .career-detail-label {
+  flex-shrink: 0;
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+  margin-right: 0;
+}
+.career-detail-val { text-align: right; font: var(--type-prose-sm); color: var(--ink-strong); }
+
+.subclass-resource { font: var(--type-prose-sm); font-weight: var(--weight-semi); }
+
+
+/* ═══ INFO PANEL (step 6, classes without a kit) ═══════════════════════════ */
+.wizard-step-info-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 220px;
+  padding: var(--space-4xl) var(--space-2xl);
+}
+.wizard-step-info-panel .wizard-step-icon {
+  margin-bottom: var(--space-md);
+  font-family: var(--family-glyph);
+  font-size: var(--size-4xl);
+  color: var(--accent-hairline);
+}
+.wizard-step-info-panel h3 {
+  margin: 0 0 var(--space-sm);
+  font: var(--type-ability-name);
+  color: var(--ink-strong);
+}
+.wizard-step-info-panel p {
+  max-width: var(--measure-prose);
+  margin: 0 auto;
+  font: var(--type-prose);
+  color: var(--ink-body);
+}

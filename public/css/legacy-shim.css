@@ -1,0 +1,146 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MIGRATION SHIM — TEMPORARY. DELETE WHEN main.css IS EMPTY.
+   ───────────────────────────────────────────────────────────────────────────
+   main.css makes 1,527 var() calls against the old dark token names. Those
+   calls are correct — they just point at a vocabulary that no longer exists.
+   This file maps each old name onto its new semantic equivalent so the whole
+   app flips to the light theme in one step, instead of going unstyled while
+   8,000 lines are rewritten section by section.
+
+   RULES
+     · Never add a new alias here. New code uses the real tokens.
+     · When a section of main.css is migrated, its aliases get deleted from
+       this file. When this file is empty, the migration is done.
+     · Aliases are one-directional and lossy on purpose — several old tokens
+       collapse onto one new one, because the old palette drew distinctions
+       the light theme does not need.
+
+   RETIREMENT TRACKER — sections still depending on this shim:
+     [ ] loading / sign-in            [ ] character list
+     [x] wizard (all steps)           [ ] character sheet
+     [ ] combat profile / stats       [ ] director board & runner
+     [ ] campaign / encounter editor  [ ] bestiary & modals
+     [ ] negotiation & montage        [ ] level-up flow
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── Surfaces ─────────────────────────────────────────────────────────────
+     The old palette had six dark greys separated by a few points of
+     lightness. The light theme needs four real steps, so several collapse. */
+  --bg-base:         var(--surface-app);
+  --bg-card:         var(--surface-page);
+  --bg-card-hover:   var(--surface-raised);
+  --bg-surface:      var(--surface-bar);
+  --bg-elevated:     var(--surface-page);
+  --bg-callout:      var(--surface-raised);
+  --bg-parchment:    var(--surface-raised);   /* was the ONE light surface;
+                                                 now everything is light, so
+                                                 this stops being special */
+
+  /* ── Ink ────────────────────────────────────────────────────────────────── */
+  --text-primary:    var(--ink-body);
+  --text-secondary:  var(--ink-muted);
+  --text-dim:        var(--ink-faint);
+  --text-inverse:    var(--ink-on-reverse);
+  --text-gold:       var(--accent-ink);       /* accent-AS-text: the darker
+                                                 step, or it fails AA */
+  --text-parchment:  var(--ink-body);
+
+  /* ── Lines ──────────────────────────────────────────────────────────────── */
+  --border-hairline: var(--line-hair);
+  --border-subtle:   var(--line-soft);
+  --border-visible:  var(--line-strong);
+  --border-gold:     var(--accent);
+  --border-warm:     var(--line-accent);
+
+  /* ── States ─────────────────────────────────────────────────────────────── */
+  --color-available:    var(--state-available);
+  --color-available-bg: var(--state-available-bg);
+  --color-spent:        var(--state-spent);
+  --color-spent-bg:     var(--state-spent-bg);
+  --color-danger:       var(--state-danger);
+  --color-danger-bg:    var(--state-danger-bg);
+  --color-heal:         var(--state-heal);
+  --color-warning:      var(--state-warning);
+  --color-gold:         var(--accent);
+  --color-gold-bg:      var(--accent-wash);
+  --color-purple:       var(--econ-triggered);
+  --color-purple-bg:    var(--econ-triggered-bg);
+
+  /* ── Action economy badges ──────────────────────────────────────────────── */
+  --badge-action:       var(--econ-action);
+  --badge-action-bg:    var(--econ-action-bg);
+  --badge-maneuver:     var(--econ-maneuver);
+  --badge-maneuver-bg:  var(--econ-maneuver-bg);
+  --badge-triggered:    var(--econ-triggered);
+  --badge-triggered-bg: var(--econ-triggered-bg);
+  --badge-spent:        var(--state-spent);
+  --badge-spent-bg:     var(--state-spent-bg);
+
+  /* ── Pre-existing dead tokens ─────────────────────────────────────────────
+     These four are referenced by main.css but were NEVER defined, in this
+     stylesheet or anywhere else — they are bugs that predate the migration,
+     surfaced by the linter's resolve check.
+
+     --border-color and --card-bg are used WITHOUT a fallback, so every rule
+     containing them was invalid and dropped: that is why the runner,
+     negotiation and montage panels have had no border and no background.
+     --class-color and --class-accent-rgb do have fallbacks, so they were
+     silently always painting the old default blue (41,128,185).
+
+     Defined here so those rules work at all. They retire with their
+     sections. */
+  --border-color:     var(--line-soft);
+  --card-bg:          var(--surface-page);
+  --class-color:      var(--class-accent);
+  --class-accent-rgb: 134, 109, 75;   /* bronze, for rgba(var(...), a) */
+
+  /* ── Layout rails ───────────────────────────────────────────────────────── */
+  --header-height:   var(--bar-header);
+  --session-bar:     var(--bar-session);
+  --economy-bar:     var(--bar-economy);
+  --tabs-height:     var(--bar-tabs);
+
+  /* ── Radius ─────────────────────────────────────────────────────────────────
+     Shifted down one step. The book is printed; nothing is very round. */
+  --radius-sm:       var(--radius-xs);
+  --radius-md:       var(--radius-sm);
+  --radius-lg:       var(--radius-md);
+
+  /* ── Elevation ──────────────────────────────────────────────────────────── */
+  --shadow-card:     var(--elevation-card);
+  --shadow-modal:    var(--elevation-modal);
+  --shadow-gold:     var(--elevation-raised);
+
+  /* ── Motion ─────────────────────────────────────────────────────────────────
+     The old tokens bundled the easing into the value ("0.12s ease") and are
+     used as `transition: opacity var(--transition-fast)`. The new duration
+     tokens are bare times, so the easing has to be re-attached here or every
+     transition in main.css becomes invalid and silently does nothing. */
+  --transition-fast: var(--duration-fast) var(--ease-standard);
+  --transition-base: var(--duration-base) var(--ease-standard);
+  --transition-slow: var(--duration-slow) var(--ease-standard);
+
+  /* ── Type families ────────────────────────────────────────────────────────
+     --font-display was Cinzel, which appears nowhere in the sourcebook and is
+     gone. --font-body was Barlow Condensed used as the app-chrome default;
+     it stays condensed so no layout reflows. Prose comes through --font-serif. */
+  --font-display:    var(--family-serif);
+  --font-serif:      var(--family-serif);
+  --font-condensed:  var(--family-condensed);
+  --font-body:       var(--family-condensed);
+  --font-mono:       var(--family-mono);
+
+  /* ── Type sizes ─────────────────────────────────────────────────────────────
+     The old scale was two fluid clamps plus five fixed sizes. Snapped onto
+     the ten-step scale; the clamps are gone because they were the reason
+     headings never lined up between screens. */
+  --text-display:    var(--size-2xl);
+  --text-heading:    var(--size-lg);
+  --text-body:       var(--size-md);
+  --text-small:      var(--size-sm);
+  --text-label:      var(--size-2xs);
+  --text-mono:       var(--size-md);
+  --text-mono-lg:    var(--size-xl);
+}

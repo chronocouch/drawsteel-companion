@@ -56,6 +56,9 @@ PAIRINGS = [
     ("--line-soft",           "--surface-page",        1.3),
 ]
 
+# Set at runtime by JS (inline style / setProperty), never in a stylesheet.
+RUNTIME_TOKENS = {"--class-accent", "--pick-color"}
+
 ALLOWED_SPACING = {0, 2, 4, 6, 8, 12, 16, 20, 24, 32, 48}
 ALLOWED_RADIUS = {0, 2, 3, 4, 999}
 
@@ -119,6 +122,28 @@ def main():
         if not ok:
             failures.append(
                 f"contrast: {fg} ({fgv}) on {bg} ({bgv}) is {ratio:.2f}:1, needs {minimum}:1"
+            )
+
+    # ── 2b. every var() in every stylesheet resolves ────────────────────────
+    # A var() pointing at an undefined token without a fallback makes the
+    # whole declaration invalid and the browser drops it silently. This is
+    # how the runner panels lost their borders for months.
+    vocabulary = set(defined)
+    for extra in ("legacy-shim.css", "base.css"):
+        path = ROOT / "public/css" / extra
+        if path.exists():
+            vocabulary |= set(re.findall(r"(--[\w-]+)\s*:", path.read_text()))
+    for path in sorted(ROOT.glob(CSS_GLOB)):
+        body = re.sub(r"/\*.*?\*/", "", path.read_text(), flags=re.S)
+        for ref in sorted(set(re.findall(r"var\((--[\w-]+)", body))):
+            if ref in vocabulary or ref in RUNTIME_TOKENS:
+                continue
+            # a fallback makes it survivable, but still worth naming
+            has_fallback = re.search(r"var\(" + re.escape(ref) + r"\s*,", body)
+            severity = "resolves-to-fallback" if has_fallback else "DROPS THE RULE"
+            failures.append(
+                f"unresolved: var({ref}) in {path.relative_to(ROOT)} is never "
+                f"defined — {severity}"
             )
 
     # ── 3. drift ────────────────────────────────────────────────────────────

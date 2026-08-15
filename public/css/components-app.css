@@ -71,59 +71,15 @@
 .action-bar > .btn { flex: 1; padding-block: var(--space-md); font-size: var(--size-sm); }
 
 
-/* ═══ WIZARD ═══════════════════════════════════════════════════════════════ */
-.wizard-header {
-  display: flex; align-items: center; gap: var(--space-md);
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--surface-page);
-  border-bottom: 1px solid var(--line-soft);
-}
-.wizard-progress {
-  flex: 1;
-  height: 4px;
-  background: var(--surface-sunken);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-}
-.wizard-progress-fill {
-  height: 100%;
-  background: var(--accent);
-  transition: width var(--duration-slow) var(--ease-out);
-}
-.wizard-step-count {
-  font: var(--type-ui-caps);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-caps);
-  color: var(--ink-muted);
-  white-space: nowrap;
-}
-
-.wizard-title { font: var(--type-section); font-size: var(--size-3xl); color: var(--ink-strong); }
-.wizard-subtitle { font: var(--type-flavor); color: var(--ink-muted); margin-top: var(--space-2xs); }
-.wizard-body { padding: var(--space-2xl) var(--space-lg) var(--space-lg); }
-
-/* Two-column: scrolling chooser on the left, detail on the right. */
-.wizard-split {
-  display: grid;
-  grid-template-columns: var(--rail-picker) 1fr;
-  gap: var(--space-lg);
-  margin-top: var(--space-xl);
-  align-items: start;
-}
-
-/* Section label + helper, as used by the Culture step */
-.field-group { margin-bottom: var(--space-2xl); }
-.field-label {
-  display: flex; align-items: baseline; gap: var(--space-md); flex-wrap: wrap;
-  margin-bottom: var(--space-md);
-}
-.field-label > b {
-  font: var(--type-ui-caps);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-caps);
-  color: var(--accent-ink);
-}
-.field-label > span { font: var(--type-prose-sm); color: var(--ink-muted); }
+/* ═══ WIZARD ═══════════════════════════════════════════════════════════════
+   Intentionally empty. The wizard's chrome (.wizard-header, .wizard-progress,
+   .progress-bar, .wizard-content, .wizard-step, .wizard-two-col,
+   .wizard-footer) lives in css/wizard.css, which owns the app's real class
+   names. An earlier draft of this file defined .wizard-progress as the bar
+   itself while the app uses it as the wrapper — the two silently fought and
+   the progress fill collapsed to zero height. Do not re-add wizard chrome
+   here; the styleguide demos the real classes instead of parallel ones.
+   ═══════════════════════════════════════════════════════════════════════ */
 
 
 /* ═══ PICKER CARDS ═════════════════════════════════════════════════════════

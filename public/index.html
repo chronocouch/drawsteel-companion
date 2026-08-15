@@ -12,8 +12,21 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
 
-  <!-- App styles -->
-  <link rel="stylesheet" href="css/main.css?v=16" />
+  <!-- ── Design system ────────────────────────────────────────────────
+       Order matters: tokens define the vocabulary, base and components
+       consume it, the shim maps legacy names onto it, main.css is what
+       is left to migrate. Never load main.css before the others. -->
+  <link rel="stylesheet" href="css/tokens.css?v=1" />
+  <link rel="stylesheet" href="css/base.css?v=1" />
+  <link rel="stylesheet" href="css/components.css?v=1" />
+  <link rel="stylesheet" href="css/components-app.css?v=1" />
+  <link rel="stylesheet" href="css/wizard.css?v=1" />
+
+  <!-- TEMPORARY: legacy token aliases. Delete when main.css is empty. -->
+  <link rel="stylesheet" href="css/legacy-shim.css?v=1" />
+
+  <!-- Un-migrated styles -->
+  <link rel="stylesheet" href="css/main.css?v=17" />
 </head>
 <body>
 
