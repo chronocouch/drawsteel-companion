@@ -30,3 +30,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Reference material — sourcebook PDFs, glyph fonts, design inputs.
+# Large and copyright MCDM; never commit these.
+context/
