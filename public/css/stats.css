@@ -1,0 +1,274 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — STATS TAB  (migrated from main.css)
+   Combat profile, power-roll hint, characteristics, subclass, resistances,
+   ancestry traits. Class names unchanged from the original stylesheet.
+
+   Depends on tokens.css + base.css + components.css + sheet.css.
+   Uses NO legacy shim aliases — this section is off the shim.
+
+   .stats-grid (the tab's container) is defined in components.css; the
+   desktop two-column arrangement of its children lives at the bottom here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ COMBAT PROFILE ═══════════════════════════════════════════════════════ */
+.combat-profile-block {
+  overflow: hidden;
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-card);
+}
+.combat-profile-block > .stats-section-title {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-bar);
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--class-accent);
+}
+
+.combat-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  border-bottom: 1px solid var(--line-soft);
+}
+.cp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-sm);
+  border-right: 1px solid var(--line-hair);
+}
+.cp-stat:last-child { border-right: none; }
+
+.cp-value { font: var(--type-numeric); color: var(--ink-strong); }
+.cp-value.cp-dmg {
+  font: var(--type-keyword);
+  color: var(--accent-ink);
+  text-align: center;
+  line-height: var(--leading-snug);
+}
+.cp-label,
+.cp-equip-label {
+  margin-top: var(--space-3xs);
+  font: var(--type-ui-caps);
+  font-size: var(--size-3xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+
+.cp-sig {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--line-soft);
+}
+.cp-sig-label {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--accent-ink);
+}
+.cp-sig-text { font: var(--type-prose-sm); color: var(--ink-body); }
+
+.cp-kit-equipment { display: flex; gap: var(--space-lg); padding: var(--space-xs) var(--space-md); }
+.cp-equip-item { font: var(--type-prose-sm); color: var(--ink-body); }
+.cp-equip-label { margin-top: 0; margin-right: var(--space-2xs); }
+
+
+/* ═══ POWER ROLL HINT ══════════════════════════════════════════════════════ */
+.power-roll-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xs);
+  color: var(--ink-muted);
+}
+.pr-icon {
+  padding: var(--space-3xs) var(--space-2xs);
+  background: var(--accent-wash);
+  border-radius: var(--radius-xs);
+  font: var(--type-numeric-sm);
+  color: var(--class-accent);
+}
+.pr-tier {
+  padding: var(--space-3xs) var(--space-2xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  font: var(--type-numeric-sm);
+  font-size: var(--size-2xs);
+}
+/* Same three colours as the sheet's power-roll banner, deliberately */
+.pr-t1 { background: var(--surface-sunken);   color: var(--tier-1); border-color: var(--line-soft); }
+.pr-t2 { background: var(--econ-maneuver-bg); color: var(--tier-2); border-color: var(--econ-maneuver); }
+.pr-t3 { background: var(--econ-action-bg);   color: var(--tier-3); border-color: var(--econ-action); }
+
+
+/* ═══ CHARACTERISTICS ══════════════════════════════════════════════════════ */
+.characteristics-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-xs);
+}
+@media (max-width: 480px) {
+  .characteristics-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.char-stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md) var(--space-sm);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+.char-stat-top { display: flex; flex-direction: column; align-items: center; gap: var(--space-3xs); }
+.char-stat-value { font: var(--type-numeric); font-size: var(--size-3xl); color: var(--class-accent); }
+.char-stat-name {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.char-stat-desc {
+  font: var(--type-prose-sm);
+  font-size: var(--size-2xs);
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+/* Legacy stat block, still referenced by older render paths */
+.stat-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-lg) var(--space-sm) var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+.stat-value { font: var(--type-numeric); font-size: var(--size-3xl); color: var(--class-accent); }
+.stat-label {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+
+
+/* ═══ SUBCLASS PANEL ═══════════════════════════════════════════════════════ */
+.subclass-panel {
+  margin-top: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--surface-raised);
+  border-left: 3px solid var(--class-accent, var(--accent));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.subclass-panel-header { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-2xs); }
+.subclass-name { font: var(--type-ability-name); font-size: var(--size-md); color: var(--ink-strong); }
+.subclass-skill-badge {
+  padding: var(--space-3xs) var(--space-xs);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xs);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.subclass-feature {
+  margin-bottom: var(--space-2xs);
+  font: var(--type-ui-caps);
+  font-size: var(--size-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+.subclass-desc { font: var(--type-flavor); font-size: var(--size-sm); color: var(--ink-muted); }
+
+
+/* ═══ RESISTANCES ══════════════════════════════════════════════════════════ */
+.resistance-block { grid-column: 1 / -1; margin-top: var(--space-sm); }
+.resistance-pills { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-sm); }
+
+.res-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-pill);
+  font: var(--type-ui-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+.res-immunity { background: var(--state-heal-bg);   border: 1px solid var(--state-heal);   color: var(--state-heal-ink); }
+.res-weakness { background: var(--state-danger-bg); border: 1px solid var(--state-danger); color: var(--state-danger-ink); }
+.res-type { color: var(--ink-strong); }
+.res-conditional {
+  font: var(--type-flavor);
+  font-size: var(--size-3xs);
+  text-transform: none;
+  letter-spacing: var(--tracking-normal);
+  opacity: .75;
+}
+
+
+/* ═══ ANCESTRY TRAITS ══════════════════════════════════════════════════════ */
+.ancestry-traits-block { margin-top: var(--space-2xs); }
+/* .ancestry-traits-title inherits .stats-section-title */
+
+.ancestry-traits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-sm);
+}
+
+.ancestry-trait-card {
+  padding: var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+/* Signature traits: the book marks these with bronze, not a glow */
+.ancestry-trait-sig {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+}
+.ancestry-trait-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+.ancestry-trait-name { font: var(--type-ability-name); font-size: var(--size-sm); color: var(--ink-strong); }
+.ancestry-trait-sig .ancestry-trait-name { color: var(--accent-ink); }
+.ancestry-trait-badges { display: flex; gap: var(--space-2xs); flex-shrink: 0; }
+.ancestry-trait-desc { font: var(--type-prose-sm); color: var(--ink-body); }
+
+
+/* ═══ DESKTOP LAYOUT ═══════════════════════════════════════════════════════
+   Two columns: combat profile on the left spanning three rows, the
+   characteristics stack on the right, ancestry traits full width beneath. */
+@media (min-width: 768px) {
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: auto;
+    align-items: start;
+    gap: 0 var(--space-2xl);
+  }
+  .combat-profile-block { grid-column: 1; grid-row: 1 / 4; }
+  .stats-grid > .stats-section-title:not(.ancestry-traits-title) { grid-column: 2; grid-row: 1; }
+  .power-roll-hint       { grid-column: 2; grid-row: 2; }
+  .characteristics-grid  { grid-column: 2; grid-row: 3; grid-template-columns: repeat(3, 1fr); }
+  .ancestry-traits-block { grid-column: 1 / -1; margin-top: var(--space-sm); }
+}

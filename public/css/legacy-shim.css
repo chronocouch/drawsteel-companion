@@ -14,15 +14,14 @@
 
    RETIREMENT TRACKER
      [x] buttons                      [x] wizard (all steps)
-     [x] character sheet              [ ] loading / sign-in
-     [ ] character list               [ ] combat profile / stats
+     [x] character sheet              [x] loading / sign-in
+     [x] character list               [x] combat profile / stats
      [ ] director board & runner      [ ] campaign / encounter editor
      [ ] bestiary & modals            [ ] negotiation & montage
      [ ] level-up flow
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-
 
   /* ── Surfaces ── */
   --bg-base:        var(--surface-app);
@@ -52,20 +51,13 @@
   --color-danger:        var(--state-danger);
   --color-danger-bg:     var(--state-danger-bg);
   --color-heal:          var(--state-heal);
-  --color-warning:       var(--state-warning);
   --color-gold:          var(--accent);
   --color-purple:        var(--econ-triggered);
-
-  /* ── Layout rails ── */
-  --header-height:  var(--bar-header);
 
   /* ── Radius ── */
   --radius-sm:  var(--radius-xs);
   --radius-md:  var(--radius-sm);
   --radius-lg:  var(--radius-md);
-
-  /* ── Elevation ── */
-  --shadow-gold:  var(--elevation-raised);
 
   /* ── Type families ── */
   --font-display:    var(--family-serif);
@@ -89,7 +81,4 @@
      panels have had no border and no background. */
   --border-color:  var(--line-soft);
   --card-bg:       var(--surface-page);
-  --class-color:   var(--class-accent);
-  /* used as rgba(var(--x), a) — needs channels, not a colour */
-  --class-accent-rgb:  134, 109, 75;   /* bronze */
 }

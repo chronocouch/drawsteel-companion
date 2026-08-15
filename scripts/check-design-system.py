@@ -56,8 +56,11 @@ PAIRINGS = [
     ("--line-soft",           "--surface-page",        1.3),
 ]
 
-# Set at runtime by JS (inline style / setProperty), never in a stylesheet.
-RUNTIME_TOKENS = {"--class-accent", "--pick-color"}
+# Set at runtime via element.style.setProperty(), never in a stylesheet:
+#   --class-accent  abilities.js / character.js
+#   --class-color   character.js (character-list card spine)
+#   --pick-color    wizard picker identity spine
+RUNTIME_TOKENS = {"--class-accent", "--class-color", "--pick-color"}
 
 ALLOWED_SPACING = {0, 2, 4, 6, 8, 12, 16, 20, 24, 32, 48}
 ALLOWED_RADIUS = {0, 2, 3, 4, 999}

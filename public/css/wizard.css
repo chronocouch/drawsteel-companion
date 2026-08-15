@@ -436,3 +436,24 @@
   font: var(--type-prose);
   color: var(--ink-body);
 }
+
+
+/* ═══ SUBCLASS PICKER (step 3) ═════════════════════════════════════════════
+   .subclass-panel is also used by the Stats tab (css/stats.css) for a
+   different component that happens to share the name. Both are migrated now,
+   so neither silently overrides the other — this one is the wizard's, and
+   only the wizard renders .subclass-header inside it. */
+.subclass-panel.hidden { display: none; }
+.subclass-header {
+  margin-bottom: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-page);
+  border-left: 3px solid var(--class-accent, var(--accent));
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+}
+.subclass-title {
+  font: var(--type-ui-label);
+  font-size: var(--size-md);
+  letter-spacing: var(--tracking-wide);
+  color: var(--ink-strong);
+}
