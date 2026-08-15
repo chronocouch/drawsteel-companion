@@ -771,7 +771,9 @@ function updateDirectorBattleBoard(sessionData) {
 
 function buildHeroRosterCard(hero, idx, total, isNext) {
   const hpPercent = hero.maxHP > 0 ? Math.round((hero.currentHP / hero.maxHP) * 100) : 0;
-  const hpColor   = hpPercent > 60 ? '#2ecc71' : hpPercent > 30 ? '#f39c12' : '#e74c3c';
+  // Stamina thresholds read from the design system, not flat-UI hex.
+  const hpColor   = hpPercent > 60 ? 'var(--stamina-fill)'
+                  : hpPercent > 30 ? 'var(--stamina-winded)' : 'var(--stamina-dying)';
   const stateClass = hero.isActivated ? 'is-active' : hero.hasActed ? 'done' : '';
 
   return `
@@ -816,7 +818,9 @@ function buildHeroRosterCard(hero, idx, total, isNext) {
 
 function buildEnemyCard(enemy, idx, total, isNext) {
   const hpPercent = enemy.maxHP > 0 ? Math.round((enemy.currentHP / enemy.maxHP) * 100) : 0;
-  const hpColor   = hpPercent > 60 ? '#2ecc71' : hpPercent > 30 ? '#f39c12' : '#e74c3c';
+  // Stamina thresholds read from the design system, not flat-UI hex.
+  const hpColor   = hpPercent > 60 ? 'var(--stamina-fill)'
+                  : hpPercent > 30 ? 'var(--stamina-winded)' : 'var(--stamina-dying)';
   const vaUsed    = enemy.villainActionsUsed || [];
 
   return `
@@ -1687,7 +1691,8 @@ function showMontageEndModal(outcome, sessionData) {
 
 function buildRunnerHeroCard(hero, idx, isNext) {
   const hpPct   = hero.maxHP > 0 ? Math.max(0, Math.round((hero.currentHP / hero.maxHP) * 100)) : 0;
-  const hpColor = hpPct > 60 ? 'var(--color-available)' : hpPct > 30 ? '#f39c12' : 'var(--color-danger)';
+  const hpColor = hpPct > 60 ? 'var(--stamina-fill)'
+                : hpPct > 30 ? 'var(--stamina-winded)' : 'var(--stamina-dying)';
   const accent  = (typeof CLASS_COLORS !== 'undefined' && CLASS_COLORS?.[hero.class]?.accent) || '#2980B9';
   const stateClass = hero.isActivated ? 'runner-hero-active' : hero.hasActed ? 'runner-hero-done' : '';
 
@@ -1725,7 +1730,8 @@ function buildRunnerHeroCard(hero, idx, isNext) {
 
 function buildRunnerEnemyCard(enemy, idx, total, isNext) {
   const hpPct   = enemy.maxHP > 0 ? Math.max(0, Math.round((enemy.currentHP / enemy.maxHP) * 100)) : 0;
-  const hpColor = hpPct > 60 ? 'var(--color-available)' : hpPct > 30 ? '#f39c12' : 'var(--color-danger)';
+  const hpColor = hpPct > 60 ? 'var(--stamina-fill)'
+                : hpPct > 30 ? 'var(--stamina-winded)' : 'var(--stamina-dying)';
   const vaUsed  = enemy.villainActionsUsed || [];
 
   return `

@@ -1179,27 +1179,9 @@ html, body {
 .levelup-stat-changed { color: var(--text-primary); }
 .levelup-stat-changed .levelup-stat-val { color: var(--color-available, #1abc9c); }
 
-/* ── Session controls ───────────────────────────────────────────────────── */
-.session-controls {
-  position: sticky;
-  bottom: 0;
-  padding: 0;
-  background: var(--bg-surface);
-  border-top: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-  z-index: 50;
-}
-
-.join-session-fab {
-  position: fixed;
-  bottom: 20px;
-  right: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  z-index: 50;
-}
+/* ── Session controls ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
 /* ── Director battle board ──────────────────────────────────────────────── */
 .director-board {
@@ -1841,28 +1823,9 @@ html, body {
    MIGRATED to css/sheet.css + css/components.css. Class names unchanged.
    ──────────────────────────────────────────────────────────────────── */
 
-/* ── Active side banner ─────────────────────────────────────────────────── */
-.active-side-banner {
-  text-align: center;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  padding: 6px 16px;
-}
-.banner-heroes {
-  background: rgba(26,188,156,0.15);
-  color: var(--color-available);
-  animation: sidePulse 1.5s ease-in-out infinite;
-}
-.banner-villains {
-  background: rgba(192,57,43,0.15);
-  color: #e74c3c;
-}
-@keyframes sidePulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.6; }
-}
+/* ── Active side banner ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
 /* ── Director board ─────────────────────────────────────────────────────── */
 .director-board {
@@ -4052,504 +4015,45 @@ html, body {
 
 #encounter-runner-screen { flex-direction: column; overflow: hidden; }
 
-/* ── Runner header ──────────────────────────────────────────────────────── */
-.runner-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-visible);
-  flex-shrink: 0;
-}
-.runner-title {
-  font-family: var(--font-condensed);
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-}
-.runner-header-center {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
-.runner-round-badge {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-gold);
-  background: rgba(200,168,75,.1);
-  border: 1px solid rgba(200,168,75,.3);
-  border-radius: 4px;
-  padding: 3px 9px;
-}
-.runner-code-badge {
-  font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: var(--text-primary);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-visible);
-  border-radius: 6px;
-  padding: 3px 12px;
-}
-.btn-danger {
-  background: var(--color-danger) !important;
-  color: #fff !important;
-  border-color: var(--color-danger) !important;
-}
-.btn-danger:hover { opacity: 0.85; }
+/* ── Runner header ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Three-panel runner body ────────────────────────────────────────────── */
-.runner-body {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr;
-  overflow-y: auto;
-  min-height: 0;
-}
-@media (min-width: 700px) {
-  .runner-body {
-    grid-template-columns: 250px 1fr 250px;
-    overflow-y: hidden;
-  }
-  .runner-panel { overflow-y: auto; border-right: 1px solid var(--border-subtle); }
-  .runner-panel-enemies { border-right: none; }
-}
-@media (min-width: 1200px) {
-  .runner-body { grid-template-columns: 280px 1fr 280px; }
-}
+/* ── Three-panel runner body ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-.runner-panel {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-.runner-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px 8px;
-  border-bottom: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  background: var(--bg-base);
-  z-index: 1;
-}
-.runner-panel-title {
-  font-family: var(--font-condensed);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
-}
+/* ── Hero cards (left panel) ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Hero cards (left panel) ────────────────────────────────────────────── */
-.runner-hero-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.runner-hero-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-left: 4px solid var(--border-warm);
-  border-radius: 8px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  transition: border-color var(--transition-fast);
-}
-.runner-hero-active { border-color: var(--color-available) !important; background: rgba(39,174,96,.05); }
-.runner-hero-done   { opacity: 0.65; }
+/* ── Turn order (center panel) ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-.runner-hero-header { display: flex; align-items: flex-start; gap: 6px; }
-.runner-hero-name-row {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-.runner-next-badge {
-  font-family: var(--font-condensed);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--color-gold);
-  background: rgba(200,168,75,.12);
-  border: 1px solid var(--color-gold);
-  border-radius: 3px;
-  padding: 1px 4px;
-}
-.runner-next-enemy { color: var(--color-danger) !important; border-color: var(--color-danger) !important; background: rgba(192,57,43,.1) !important; }
-.runner-state-badge {
-  font-family: var(--font-condensed);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  border-radius: 3px;
-  border: 1px solid;
-  padding: 1px 4px;
-}
-.runner-badge-active { color: var(--color-available); border-color: var(--color-available); }
-.runner-badge-done   { color: var(--text-dim);        border-color: var(--border-visible); }
-.runner-hero-name {
-  font-family: var(--font-condensed);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-.runner-hero-class {
-  font-family: var(--font-condensed);
-  font-size: 11px;
-  color: var(--text-dim);
-}
-.runner-hero-edit-btn {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 2px 4px;
-  flex-shrink: 0;
-  transition: color var(--transition-fast);
-}
-.runner-hero-edit-btn:hover { color: var(--color-gold); }
+/* ── Enemy cards (right panel) ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-.runner-hp-track { flex: 1; }
-.runner-hero-hp-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.runner-hero-hp-text {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  min-width: 48px;
-  text-align: right;
-}
-.runner-hero-resource-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--font-condensed);
-  font-size: 11px;
-}
-.runner-resource-name  { color: var(--text-dim); }
-.runner-resource-value { font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); }
+/* ── Malice bar (bottom of enemy panel) ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-.runner-buckets { display: flex; gap: 6px; }
-.runner-bucket {
-  font-size: 13px;
-  opacity: 1;
-  transition: opacity var(--transition-fast);
-}
-.rbucket-spent { opacity: 0.2; }
-.rbucket-ready { opacity: 1; }
+/* ── Bottom bar ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Turn order (center panel) ──────────────────────────────────────────── */
-.runner-side-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-subtle);
-  gap: 8px;
-  flex-shrink: 0;
-}
-.runner-active-label {
-  font-family: var(--font-condensed);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--text-primary);
-  text-align: center;
-  flex: 1;
-}
-.runner-turn-order {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.runner-turn-section {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.runner-turn-section-label {
-  font-family: var(--font-condensed);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: var(--text-dim);
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 2px;
-}
-.runner-turn-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 5px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  transition: opacity var(--transition-fast);
-}
-.turn-row-done { opacity: 0.45; }
-.turn-row-hero   { border-left: 3px solid var(--color-available); }
-.turn-row-enemy  { border-left: 3px solid var(--color-danger); }
-.runner-turn-indicator {
-  font-size: 10px;
-  color: var(--color-gold);
-  width: 12px;
-  flex-shrink: 0;
-}
-.runner-turn-name {
-  flex: 1;
-  font-family: var(--font-condensed);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.runner-turn-check {
-  font-size: 12px;
-  color: var(--text-dim);
-  flex-shrink: 0;
-}
-.runner-turn-empty {
-  font-family: var(--font-condensed);
-  font-size: 12px;
-  color: var(--text-dim);
-  padding: 4px 8px;
-}
+/* ── Encounter card: Start button ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Enemy cards (right panel) ──────────────────────────────────────────── */
-.runner-enemy-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.runner-enemy-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--color-danger);
-  border-radius: 8px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  transition: opacity var(--transition-fast);
-}
-.runner-enemy-done { opacity: 0.5; }
-.runner-enemy-header { display: flex; align-items: flex-start; gap: 6px; }
-.runner-enemy-name-row {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-.runner-enemy-name {
-  font-family: var(--font-condensed);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-.runner-enemy-ctrl {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-.runner-enemy-activate-btn {
-  font-family: var(--font-condensed);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-visible);
-  border-radius: 4px;
-  color: var(--text-secondary);
-  padding: 2px 6px;
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-.runner-enemy-activate-btn.is-done {
-  background: rgba(39,174,96,.1);
-  border-color: var(--color-available);
-  color: var(--color-available);
-}
-.runner-enemy-activate-btn:hover:not(.is-done) { background: var(--bg-card); }
-.runner-enemy-hp-btn {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 13px;
-  padding: 2px 4px;
-  transition: color var(--transition-fast);
-}
-.runner-enemy-hp-btn:hover { color: var(--color-gold); }
-.runner-enemy-remove-btn {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 12px;
-  padding: 2px 4px;
-  transition: color var(--transition-fast);
-}
-.runner-enemy-remove-btn:hover { color: var(--color-danger); }
-.runner-enemy-hp-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.runner-enemy-hp-text {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  min-width: 48px;
-  text-align: right;
-}
+/* ── End Encounter modal ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Malice bar (bottom of enemy panel) ─────────────────────────────────── */
-.runner-malice-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-elevated);
-  flex-shrink: 0;
-}
-.runner-malice-label {
-  font-family: var(--font-condensed);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: var(--color-danger);
-}
-.runner-malice-value {
-  font-family: var(--font-mono);
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--color-danger);
-  min-width: 28px;
-  text-align: center;
-}
-.runner-malice-next {
-  font-family: var(--font-condensed);
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-left: auto;
-}
-
-/* ── Bottom bar ─────────────────────────────────────────────────────────── */
-.runner-bottom-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  background: var(--bg-card);
-  border-top: 1px solid var(--border-visible);
-  flex-shrink: 0;
-}
-.runner-tokens {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.runner-tokens-label {
-  font-family: var(--font-condensed);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: var(--text-dim);
-}
-#runner-token-count {
-  font-family: var(--font-mono);
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--color-gold);
-  min-width: 24px;
-  text-align: center;
-}
-
-/* ── Encounter card: Start button ───────────────────────────────────────── */
-.encounter-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding-right: 6px;
-  flex-shrink: 0;
-}
-
-/* ── End Encounter modal ────────────────────────────────────────────────── */
-.end-encounter-modal { display: flex; flex-direction: column; gap: 14px; }
-.outcome-group { display: flex; flex-direction: column; gap: 6px; }
-.outcome-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
-}
-.outcome-option.active {
-  border-color: var(--color-gold);
-  background: rgba(200,168,75,.06);
-}
-.outcome-option input { width: 16px; height: 16px; accent-color: var(--color-gold); }
-.outcome-content { display: flex; flex-direction: column; gap: 2px; }
-.outcome-label-text {
-  font-family: var(--font-condensed);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-.outcome-desc-text {
-  font-family: var(--font-condensed);
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-/* ── Session started modal ──────────────────────────────────────────────── */
-.session-started-modal { display: flex; flex-direction: column; gap: 12px; text-align: center; }
-
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PHASE K — NEGOTIATION
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Session started modal ──────────────────────────────────────────────
+   MIGRATED to css/runner.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
 /* ── K1: Negotiation config panel in encounter editor ───────────────────── */
 

@@ -42,6 +42,11 @@
 .btn-ghost { background: transparent; border-color: transparent; color: var(--ink-muted); }
 .btn-ghost:hover { background: var(--surface-inset); border-color: transparent; }
 
+/* NOTE: main.css's un-migrated "HP adjustment modal" section declares a BARE
+   .btn-danger as an outline variant (tinted ground, danger text) and loads
+   after this file — so app-wide, danger buttons currently render outlined,
+   not filled. Decide which one wins when that section migrates; until then
+   this rule only applies where something scopes above it. */
 .btn-danger { background: var(--state-danger); border-color: var(--state-danger); color: var(--ink-on-accent); }
 
 /* .btn-primary used to be var(--class-accent), which made the confirm button

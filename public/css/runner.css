@@ -1,0 +1,439 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — ENCOUNTER RUNNER  (migrated from main.css)
+   The live combat screen: heroes left, turn order centre, enemies right.
+   Class names unchanged from the original stylesheet.
+
+   Depends on tokens.css + base.css + components.css.
+   Uses NO legacy shim aliases — this section is off the shim.
+
+   SIDE COLOUR is the one semantic that earns a hue here: heroes read
+   verdigris, enemies oxblood, malice black. Everything else is bronze and
+   paper like the rest of the app.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ HEADER ═══════════════════════════════════════════════════════════════ */
+.runner-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--surface-reverse);
+  color: var(--ink-on-reverse);
+  border-bottom: 2px solid var(--line-accent);
+}
+.runner-title {
+  font: var(--type-ui-label);
+  font-size: var(--size-lg);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+.runner-header-center { flex: 1; display: flex; align-items: center; justify-content: center; gap: var(--space-md); }
+
+.runner-round-badge {
+  padding: var(--space-3xs) var(--space-sm);
+  background: var(--wash-accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-xs);
+  color: var(--bronze-200);
+  font: var(--type-numeric-sm);
+}
+/* The join code — the one thing players squint at across a table */
+.runner-code-badge {
+  padding: var(--space-3xs) var(--space-md);
+  background: var(--wash-on-reverse-weak);
+  border: 1px solid var(--wash-on-reverse-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-on-reverse);
+  font: var(--type-numeric);
+  font-size: var(--size-lg);
+  letter-spacing: var(--tracking-caps);
+}
+.runner-header .btn {
+  background: transparent;
+  border-color: var(--wash-on-reverse-strong);
+  color: var(--ink-on-reverse);
+}
+.runner-header .btn:hover { background: var(--wash-on-reverse-weak); }
+.runner-header .btn-danger {
+  background: var(--state-danger);
+  border-color: var(--state-danger);
+  color: var(--ink-on-accent);
+}
+
+
+/* ═══ THREE-PANEL BODY ═════════════════════════════════════════════════════ */
+.runner-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow-y: auto;
+  min-height: 0;
+  background: var(--surface-app);
+}
+@media (min-width: 700px) {
+  .runner-body { grid-template-columns: 250px 1fr 250px; overflow-y: hidden; }
+  .runner-panel { overflow-y: auto; border-right: 1px solid var(--line-soft); }
+  .runner-panel-enemies { border-right: none; }
+}
+@media (min-width: 1200px) {
+  .runner-body { grid-template-columns: 280px 1fr 280px; }
+}
+
+.runner-panel { display: flex; flex-direction: column; min-height: 0; }
+.runner-panel-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-bar);
+  border-bottom: 1px solid var(--line-soft);
+}
+.runner-panel-title {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+
+
+/* ═══ HERO CARDS (left) ════════════════════════════════════════════════════ */
+.runner-hero-list,
+.runner-enemy-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+}
+
+.runner-hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-left: 4px solid var(--state-available);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              background var(--duration-fast) var(--ease-standard),
+              opacity var(--duration-base) var(--ease-standard);
+}
+/* Whose turn it is has to be readable from across the table */
+.runner-hero-active {
+  border-color: var(--state-available);
+  background: var(--state-available-bg);
+  box-shadow: var(--elevation-raised);
+}
+.runner-hero-done { opacity: .6; }
+
+.runner-hero-header { display: flex; align-items: flex-start; gap: var(--space-xs); }
+.runner-hero-name-row,
+.runner-enemy-name-row { flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2xs); }
+
+.runner-hero-name { font: var(--type-ui-label); font-size: var(--size-md); color: var(--ink-strong); }
+.runner-hero-class { font: var(--type-ui-caps); text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--ink-muted); }
+
+.runner-next-badge,
+.runner-state-badge {
+  padding: var(--space-3xs) var(--space-2xs);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-xs);
+  font: var(--type-ui-caps);
+  font-size: var(--size-3xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+.runner-next-badge   { background: var(--accent-wash); color: var(--accent-ink); }
+.runner-next-enemy   { background: var(--state-danger-bg); color: var(--state-danger-ink); }
+.runner-badge-active { background: var(--state-available-bg); color: var(--state-available-ink); }
+.runner-badge-done   { background: var(--state-spent-bg); color: var(--state-spent); }
+
+.runner-hero-edit-btn,
+.runner-enemy-hp-btn,
+.runner-enemy-remove-btn {
+  flex-shrink: 0;
+  padding: var(--space-3xs) var(--space-2xs);
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: var(--size-md);
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+.runner-hero-edit-btn:hover,
+.runner-enemy-hp-btn:hover { color: var(--accent-ink); }
+.runner-enemy-remove-btn:hover { color: var(--state-danger); }
+
+.runner-hp-track { flex: 1; }
+.runner-hero-hp-row,
+.runner-enemy-hp-row { display: flex; align-items: center; gap: var(--space-sm); }
+.runner-hero-hp-text,
+.runner-enemy-hp-text {
+  flex-shrink: 0;
+  min-width: 48px;
+  text-align: right;
+  font: var(--type-numeric-sm);
+  color: var(--ink-body);
+}
+
+.runner-hero-resource-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: var(--type-ui-label);
+}
+.runner-resource-name  { color: var(--ink-muted); }
+.runner-resource-value { font: var(--type-numeric-sm); color: var(--ink-strong); }
+
+.runner-buckets { display: flex; gap: var(--space-xs); }
+.runner-bucket {
+  font-family: var(--family-glyph);
+  font-size: var(--size-md);
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+.rbucket-spent { opacity: .25; }
+.rbucket-ready { opacity: 1; }
+
+
+/* ═══ TURN ORDER (centre) ══════════════════════════════════════════════════ */
+.runner-side-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--line-soft);
+}
+.runner-active-label {
+  flex: 1;
+  text-align: center;
+  font: var(--type-ui-label);
+  font-size: var(--size-md);
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-strong);
+}
+
+.runner-turn-order {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+}
+.runner-turn-section { display: flex; flex-direction: column; gap: var(--space-3xs); }
+.runner-turn-section-label {
+  margin-bottom: var(--space-3xs);
+  padding-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--line-soft);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+
+.runner-turn-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xs);
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+.turn-row-done  { opacity: .45; }
+.turn-row-hero  { border-left: 3px solid var(--state-available); }
+.turn-row-enemy { border-left: 3px solid var(--state-danger); }
+
+.runner-turn-indicator { flex-shrink: 0; width: 12px; font-size: var(--size-3xs); color: var(--accent); }
+.runner-turn-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--type-ui-label);
+  font-size: var(--size-md);
+  color: var(--ink-strong);
+}
+.runner-turn-check { flex-shrink: 0; font-size: var(--size-sm); color: var(--ink-faint); }
+.runner-turn-empty {
+  padding: var(--space-2xs) var(--space-sm);
+  font: var(--type-flavor);
+  font-size: var(--size-sm);
+  color: var(--ink-faint);
+}
+
+
+/* ═══ ENEMY CARDS (right) ══════════════════════════════════════════════════ */
+.runner-enemy-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-left: 4px solid var(--state-danger);
+  border-radius: var(--radius-sm);
+  transition: opacity var(--duration-base) var(--ease-standard);
+}
+.runner-enemy-done { opacity: .5; }
+.runner-enemy-header { display: flex; align-items: flex-start; gap: var(--space-xs); }
+.runner-enemy-name { font: var(--type-ui-label); font-size: var(--size-md); color: var(--ink-strong); }
+.runner-enemy-ctrl { display: flex; align-items: center; gap: var(--space-2xs); flex-shrink: 0; }
+
+.runner-enemy-activate-btn {
+  padding: var(--space-3xs) var(--space-xs);
+  background: var(--surface-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+  color: var(--ink-body);
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  transition: background var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+}
+.runner-enemy-activate-btn:hover:not(.is-done) { background: var(--surface-page); border-color: var(--accent); }
+.runner-enemy-activate-btn.is-done {
+  background: var(--state-available-bg);
+  border-color: var(--state-available);
+  color: var(--state-available-ink);
+}
+
+
+/* ═══ MALICE ═══════════════════════════════════════════════════════════════
+   The director's resource. Black, like the book's malice glyph — this is
+   the one place on a light screen that should feel heavy. */
+.runner-malice-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-reverse);
+  color: var(--ink-on-reverse);
+  border-top: 2px solid var(--line-accent);
+}
+.runner-malice-label {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--bronze-300);
+}
+.runner-malice-value {
+  min-width: 28px;
+  text-align: center;
+  font: var(--type-numeric);
+  color: var(--ink-on-reverse);
+}
+.runner-malice-next {
+  margin-left: auto;
+  font: var(--type-ui-label);
+  color: var(--bronze-300);
+}
+
+
+/* ═══ BOTTOM BAR ═══════════════════════════════════════════════════════════ */
+.runner-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--surface-bar);
+  border-top: 1px solid var(--line-strong);
+}
+.runner-tokens { display: flex; align-items: center; gap: var(--space-sm); }
+.runner-tokens-label {
+  font: var(--type-ui-caps);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+#runner-token-count {
+  min-width: 24px;
+  text-align: center;
+  font: var(--type-numeric);
+  color: var(--accent-ink);
+}
+
+
+/* ═══ SIDE BANNER ══════════════════════════════════════════════════════════ */
+.active-side-banner {
+  padding: var(--space-xs) var(--space-lg);
+  text-align: center;
+  font: var(--type-ui-label);
+  font-size: var(--size-md);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+.banner-heroes {
+  background: var(--state-available-bg);
+  color: var(--state-available-ink);
+  animation: sidePulse 1.5s var(--ease-standard) infinite;
+}
+.banner-villains { background: var(--state-danger-bg); color: var(--state-danger-ink); }
+@keyframes sidePulse { 0%, 100% { opacity: 1 } 50% { opacity: .6 } }
+
+
+/* ═══ SESSION CONTROLS ═════════════════════════════════════════════════════ */
+.session-controls {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  flex-shrink: 0;
+  padding: 0;
+  background: var(--surface-bar);
+  border-top: 1px solid var(--line-soft);
+}
+.join-session-fab {
+  position: fixed;
+  right: var(--space-lg);
+  bottom: var(--space-xl);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-sm);
+}
+
+
+/* ═══ ENCOUNTER START / END ════════════════════════════════════════════════ */
+.encounter-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex-shrink: 0;
+  padding-right: var(--space-xs);
+}
+
+.end-encounter-modal { display: flex; flex-direction: column; gap: var(--space-md); }
+.session-started-modal { display: flex; flex-direction: column; gap: var(--space-md); text-align: center; }
+
+.outcome-group { display: flex; flex-direction: column; gap: var(--space-xs); }
+.outcome-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              background var(--duration-fast) var(--ease-standard);
+}
+.outcome-option:hover { border-color: var(--line-strong); }
+.outcome-option.active { border-color: var(--accent); background: var(--accent-wash); }
+.outcome-option input { width: 16px; height: 16px; accent-color: var(--accent); }
+.outcome-content { display: flex; flex-direction: column; gap: var(--space-3xs); }
+.outcome-label-text { font: var(--type-ability-name); font-size: var(--size-md); color: var(--ink-strong); }
+.outcome-desc-text { font: var(--type-prose-sm); color: var(--ink-muted); }

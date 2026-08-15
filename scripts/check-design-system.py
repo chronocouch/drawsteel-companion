@@ -5,12 +5,16 @@ Draw Steel Companion — design system linter.
 Run:  python3 scripts/check-design-system.py
 CI:   exits non-zero on any failure.
 
-Checks three things, which are exactly the three ways the old system leaked:
+Checks four things — the ways the old system leaked:
 
   1. TOKEN INTEGRITY   every var(--x) resolves; no malformed hex.
   2. CONTRAST          every declared text/background pairing meets WCAG AA.
   3. DRIFT             no raw hex, no raw px font-size, no off-scale spacing
                        anywhere outside tokens.css.
+  4. JS COLOUR         inline styles built in JS bypass CSS entirely, so the
+                       other three checks cannot see them. Reported
+                       separately because some JS colour is legitimate DATA
+                       (the per-class accent map) rather than theme.
 
 Add a pairing to PAIRINGS whenever you introduce a new text-on-surface
 combination. If it isn't listed here, nothing is checking it.
@@ -23,6 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 TOKENS = ROOT / "public/css/tokens.css"
 CSS_GLOB = "public/css/*.css"
+JS_GLOB = "public/js/*.js"
 
 # ── (text_token, background_token, minimum_ratio) ───────────────────────────
 # 4.5 = AA normal text · 3.0 = AA large text / non-text UI contrast
@@ -176,6 +181,27 @@ def main():
         for num in set(re.findall(r"border-radius:\s*([\d.]+)px", body)):
             if float(num) not in ALLOWED_RADIUS:
                 failures.append(f"drift: border-radius {num}px in {rel} — use --radius-*")
+
+    # ── 4. colour set from JavaScript ───────────────────────────────────────
+    # A hex in a template literal never touches a stylesheet, so nothing above
+    # catches it. Not all of these are wrong — CLASS_COLORS is deliberate
+    # per-class data — so they are listed apart from the CSS drift count.
+    js_hits = []
+    for path in sorted(ROOT.glob(JS_GLOB)):
+        if "firebase-config" in path.name:
+            continue
+        body = re.sub(r"//[^\n]*|/\*.*?\*/", "", path.read_text(), flags=re.S)
+        for hexval in re.findall(r"#[0-9a-fA-F]{6}\b", body):
+            js_hits.append((path.relative_to(ROOT), hexval))
+    if js_hits:
+        by_file = {}
+        for rel, hexval in js_hits:
+            by_file.setdefault(str(rel), set()).add(hexval.lower())
+        print("JS-SET COLOUR (outside the token system, not counted as failures):")
+        for rel in sorted(by_file):
+            vals = ", ".join(sorted(by_file[rel]))
+            print(f"  · {rel}: {len(by_file[rel])} distinct — {vals}")
+        print()
 
     # ── report ──────────────────────────────────────────────────────────────
     if failures:
