@@ -1183,118 +1183,9 @@ html, body {
    MIGRATED to css/runner.css. Class names unchanged.
    ──────────────────────────────────────────────────────── */
 
-/* ── Director battle board ──────────────────────────────────────────────── */
-.director-board {
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
-  padding: 8px 12px;
-}
-
-.director-board-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.round-label {
-  font-family: var(--font-condensed);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--class-accent);
-  flex: 1;
-}
-
-.hero-roster {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.hero-roster-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  min-width: 130px;
-  flex-shrink: 0;
-}
-
-.hero-roster-card.has-acted { opacity: 0.5; }
-
-.roster-name {
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.roster-hp { margin-bottom: 4px; }
-
-.hp-bar-track {
-  height: 4px;
-  background: var(--border-subtle);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-bottom: 2px;
-}
-
-.hp-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.4s ease;
-}
-
-.hp-text {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.roster-resource {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-
-.roster-resource-name {
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-left: 4px;
-}
-
-.roster-buckets {
-  display: flex;
-  gap: 4px;
-  margin-top: 4px;
-}
-
-.roster-bucket { font-size: 12px; transition: opacity 0.2s; }
-.roster-bucket.ready { opacity: 1; color: var(--color-available); }
-.roster-bucket.spent { opacity: 0.25; }
-
-.roster-conditions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  margin-top: 4px;
-}
-
-.condition-badge {
-  font-size: 9px;
-  background: rgba(231, 76, 60, 0.15);
-  color: var(--color-danger);
-  border: 1px solid var(--color-danger);
-  border-radius: 3px;
-  padding: 1px 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
+/* ── Director battle board ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
 /* ── Modal ──────────────────────────────────────────────────────────────── */
 .modal-overlay {
@@ -1827,368 +1718,57 @@ html, body {
    MIGRATED to css/runner.css. Class names unchanged.
    ──────────────────────────────────────────────────────── */
 
-/* ── Director board ─────────────────────────────────────────────────────── */
-.director-board {
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 0;
-}
+/* ── Director board ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-.director-board-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-subtle);
-  flex-wrap: wrap;
-}
-.director-header-stats {
-  display: flex;
-  gap: 8px;
-  flex: 1;
-}
-.malice-pill {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  background: rgba(192,57,43,0.2);
-  color: #e74c3c;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-.token-pill {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  background: rgba(26,188,156,0.15);
-  color: var(--color-available);
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-.director-header-btns {
-  display: flex;
-  gap: 6px;
-}
+/* ── Zipper board ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Zipper board ───────────────────────────────────────────────────────── */
-.zipper-board {
-  display: flex;
-  gap: 0;
-  min-height: 120px;
-}
-.zipper-side {
-  flex: 1;
-  padding: 8px;
-  overflow-x: auto;
-}
-.zipper-side + .zipper-side {
-  border-left: 1px solid var(--border-subtle);
-}
-.zipper-side-label {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.15em;
-  color: var(--text-dim);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-}
-.zipper-heroes .zipper-side-label { color: var(--color-available); }
-.zipper-villains .zipper-side-label { color: #e74c3c; }
+/* ── Hero roster card ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-.hero-roster,
-.enemy-roster {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+/* ── NEXT badge ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Hero roster card ───────────────────────────────────────────────────── */
-.hero-roster-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  padding: 6px 8px;
-  min-width: 110px;
-  max-width: 140px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.hero-roster-card.is-active {
-  border-color: var(--color-available);
-  box-shadow: 0 0 8px rgba(26,188,156,0.3);
-}
-.hero-roster-card.done {
-  opacity: 0.6;
-}
-/* ── NEXT badge ─────────────────────────────────────────────────────────── */
-.next-badge {
-  display: inline-flex;
-  align-items: center;
-  font-family: var(--font-condensed);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: rgba(26, 188, 156, 0.2);
-  border: 1px solid var(--color-available);
-  color: var(--color-available);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.next-badge-enemy {
-  background: rgba(231, 76, 60, 0.18);
-  border-color: #e74c3c;
-  color: #e74c3c;
-}
+/* ── Roster name row (name + NEXT + order controls) ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Roster name row (name + NEXT + order controls) ─────────────────────── */
-.roster-name-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-condensed);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.enemy-name-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex: 1;
-  min-width: 0;
-}
+/* ── Up/down order buttons ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Up/down order buttons ───────────────────────────────────────────────── */
-.roster-order-btns {
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  flex-shrink: 0;
-}
-.roster-order-btns-sm {
-  margin-right: 2px;
-}
-.order-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  background: transparent;
-  border: 1px solid var(--border-visible);
-  border-radius: 3px;
-  color: var(--text-dim);
-  font-size: 8px;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
-}
-.order-btn:hover:not(:disabled) {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  border-color: var(--border-warm);
-}
-.order-btn:disabled {
-  opacity: 0.2;
-  cursor: not-allowed;
-}
-.order-pos {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--text-dim);
-  min-width: 12px;
-  text-align: center;
-}
+/* ── Roster name row layout update ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Roster name row layout update ──────────────────────────────────────── */
-.roster-name {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 2px;
-}
-.roster-state-badges {
-  min-height: 14px;
-  margin-bottom: 3px;
-}
+/* ── Enemy roster card ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-.activation-badge {
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
-}
-.badge-active {
-  background: rgba(26,188,156,0.25);
-  color: var(--color-available);
-}
-.badge-done {
-  background: rgba(255,255,255,0.08);
-  color: var(--text-dim);
-}
+/* ── Villain action buttons ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Enemy roster card ──────────────────────────────────────────────────── */
-.enemy-roster-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  padding: 6px 8px;
-  min-width: 120px;
-  max-width: 160px;
-  border-left: 2px solid #e74c3c;
-}
-.enemy-roster-card.enemy-done {
-  opacity: 0.55;
-}
-.enemy-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-.enemy-card-name {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-.enemy-card-btns {
-  display: flex;
-  gap: 3px;
-  flex-shrink: 0;
-}
-.enemy-card-hp {
-  margin-bottom: 4px;
-}
-.hp-text-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--text-secondary);
-  padding: 0;
-}
-.hp-text-btn:hover { color: var(--text-primary); }
+/* ── Director board footer ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Villain action buttons ─────────────────────────────────────────────── */
-.villain-actions {
-  display: flex;
-  gap: 4px;
-  margin-top: 5px;
-}
-.va-btn {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 3px;
-  border: 1px solid var(--color-danger);
-  background: transparent;
-  color: var(--color-danger);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.va-btn:hover { background: rgba(192,57,43,0.2); }
-.va-btn.used {
-  background: rgba(192,57,43,0.15);
-  color: var(--text-dim);
-  border-color: var(--border-subtle);
-  text-decoration: line-through;
-  cursor: default;
-}
+/* ── Bucket filter — active state ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Director board footer ──────────────────────────────────────────────── */
-.director-board-footer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-top: 1px solid var(--border-subtle);
-  flex-wrap: wrap;
-}
-.side-toggle {
-  display: flex;
-  gap: 6px;
-}
-.malice-tracker {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-}
-.malice-label {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: #e74c3c;
-}
-.malice-value {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  color: #e74c3c;
-  min-width: 28px;
-  text-align: center;
-}
-.malice-gain-preview {
-  font-size: 10px;
-  color: var(--text-dim);
-  font-style: italic;
-}
+/* ── Collapsible director board ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
-/* ── Bucket filter — active state ───────────────────────────────────────── */
-.bucket {
-  cursor: pointer;
-  user-select: none;
-}
-.bucket.filter-active {
-  outline: 2px solid var(--color-available);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
-.bucket.filter-active .bucket-label {
-  color: var(--color-available);
-}
-
-/* ── Collapsible director board ─────────────────────────────────────────── */
-.director-board.collapsed .zipper-board,
-.director-board.collapsed .director-board-footer {
-  display: none;
-}
-.board-collapse-btn {
-  font-size: 12px;
-  padding: 0 6px;
-  line-height: 22px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-/* ── btn-xs (extra small) ────────────────────────────────────────────────── */
-.btn-xs {
-  font-size: 9px;
-  padding: 2px 5px;
-  border-radius: 3px;
-}
-.btn-danger-ghost {
-  color: var(--color-danger);
-  border-color: transparent;
-}
-.btn-danger-ghost:hover { background: rgba(192,57,43,0.15); }
+/* ── btn-xs (extra small) ──────────────────────────────────────────────
+   MIGRATED to css/director.css. Class names unchanged.
+   ──────────────────────────────────────────────────────── */
 
 /* ── Add enemy modal ─────────────────────────────────────────────────────── */
 .add-enemy-modal,

@@ -6,15 +6,38 @@
  */
 
 // ── Class accent colors ──────────────────────────────────────────────────────
+// Class identity colours, re-derived for the light theme.
+//
+// The originals were flat-UI hues picked to glow on a near-black background.
+// On the book's paper (#FFFEF6) four of them failed WCAG AA as text, and
+// --class-accent IS used as text — the power-roll dice in the Stats tab are
+// 11px. Conduit's #D4AC0D measured 2.14:1: effectively invisible.
+//
+// These are the same hues walked down to the sourcebook's chroma, so each
+// class still reads as itself beside the bronze rather than on top of it.
+// Verified: every entry >= 4.5:1 on paper, every pair >= 15 CIELAB DeltaE
+// apart, and none closer than 17.5 DeltaE to the app accent #866D4B.
+//
+//   class          old        was     new        now
+//   Beastheart     #7D5A3C   6.11    #7A4A28    7.32
+//   Conduit        #D4AC0D   2.14 X  #8A6512    5.25
+//   Elementalist   #E67E22   2.82 X  #9C4A16    6.10
+//   Fury           #C0392B   5.38    #9B2C20    7.48
+//   Null           #717D7E   4.20 X  #4C565C    7.43
+//   Shadow         #6C3483   8.45    #5C3475    9.42
+//   Tactician      #2980B9   4.25 X  #234B6B    9.06
+//   Talent         #9B59B6   4.62    #7C3558    8.28
+//
+// Re-check with scripts/check-design-system.py after any change here.
 const CLASS_COLORS = {
-  'Beastheart':   { accent: '#7D5A3C', resource: 'Ferocity' },
-  'Conduit':      { accent: '#D4AC0D', resource: 'Piety' },
-  'Elementalist': { accent: '#E67E22', resource: 'Essence' },
-  'Fury':         { accent: '#C0392B', resource: 'Rage' },
-  'Null':         { accent: '#717D7E', resource: 'Discipline' },
-  'Shadow':       { accent: '#6C3483', resource: 'Insight' },
-  'Tactician':    { accent: '#2980B9', resource: 'Focus' },
-  'Talent':       { accent: '#9B59B6', resource: 'Clarity' },
+  'Beastheart':   { accent: '#7A4A28', resource: 'Ferocity' },   // russet
+  'Conduit':      { accent: '#8A6512', resource: 'Piety' },      // deep ochre
+  'Elementalist': { accent: '#9C4A16', resource: 'Essence' },    // burnt sienna
+  'Fury':         { accent: '#9B2C20', resource: 'Rage' },       // oxblood
+  'Null':         { accent: '#4C565C', resource: 'Discipline' }, // graphite
+  'Shadow':       { accent: '#5C3475', resource: 'Insight' },    // aubergine
+  'Tactician':    { accent: '#234B6B', resource: 'Focus' },      // lapis
+  'Talent':       { accent: '#7C3558', resource: 'Clarity' },    // plum
 };
 
 // ── Load character list ──────────────────────────────────────────────────────
@@ -52,7 +75,7 @@ async function loadCharacterList(userId) {
 }
 
 function buildCharacterCard(char) {
-  const meta = CLASS_COLORS[char.class] || { accent: '#444', resource: 'Resource' };
+  const meta = CLASS_COLORS[char.class] || { accent: '#866D4B', resource: 'Resource' };
   const card = document.createElement('div');
   card.className = 'character-card';
   card.style.setProperty('--class-color', meta.accent);
@@ -81,7 +104,7 @@ function buildCharacterCard(char) {
 
 function openCharacterSheet(char) {
   AppState.currentCharacter = char;
-  const meta = CLASS_COLORS[char.class] || { accent: '#2980B9', resource: 'Resource' };
+  const meta = CLASS_COLORS[char.class] || { accent: '#866D4B', resource: 'Resource' };
 
   // Set class accent color on root
   document.documentElement.style.setProperty('--class-accent', meta.accent);
@@ -552,7 +575,7 @@ function _renderLvlStep() {
   const step = f.steps[f.stepIndex];
   const isFirst = f.stepIndex === 0;
   const isLast  = f.stepIndex === f.steps.length - 1;
-  const meta    = CLASS_COLORS[f.char.class] || { accent: '#2980B9' };
+  const meta    = CLASS_COLORS[f.char.class] || { accent: '#866D4B' };
   const accent  = meta.accent;
 
   const navHTML = (nextLabel = 'Continue', nextDisabled = false) => `
@@ -1302,7 +1325,7 @@ function buildResistancesBlock(char) {
 }
 
 function populateStatsTab(char) {
-  const meta     = CLASS_COLORS[char.class] || { accent: '#2980B9', resource: 'Resource' };
+  const meta     = CLASS_COLORS[char.class] || { accent: '#866D4B', resource: 'Resource' };
   const stats    = char.characteristics || {};
   const level    = char.level ?? 1;
   const recValue = Math.floor((char.maxHP ?? 0) / 3);                 // stamina regained per recovery
@@ -2241,7 +2264,7 @@ function _step5(body) {
   function rightPanelHTML(className) {
     if (!className) return '<p class="col-right-placeholder">← Select a class to see subclasses</p>';
     const subs = CLASS_SUBCLASSES[className] || [];
-    const meta = CLASS_COLORS[className] || { accent: '#2980B9', resource: 'Resource' };
+    const meta = CLASS_COLORS[className] || { accent: '#866D4B', resource: 'Resource' };
     const skillGrant = CLASS_SKILL_GRANTS?.[className];
     const chosenSkills = p._classSkills || [];
     const skillPickHTML = skillGrant ? `
@@ -3193,7 +3216,7 @@ function _step9(body) {
 
 function _step10(body) {
   const p         = AppState.pendingCharacter;
-  const meta      = CLASS_COLORS[p.class] || { accent: '#2980B9', resource: 'Resource' };
+  const meta      = CLASS_COLORS[p.class] || { accent: '#866D4B', resource: 'Resource' };
   const base      = CLASS_BASE_STAMINA[p.class] || 18;
   const access10  = (typeof CLASS_KIT_ACCESS !== 'undefined' ? CLASS_KIT_ACCESS : {})[p.class] || { type: 'none' };
   const kitBonus1 = KIT_STAMINA[p.kit]  || 0;
@@ -3278,7 +3301,7 @@ function _step10(body) {
 
 function _step11(body) {
   const p    = AppState.pendingCharacter;
-  const meta = CLASS_COLORS[p.class] || { accent: '#2980B9', resource: 'Resource' };
+  const meta = CLASS_COLORS[p.class] || { accent: '#866D4B', resource: 'Resource' };
 
   // ── Required field validation ──────────────────────────────────────────────
   const access11 = (typeof CLASS_KIT_ACCESS !== 'undefined' ? CLASS_KIT_ACCESS : {})[p.class] || { type: 'none' };
@@ -3546,7 +3569,7 @@ function retreatWizard() {
 
 async function finishCharacterCreation() {
   const p    = AppState.pendingCharacter;
-  const meta = CLASS_COLORS[p.class] || { accent: '#2980B9', resource: 'Resource' };
+  const meta = CLASS_COLORS[p.class] || { accent: '#866D4B', resource: 'Resource' };
   const user = AppState.currentUser;
 
   const base      = CLASS_BASE_STAMINA[p.class] || 18;

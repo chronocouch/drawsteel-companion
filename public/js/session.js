@@ -1224,7 +1224,7 @@ function renderNegotiationRunner(sessionData) {
         </div>
         <div class="neg-runner-hero-list">
           ${heroes.map(h => {
-            const accent = (typeof CLASS_COLORS !== 'undefined' && CLASS_COLORS?.[h.class]?.accent) || '#2980B9';
+            const accent = (typeof CLASS_COLORS !== 'undefined' && CLASS_COLORS?.[h.class]?.accent) || '#866D4B';
             return `
               <div class="neg-runner-hero-row" style="border-left-color:${accent}">
                 <span class="neg-runner-hero-name">${h.displayName}</span>
@@ -1405,7 +1405,7 @@ function renderMontageRunner(sessionData) {
   const challenges  = m.challenges   || [];
   const pct      = Math.min(100, Math.round((total / needed) * 100));
   const barColor = total >= needed ? 'var(--color-gold)'
-    : pct >= 60 ? 'var(--color-available)' : '#2980B9';
+    : pct >= 60 ? 'var(--color-available)' : '#866D4B';
   const roundsLeft = limit - round + 1;
   const roundColor = roundsLeft <= 1 ? 'var(--color-danger)' : roundsLeft <= 2 ? '#e67e22' : 'var(--color-available)';
 
@@ -1455,7 +1455,7 @@ function renderMontageRunner(sessionData) {
         </div>
         <div class="montage-hero-tests">
           ${heroes.map((h, i) => {
-            const accent  = (typeof CLASS_COLORS !== 'undefined' && CLASS_COLORS?.[h.class]?.accent) || '#2980B9';
+            const accent  = (typeof CLASS_COLORS !== 'undefined' && CLASS_COLORS?.[h.class]?.accent) || '#866D4B';
             const result  = heroResults[i];
             const resCfg  = result ? RESULT_CFG[result] : null;
             return `
@@ -1693,7 +1693,7 @@ function buildRunnerHeroCard(hero, idx, isNext) {
   const hpPct   = hero.maxHP > 0 ? Math.max(0, Math.round((hero.currentHP / hero.maxHP) * 100)) : 0;
   const hpColor = hpPct > 60 ? 'var(--stamina-fill)'
                 : hpPct > 30 ? 'var(--stamina-winded)' : 'var(--stamina-dying)';
-  const accent  = (typeof CLASS_COLORS !== 'undefined' && CLASS_COLORS?.[hero.class]?.accent) || '#2980B9';
+  const accent  = (typeof CLASS_COLORS !== 'undefined' && CLASS_COLORS?.[hero.class]?.accent) || '#866D4B';
   const stateClass = hero.isActivated ? 'runner-hero-active' : hero.hasActed ? 'runner-hero-done' : '';
 
   return `
