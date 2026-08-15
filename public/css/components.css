@@ -419,7 +419,28 @@
 .card-header-right { display: flex; align-items: center; gap: var(--space-xs); flex: none; }
 
 .card-body { padding: 0 var(--space-md) var(--space-md) var(--space-2xl); }
-.card-summary { font: var(--type-prose); color: var(--ink-body); }
+
+/* Collapsed cards are clamped so the grid is even. Without this the summary
+   runs 1-3 lines and the name 1-2, so no two cards in a row match height.
+   Full text is never lost — it is what the detail surface shows. */
+.card-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-summary {
+  font: var(--type-prose);
+  color: var(--ink-body);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-keywords { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* …but not once it is open in the detail surface */
+.ability-detail .card-name,
+.ability-detail .card-summary { -webkit-line-clamp: unset; display: block; }
 
 .resource-pips { display: flex; gap: var(--space-3xs); }
 .resource-pips i { width: 8px; height: 8px; border-radius: 50%; background: var(--class-accent); display: block; }

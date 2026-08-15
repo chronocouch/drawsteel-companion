@@ -351,6 +351,11 @@ function renderAbilityCards(abilities, char) {
   _renderedAbilityMap = {};
   for (const a of abilities) _renderedAbilityMap[a.id] = a;
 
+  // The open card's .card-expanded node currently lives in the detail
+  // surface, not in the card. Put it back before innerHTML wipes the grid,
+  // otherwise it is orphaned and the surface shows a stale ability.
+  closeAbilityDetail();
+
   const container = document.getElementById('ability-cards-container');
   // Don't clobber an empty-state message that may have been set before this call
   const existingMsg = container.querySelector('.empty-text');
@@ -543,11 +548,10 @@ function buildCard(ability, char, currentResource) {
     </div>
   `;
 
-  // Toggle expand/collapse
-  card.querySelector('.card-header').addEventListener('click', () => {
-    const expanded = card.querySelector('.card-expanded');
-    expanded.classList.toggle('hidden');
-    card.classList.toggle('expanded');
+  // Open in the detail surface (panel on desktop, full-screen on mobile)
+  card.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;   // let inner controls act
+    toggleAbilityDetail(card, ability);
   });
 
   // Use ability button
@@ -906,3 +910,79 @@ window.updateCardAffordability = updateCardAffordability;
 window.cardState = cardState;
 window.getAncestryAbilities = getAncestryAbilities;
 window.getKitVirtualAbility = getKitVirtualAbility;
+
+
+// ── Ability detail surface ───────────────────────────────────────────────────
+// Replaces inline card expansion. One click target, two presentations:
+// a sticky side panel on desktop (cards stay visible, so you can still
+// compare before committing) and a full-screen sheet on mobile.
+//
+// The card's .card-expanded element is MOVED into the surface rather than
+// cloned, so the "Use This Ability" listener bound in buildCard() keeps
+// working. closeAbilityDetail() always moves it home again.
+
+let _openAbilityCard = null;
+
+function getAbilityDetailSurface() {
+  let el = document.getElementById('ability-detail');
+  if (el) return el;
+
+  el = document.createElement('aside');
+  el.id = 'ability-detail';
+  el.className = 'ability-detail hidden';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', 'Ability detail');
+  el.innerHTML = `
+    <div class="ability-detail-head">
+      <span class="ability-detail-title"></span>
+      <button class="ability-detail-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="ability-detail-body"></div>`;
+
+  (document.getElementById('tab-abilities') || document.body).appendChild(el);
+  el.querySelector('.ability-detail-close').addEventListener('click', closeAbilityDetail);
+  return el;
+}
+
+function closeAbilityDetail() {
+  if (!_openAbilityCard) return;
+  const surface = document.getElementById('ability-detail');
+  const node = surface?.querySelector('.ability-detail-body > .card-expanded');
+  if (node) {
+    node.classList.add('hidden');
+    _openAbilityCard.appendChild(node);     // move it home
+  }
+  _openAbilityCard.classList.remove('expanded');
+  _openAbilityCard = null;
+  surface?.classList.add('hidden');
+  document.getElementById('tab-abilities')?.classList.remove('has-detail');
+  document.body.classList.remove('detail-open');
+}
+
+function openAbilityDetail(card, ability) {
+  closeAbilityDetail();
+
+  const node = card.querySelector('.card-expanded');
+  if (!node) return;                        // nothing to show
+
+  const surface = getAbilityDetailSurface();
+  surface.querySelector('.ability-detail-title').textContent = ability.name;
+  node.classList.remove('hidden');
+  surface.querySelector('.ability-detail-body').appendChild(node);
+
+  card.classList.add('expanded');
+  _openAbilityCard = card;
+  surface.classList.remove('hidden');
+  document.getElementById('tab-abilities')?.classList.add('has-detail');
+  document.body.classList.add('detail-open');
+  surface.scrollTop = 0;
+}
+
+function toggleAbilityDetail(card, ability) {
+  if (_openAbilityCard === card) closeAbilityDetail();
+  else openAbilityDetail(card, ability);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeAbilityDetail();
+});

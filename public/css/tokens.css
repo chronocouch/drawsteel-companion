@@ -327,6 +327,7 @@
   --card-grid-min:     280px;  /* ability grid column floor */
   --rail-picker:       420px;  /* wizard left-hand chooser column */
   --rail-sidebar:      300px;  /* campaign info sidebar */
+  --rail-detail:       360px;  /* ability detail panel, desktop */
   --rail-party:        220px;  /* campaign party column */
   --modal-max:         680px;
 }

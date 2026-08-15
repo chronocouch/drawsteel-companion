@@ -98,8 +98,13 @@
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--space-md);
   padding: var(--space-lg);
-  align-items: start;
+  /* stretch, not start: every card in a row matches the tallest in that row.
+     Combined with the 2-line clamps on name and summary this bounds the
+     variation without reserving empty space on short abilities. */
+  align-items: stretch;
 }
+.ability-cards > .ability-card { display: flex; flex-direction: column; }
+.ability-cards > .ability-card > .card-body { flex: 1; }
 
 .ability-section-header {
   grid-column: 1 / -1;
@@ -126,6 +131,92 @@
   background: var(--accent-wash);
 }
 .tier2 .tier-label { color: var(--class-accent); }
+
+
+/* ═══ ABILITY DETAIL SURFACE ═══════════════════════════════════════════════
+   One interaction, two presentations. Desktop: a sticky panel beside the
+   grid, so the cards stay visible and you can still compare before choosing.
+   Mobile: a full-screen sheet, because on a phone comparison is impossible
+   anyway and focus is worth more.
+
+   The expanded node is MOVED into this surface by abilities.js rather than
+   cloned, so the "Use This Ability" listener travels with it. */
+#tab-abilities.has-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rail-detail);
+  align-items: start;
+  column-gap: var(--space-lg);
+}
+#tab-abilities.has-detail > .ability-filter-bar,
+#tab-abilities.has-detail > .power-roll-banner { grid-column: 1 / -1; }
+
+.ability-detail {
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-top: 3px solid var(--class-accent);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-raised);
+}
+.ability-detail.hidden { display: none; }
+
+@media (min-width: 700px) {
+  .ability-detail {
+    position: sticky;
+    top: var(--space-lg);
+    margin: var(--space-lg) var(--space-lg) var(--space-lg) 0;
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+  }
+}
+
+.ability-detail-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+  background: var(--surface-page);
+  border-bottom: 1px solid var(--line-soft);
+}
+.ability-detail-title { font: var(--type-ability-name); color: var(--ink-strong); }
+.ability-detail-close {
+  flex: none;
+  width: 30px; height: 30px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xs);
+  color: var(--ink-muted);
+  font-size: var(--size-lg);
+  line-height: 1;
+}
+.ability-detail-close:hover { color: var(--ink-strong); border-color: var(--line-strong); }
+
+/* Inside the surface the expanded block is the whole content, so it drops
+   its card-interior chrome. */
+.ability-detail .card-expanded {
+  background: transparent;
+  border-top: none;
+  padding: var(--space-md);
+}
+
+/* ── Mobile: full-screen sheet ── */
+@media (max-width: 699px) {
+  #tab-abilities.has-detail { display: block; }
+  .ability-detail {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ability-detail-head { padding: var(--space-lg); }
+  body.detail-open { overflow: hidden; }
+}
 
 
 /* ═══ BADGES — app-specific variants ═══════════════════════════════════════ */
