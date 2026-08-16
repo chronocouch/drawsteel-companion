@@ -288,36 +288,55 @@
   --victory-mark-off:   var(--paper-400);
   --malice:             var(--black);
 
-  /* ── Negotiation interest — a 5-step ORDINAL ramp ───────────────────────
-     Interest is ONE quantity measured 1→5, so it gets ONE hue getting
-     darker, not five unrelated colours. The old scale ran red → orange →
-     gold → teal → gold: a rainbow (which encodes magnitude as identity),
-     and it borrowed the "available" and "gold" status colours for steps 4
-     and 5, so a full-interest pip was indistinguishable from a live
-     resource badge.
+  /* ── THE ORDINAL RAMP ───────────────────────────────────────────────────
+     The app has three ordered-magnitude scales — negotiation interest 1-5,
+     encounter difficulty trivial→extreme, montage challenge tier. All three
+     used to be rainbows: red → orange → gold → teal → gold, which encodes
+     magnitude as if it were identity, and which borrowed live status hues
+     for its top steps. A quantity that only goes up gets ONE hue that only
+     gets darker, and every scale in the app gets the SAME one.
 
-     Steps validated as an ordinal ramp against the paper surface: lightness
+     Validated as an ordinal ramp against the paper surface: lightness
      monotone, every adjacent ΔL ≥ 0.06, light end 2.27:1 vs #FFFEF6.
-     Each -ink is the pip's own number ON that fill — all ≥ 4.5:1, which is
-     why the ink flips to paper at step 3. */
-  --interest-1:         var(--bronze-300);
-  --interest-2:         var(--bronze-400);
-  --interest-3:         var(--bronze-500);
-  --interest-4:         var(--bronze-700);
-  --interest-5:         var(--bronze-800);
-  --interest-1-ink:     var(--ink-900);
-  --interest-2-ink:     var(--ink-900);
-  --interest-3-ink:     var(--paper-000);
-  --interest-4-ink:     var(--paper-000);
-  --interest-5-ink:     var(--paper-000);
-  --interest-empty:     var(--surface-sunken);
-  --interest-empty-ink: var(--ink-muted);
 
-  /* ── Montage challenge difficulty — a 3-step ORDINAL ramp ───────────────
-     Same reasoning, one third the length. Difficulty is a property of the
-     challenge, not a state of the app, so it does NOT get the danger/
-     warning status hues — it gets weight. Every pill carries its word
-     ("EASY"/"MEDIUM"/"HARD"), so identity is never colour-alone. */
+     THESE ARE FILLS, NOT TEXT. Steps 1-2 are tints — 2.3:1 and 3.2:1 on
+     paper — so they can only ever be a background. Anything that shows a
+     step as a word wears it as a filled chip with the matching -ink (all
+     ≥ 4.5:1, which is why the ink flips to paper at step 3), never as
+     coloured text. */
+  --ordinal-1:          var(--bronze-300);
+  --ordinal-2:          var(--bronze-400);
+  --ordinal-3:          var(--bronze-500);
+  --ordinal-4:          var(--bronze-700);
+  --ordinal-5:          var(--bronze-800);
+  --ordinal-1-ink:      var(--ink-900);
+  --ordinal-2-ink:      var(--ink-900);
+  --ordinal-3-ink:      var(--paper-000);
+  --ordinal-4-ink:      var(--paper-000);
+  --ordinal-5-ink:      var(--paper-000);
+  --ordinal-empty:      var(--surface-sunken);
+  --ordinal-empty-ink:  var(--ink-muted);
+
+  /* Negotiation interest — the named instance of the ramp above. */
+  --interest-1:         var(--ordinal-1);
+  --interest-2:         var(--ordinal-2);
+  --interest-3:         var(--ordinal-3);
+  --interest-4:         var(--ordinal-4);
+  --interest-5:         var(--ordinal-5);
+  --interest-1-ink:     var(--ordinal-1-ink);
+  --interest-2-ink:     var(--ordinal-2-ink);
+  --interest-3-ink:     var(--ordinal-3-ink);
+  --interest-4-ink:     var(--ordinal-4-ink);
+  --interest-5-ink:     var(--ordinal-5-ink);
+  --interest-empty:     var(--ordinal-empty);
+  --interest-empty-ink: var(--ordinal-empty-ink);
+
+  /* ── Montage challenge difficulty — the ramp at wash strength ───────────
+     Same three-step shape, but these pills are 10px type inside a dense
+     challenge list, where a solid fill would shout. Bronze at wash strength
+     instead: the bg gets heavier and the ink gets darker together, so the
+     order still reads. Every pill carries its word ("EASY"/"MEDIUM"/"HARD"),
+     so identity is never colour-alone. */
   --difficulty-easy-bg:   var(--bronze-050);
   --difficulty-easy-ink:  var(--bronze-600);
   --difficulty-easy-line: var(--bronze-200);

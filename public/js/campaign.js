@@ -962,13 +962,14 @@ function round1Malice(heroes) {
   return heroes.length + avgVic;
 }
 
-const DIFFICULTY_COLOR = {
-  trivial: 'var(--text-dim)', easy: 'var(--color-available)',
-  standard: 'var(--color-gold)', hard: 'var(--state-warning)', extreme: 'var(--color-danger)',
-  // TODO(encounter-editor migration): this whole map is a rainbow standing in
-  // for a 5-step ordinal scale — same defect the interest meter had. Rebuild it
-  // on a single-hue ramp when the encounter editor + budget bar migrate.
-
+// Difficulty is a 5-step ORDINAL scale, drawn by .enc-diff-* in
+// encounter.css off the shared --ordinal-* ramp. It used to be a rainbow
+// (dim -> teal -> gold -> orange -> red), which encodes magnitude as if it
+// were identity and spent two live status colours on it. No colour here.
+const DIFFICULTY_CLASS = {
+  trivial:  'enc-diff-trivial',  easy: 'enc-diff-easy',
+  standard: 'enc-diff-standard', hard: 'enc-diff-hard',
+  extreme:  'enc-diff-extreme',
 };
 
 const GOAL_TYPES = [
@@ -1360,7 +1361,7 @@ function renderEncounterList(campaign) {
     const spent      = enc.budgetSpent || 0;
     const budget     = enc.encounterBudget || 0;
     const diff       = enc.difficulty || 'standard';
-    const diffColor  = DIFFICULTY_COLOR[diff] || DIFFICULTY_COLOR.standard;
+    const diffClass  = DIFFICULTY_CLASS[diff] || DIFFICULTY_CLASS.standard;
     const groupCount = (enc.groups || []).length + (enc.customNPCs || []).length;
     const isMontage = enc.type === 'montage';
     const isNeg     = enc.type === 'negotiation';
@@ -1394,7 +1395,7 @@ function renderEncounterList(campaign) {
             <div class="encounter-card-badges">
               <span class="enc-badge enc-type-badge">${(enc.type || 'combat').toUpperCase()}</span>
               <span class="enc-badge enc-status-badge enc-status-${enc.status || 'draft'}">${(enc.status || 'draft').toUpperCase()}</span>
-              <span class="enc-badge enc-diff-badge" style="color:${diffColor};border-color:${diffColor}">${diff.toUpperCase()}</span>
+              <span class="enc-badge enc-diff-badge ${diffClass}">${diff.toUpperCase()}</span>
             </div>
           </div>
           <div class="encounter-card-row2">${row2HTML}</div>
@@ -2390,8 +2391,9 @@ function buildBudgetBarHTML(enc, budgets, heroes) {
   const spent  = enc.budgetSpent || 0;
   const budget = Math.max(enc.encounterBudget || 1, 1);
   const pct    = Math.min(100, Math.round((spent / budget) * 100));
-  const barColor = spent > budget * 1.1 ? 'var(--color-danger)'
-    : spent > budget * 0.85 ? 'var(--color-gold)' : 'var(--color-available)';
+  // Under / near / over budget: three states, not a scale. See encounter.css.
+  const barState = spent > budget * 1.1 ? 'enc-budget-over'
+    : spent > budget * 0.85 ? 'enc-budget-near' : '';
   const bd = budgets.breakdown;
   const slotsUsed  = encounterSlotsUsed(enc, bd?.avgLevel || 1);
   const slotsAvail = encounterSlotsAvailable(heroes || [], enc, bd);
@@ -2400,19 +2402,19 @@ function buildBudgetBarHTML(enc, budgets, heroes) {
       <div class="enc-budget-bar-header">
         <span class="enc-budget-label">Budget</span>
         <span class="enc-budget-numbers" id="enc-budget-numbers">
-          <span class="enc-budget-spent" style="color:${barColor}">${spent}</span>
+          <span class="enc-budget-spent ${barState}">${spent}</span>
           <span class="enc-budget-sep">/</span>
           <span class="enc-budget-total">${budget}</span>
           <span class="enc-budget-ev-label">EV</span>
         </span>
       </div>
       <div class="enc-budget-bar-track">
-        <div class="enc-budget-bar-fill" id="enc-budget-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+        <div class="enc-budget-bar-fill ${barState}" id="enc-budget-bar-fill" style="width:${pct}%"></div>
       </div>
       <div class="enc-budget-bar-header enc-slot-row">
         <span class="enc-budget-label">Hero Slots</span>
         <span class="enc-budget-numbers" id="enc-slot-numbers">
-          <span class="enc-budget-spent" style="color:${slotsUsed > slotsAvail ? 'var(--color-danger)' : 'var(--color-available)'}">${formatSlots(slotsUsed)}</span>
+          <span class="enc-budget-spent ${slotsUsed > slotsAvail ? 'enc-budget-over' : ''}">${formatSlots(slotsUsed)}</span>
           <span class="enc-budget-sep">/</span>
           <span class="enc-budget-total">${formatSlots(slotsAvail)}</span>
         </span>
@@ -2492,7 +2494,7 @@ function buildChallengePreviewHTML(campaign, enc, budgets) {
   const heroes    = campaign.heroes || [];
   const spent     = enc.budgetSpent || 0;
   const diff      = computeDifficulty(spent, budgets);
-  const diffColor = DIFFICULTY_COLOR[diff] || DIFFICULTY_COLOR.standard;
+  const diffClass = DIFFICULTY_CLASS[diff] || DIFFICULTY_CLASS.standard;
   const malice    = round1Malice(heroes);
   const avgLevel  = heroes.length ? heroes.reduce((s, h) => s + (h.level || 1), 0) / heroes.length : 1;
   const warnings  = encounterWarnings(enc, avgLevel, budgets.breakdown?.avgVictories || 0);
@@ -2537,7 +2539,7 @@ function buildChallengePreviewHTML(campaign, enc, budgets) {
       <div class="preview-section-label">This Encounter</div>
       <div class="preview-stat-row">
         <span>Auto Difficulty</span>
-        <span class="preview-difficulty" style="color:${diffColor}">${diff.toUpperCase()}</span>
+        <span class="preview-difficulty ${diffClass}">${diff.toUpperCase()}</span>
       </div>
       <div class="preview-stat-row">
         <span>Round 1 Malice</span>
@@ -2561,15 +2563,20 @@ function refreshBudgetDisplay(enc, budgets, heroes) {
   const spent  = enc.budgetSpent || 0;
   const budget = Math.max(enc.encounterBudget || 1, 1);
   const pct    = Math.min(100, Math.round((spent / budget) * 100));
-  const barColor = spent > budget * 1.1 ? 'var(--color-danger)'
-    : spent > budget * 0.85 ? 'var(--color-gold)' : 'var(--color-available)';
+  // Under / near / over budget: three states, not a scale. See encounter.css.
+  const barState = spent > budget * 1.1 ? 'enc-budget-over'
+    : spent > budget * 0.85 ? 'enc-budget-near' : '';
 
   const fillEl    = document.getElementById('enc-budget-bar-fill');
   const numbersEl = document.getElementById('enc-budget-numbers');
-  if (fillEl) { fillEl.style.width = `${pct}%`; fillEl.style.background = barColor; }
+  if (fillEl) {
+    fillEl.style.width = `${pct}%`;
+    fillEl.classList.remove('enc-budget-near', 'enc-budget-over');
+    if (barState) fillEl.classList.add(barState);
+  }
   if (numbersEl) {
     numbersEl.innerHTML = `
-      <span class="enc-budget-spent" style="color:${barColor}">${spent}</span>
+      <span class="enc-budget-spent ${barState}">${spent}</span>
       <span class="enc-budget-sep">/</span>
       <span class="enc-budget-total">${budget}</span>
       <span class="enc-budget-ev-label">EV</span>
@@ -2582,7 +2589,7 @@ function refreshBudgetDisplay(enc, budgets, heroes) {
     const slotsUsed  = encounterSlotsUsed(enc, bd?.avgLevel || 1);
     const slotsAvail = encounterSlotsAvailable(heroes || [], enc, bd);
     slotsEl.innerHTML = `
-      <span class="enc-budget-spent" style="color:${slotsUsed > slotsAvail ? 'var(--color-danger)' : 'var(--color-available)'}">${formatSlots(slotsUsed)}</span>
+      <span class="enc-budget-spent ${slotsUsed > slotsAvail ? 'enc-budget-over' : ''}">${formatSlots(slotsUsed)}</span>
       <span class="enc-budget-sep">/</span>
       <span class="enc-budget-total">${formatSlots(slotsAvail)}</span>
     `;

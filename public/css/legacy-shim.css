@@ -16,8 +16,9 @@
      [x] buttons                      [x] wizard (all steps)
      [x] character sheet              [x] loading / sign-in
      [x] character list               [x] combat profile / stats
-     [ ] director board & runner      [ ] campaign / encounter editor
-     [ ] bestiary & modals            [x] negotiation & montage
+     [ ] director board & runner      [~] campaign / encounter editor
+     [x] bestiary & modals            [x] negotiation & montage
+     [x] encounter editor & knowledge
      [ ] level-up flow
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -47,9 +48,7 @@
   --color-available:     var(--state-available);
   --color-available-bg:  var(--state-available-bg);
   --color-danger:        var(--state-danger);
-  --color-heal:          var(--state-heal);
   --color-gold:          var(--accent);
-  --color-purple:        var(--econ-triggered);
 
   /* ── Radius ── */
   --radius-sm:  var(--radius-xs);

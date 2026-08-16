@@ -60,15 +60,16 @@ PAIRINGS = [
     ("--accent",              "--surface-page",        3.0),
     ("--line-soft",           "--surface-page",        1.3),
 
-    # Negotiation interest — a 5-step ordinal ramp. Each pip prints its own
-    # number ON its fill, so every step needs AA in its own right; this is
-    # what forces the ink to flip to paper at step 3.
-    ("--interest-1-ink",      "--interest-1",          4.5),
-    ("--interest-2-ink",      "--interest-2",          4.5),
-    ("--interest-3-ink",      "--interest-3",          4.5),
-    ("--interest-4-ink",      "--interest-4",          4.5),
-    ("--interest-5-ink",      "--interest-5",          4.5),
-    ("--interest-empty-ink",  "--interest-empty",      4.5),
+    # The shared 5-step ordinal ramp (negotiation interest, encounter
+    # difficulty). Every step is shown as a filled chip with its own word or
+    # number printed ON it, so each needs AA in its own right — this is what
+    # forces the ink to flip to paper at step 3.
+    ("--ordinal-1-ink",       "--ordinal-1",           4.5),
+    ("--ordinal-2-ink",       "--ordinal-2",           4.5),
+    ("--ordinal-3-ink",       "--ordinal-3",           4.5),
+    ("--ordinal-4-ink",       "--ordinal-4",           4.5),
+    ("--ordinal-5-ink",       "--ordinal-5",           4.5),
+    ("--ordinal-empty-ink",   "--ordinal-empty",       4.5),
     # Montage challenge difficulty — the same idea, three steps.
     ("--difficulty-easy-ink", "--difficulty-easy-bg",  4.5),
     ("--difficulty-mid-ink",  "--difficulty-mid-bg",   4.5),
