@@ -252,9 +252,14 @@
 .wizard-text-input.input-error { border-color: var(--state-danger); }
 .wizard-text-input::placeholder { color: var(--ink-faint); font-weight: var(--weight-regular); }
 
-/* Inside a .wizard-field the input is a form control, not a headline. */
+/* Everywhere except step 1, .wizard-text-input is an ordinary form control
+   rather than a headline. Listing the callers here keeps the exception in
+   one place instead of each screen re-declaring a font-size. */
 .wizard-field .wizard-text-input,
-.wizard-field .campaign-textarea {
+.wizard-field .campaign-textarea,
+.email-search-row .wizard-text-input,
+.wizard-two-mini .wizard-text-input,
+.enc-field .wizard-text-input {
   padding: var(--space-sm) var(--space-md);
   font: var(--type-prose-sm);
   color: var(--ink-strong);

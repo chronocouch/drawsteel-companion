@@ -485,3 +485,130 @@
   color: var(--ink-muted);
 }
 .kn-review-footer { display: flex; gap: var(--space-md); justify-content: flex-end; }
+
+/* ═══ ROSTER (editor centre column) ════════════════════════════════════════
+   Monster groups and custom NPCs. Group warnings are THRESHOLDS on the
+   encounter's composition — "this group is off-level", "this group breaks
+   the budget" — so they take the warning and danger hues, and every warned
+   card also carries the warning text. */
+.enc-roster-list {
+  flex: 1;
+  min-height: 80px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.enc-group-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+.enc-group-warning { border-color: var(--state-warning); background: var(--state-warning-bg); }
+.enc-group-danger  { border-color: var(--state-danger);  background: var(--state-danger-bg); }
+.enc-warn-danger   { color: var(--state-danger-ink); }
+.enc-level-warn-icon { color: var(--state-warning-ink); font-size: var(--size-sm); }
+
+/* A custom NPC is a group the director typed in rather than pulled from the
+   bestiary. It was emitted with no rule at all — it now reads as a group
+   card with a bronze spine, so it is visibly hand-made without being loud. */
+.enc-npc-card { border-left: 3px solid var(--accent-hairline); }
+
+.enc-group-header { display: flex; align-items: center; gap: var(--space-xs); }
+.enc-group-name {
+  flex: 1;
+  font: var(--type-ui-label);
+  font-size: var(--size-sm);
+  font-weight: var(--weight-bold);
+  color: var(--ink-strong);
+}
+
+.enc-group-remove {
+  padding: var(--space-3xs) var(--space-2xs);
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: var(--size-xs);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+.enc-group-remove:hover { color: var(--state-danger-ink); }
+
+.enc-group-details {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+.enc-group-count-ctrl { display: flex; align-items: center; gap: var(--space-xs); }
+
+.enc-count-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-page);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-strong);
+  font-size: var(--size-sm);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+}
+.enc-count-btn:hover { background: var(--accent-wash); border-color: var(--accent); }
+
+.enc-count-val {
+  min-width: 18px;
+  text-align: center;
+  font: var(--type-numeric-sm);
+  font-size: var(--size-md);
+  color: var(--ink-strong);
+}
+
+.enc-group-ev       { font: var(--type-ui-label); color: var(--ink-muted); }
+.enc-group-total-ev { font: var(--type-ui-label); font-weight: var(--weight-semi); color: var(--ink-body); }
+
+.enc-npc-tag,
+.enc-boss-tag {
+  padding: var(--space-3xs) var(--space-2xs);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  font: var(--type-ui-caps);
+  font-size: var(--size-3xs);
+  letter-spacing: var(--tracking-wide);
+}
+.enc-boss-tag {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.enc-roster-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.enc-custom-npc-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.enc-npc-form-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-sm); }
+.enc-mini-input { max-width: 72px; min-width: 0; }
