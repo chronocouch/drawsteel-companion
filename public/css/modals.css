@@ -1,0 +1,303 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — MODALS & PAGE FURNITURE  (migrated from main.css)
+   The shared dialog shell, toasts, utility text, dividers, callouts and
+   scrollbars. Class names unchanged from the original stylesheet.
+
+   Depends on tokens.css + base.css + components.css.
+   Uses NO legacy shim aliases — this section is off the shim.
+
+   SUPERSEDES, because it loads last: .modal / .modal-close from
+   components-app.css, and .toast / .toast-* / .empty-state from
+   components.css. Those were authored for the styleguide before the app's
+   real markup was known. They should be deleted when the bestiary modal
+   migrates and the styleguide switches to these class names — until then
+   two definitions exist and this one wins.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ DIALOG SHELL ═════════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  background: var(--surface-overlay);
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-2xl);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-modal);
+}
+.modal h2 { font: var(--type-section); color: var(--ink-strong); margin-bottom: var(--space-md); }
+
+.modal-close {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: var(--space-xs) var(--space-sm);
+  background: none;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: var(--ink-muted);
+  font-size: var(--size-lg);
+  transition: color var(--duration-fast) var(--ease-standard),
+              background var(--duration-fast) var(--ease-standard);
+}
+.modal-close:hover { color: var(--ink-strong); background: var(--surface-inset); }
+
+
+/* ═══ SESSION CODE ═════════════════════════════════════════════════════════
+   The number read aloud across a table — the largest type in the app. */
+.session-created { text-align: center; }
+.session-created h2,
+.join-session-modal h2 { font: var(--type-section); color: var(--ink-strong); margin-bottom: var(--space-md); }
+
+.session-code-display {
+  margin: var(--space-lg) 0;
+  padding: var(--space-lg);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--class-accent);
+  font: var(--type-numeric);
+  font-size: var(--size-4xl);
+  letter-spacing: var(--tracking-caps);
+}
+
+.session-code-input {
+  display: block;
+  width: 100%;
+  margin: var(--space-md) 0;
+  padding: var(--space-md) var(--space-lg);
+  text-align: center;
+  outline: none;
+  background: var(--surface-page);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+  color: var(--ink-strong);
+  font: var(--type-numeric);
+  font-size: var(--size-3xl);
+  letter-spacing: .2em;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+.session-code-input:focus { border-color: var(--accent); }
+
+.join-error {
+  margin-top: var(--space-sm);
+  text-align: center;
+  font: var(--type-prose-sm);
+  color: var(--state-danger-ink);
+}
+
+
+/* ═══ CONFIRM / DANGER ═════════════════════════════════════════════════════ */
+.confirm-modal { text-align: center; padding: var(--space-2xs) 0; }
+.confirm-modal h2 { font: var(--type-section); color: var(--ink-strong); margin-bottom: var(--space-sm); }
+.confirm-modal-body {
+  margin: var(--space-sm) 0 var(--space-lg);
+  font: var(--type-prose);
+  color: var(--ink-body);
+}
+.confirm-modal-actions { display: flex; justify-content: center; gap: var(--space-sm); margin-top: var(--space-lg); }
+.confirm-modal .wizard-text-input { margin: var(--space-sm) 0 0; }
+
+.detail-section-danger { border-top: 1px solid var(--state-danger); }
+.detail-danger-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+
+/* ═══ HP ADJUSTMENT ════════════════════════════════════════════════════════ */
+.hp-display { cursor: pointer; }
+.hp-display:hover { opacity: .8; }
+
+.hp-modal { text-align: center; }
+.hp-modal h2 { font: var(--type-section); color: var(--ink-strong); margin-bottom: var(--space-lg); }
+.hp-modal-current {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-3xs);
+  margin-bottom: var(--space-xl);
+  font: var(--type-numeric);
+  font-size: var(--size-4xl);
+  color: var(--ink-strong);
+}
+.hp-modal-sep   { font-size: var(--size-3xl); color: var(--ink-faint); }
+.hp-modal-max   { font-size: var(--size-2xl); color: var(--ink-muted); }
+.hp-modal-label { margin-left: var(--space-xs); font: var(--type-prose-sm); color: var(--ink-muted); }
+
+.hp-delta-input {
+  width: 100%;
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  text-align: center;
+  background: var(--surface-page);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-strong);
+  font: var(--type-numeric);
+  font-size: var(--size-xl);
+}
+.hp-delta-input:focus { outline: none; border-color: var(--accent); }
+
+.hp-modal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.hp-modal-set-btn { width: 100%; font-size: var(--size-xs); color: var(--ink-muted); }
+
+/* Damage and heal are the two halves of one control, so they are outlined
+   rather than filled — a solid red button next to a solid green one reads
+   as "danger vs confirm", which is not what these mean.
+   NOTE: this .btn-danger is bare on purpose; it is the app-wide danger
+   button. components.css declares a filled variant that this supersedes. */
+.btn-danger {
+  background: var(--state-danger-bg);
+  border: 1px solid var(--state-danger);
+  color: var(--state-danger-ink);
+}
+.btn-danger:hover { background: var(--state-danger); color: var(--ink-on-accent); }
+.btn-heal {
+  background: var(--state-available-bg);
+  border: 1px solid var(--state-available);
+  color: var(--state-available-ink);
+}
+.btn-heal:hover { background: var(--state-available); color: var(--ink-on-accent); }
+
+
+/* ═══ TOASTS ═══════════════════════════════════════════════════════════════ */
+.toast-container {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: calc(100% - var(--space-3xl));
+  max-width: 420px;
+  pointer-events: none;
+}
+.toast {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--surface-reverse);
+  border: 1px solid var(--surface-reverse);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--elevation-modal);
+  color: var(--ink-on-reverse);
+  font: var(--type-prose-sm);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--duration-base) var(--ease-standard),
+              transform var(--duration-base) var(--ease-standard);
+}
+.toast.toast-visible { opacity: 1; transform: translateY(0); }
+.toast-success { border-left-color: var(--state-available); }
+.toast-danger  { border-left-color: var(--state-danger); }
+
+
+/* ═══ UTILITY TEXT ═════════════════════════════════════════════════════════ */
+.hidden { display: none !important; }
+
+.loading-text,
+.empty-text {
+  padding: var(--space-4xl) var(--space-lg);
+  text-align: center;
+  font: var(--type-prose);
+  color: var(--ink-muted);
+}
+.error-text {
+  padding: var(--space-4xl) var(--space-lg);
+  text-align: center;
+  font: var(--type-prose);
+  color: var(--state-danger-ink);
+}
+.empty-state {
+  padding: var(--space-4xl) var(--space-2xl);
+  text-align: center;
+  font: var(--type-prose);
+  color: var(--ink-muted);
+}
+.empty-state strong { color: var(--ink-strong); }
+
+
+/* ═══ PAGE FURNITURE ═══════════════════════════════════════════════════════ */
+/* The book's diamond rule. base.css has .divider for new markup; this is
+   the app's existing class name for the same mark. */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin: var(--space-lg) 0;
+  color: var(--accent-ink);
+  font: var(--type-ui-caps);
+  font-size: var(--size-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+.section-divider::before,
+.section-divider::after { content: ''; flex: 1; height: 1px; }
+.section-divider::before { background: linear-gradient(to right, transparent, var(--line-accent)); }
+.section-divider::after  { background: linear-gradient(to left,  transparent, var(--line-accent)); }
+
+.callout-book {
+  margin: var(--space-lg) 0;
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--surface-raised);
+  border-top: 2px solid var(--line-accent);
+  border-bottom: 2px solid var(--line-accent);
+}
+.callout-book-title {
+  margin-bottom: var(--space-sm);
+  text-align: center;
+  font: var(--type-ui-caps);
+  font-size: var(--size-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--accent-ink);
+}
+.callout-book-body { font: var(--type-flavor); color: var(--ink-body); line-height: var(--leading-prose); }
+
+/* Power-roll outcome range. Prefer the glyph pills (sheet.css) where the
+   font is available; this is the text fallback. */
+.tier-range {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 52px;
+  padding: var(--space-3xs) var(--space-xs);
+  background: var(--surface-inset);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-pill);
+  font: var(--type-numeric-sm);
+  font-size: var(--size-2xs);
+  color: var(--ink-muted);
+}
+
+
+/* ═══ SCROLLBARS ═══════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: var(--radius-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
