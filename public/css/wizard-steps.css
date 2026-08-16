@@ -449,7 +449,7 @@
 .review-stats-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
+  gap: var(--space-hair);
   overflow: hidden;
   margin-bottom: var(--space-lg);
   background: var(--line-soft);

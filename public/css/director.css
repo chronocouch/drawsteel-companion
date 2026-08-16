@@ -227,7 +227,7 @@
 
 
 /* ═══ ORDER CONTROLS ═══════════════════════════════════════════════════════ */
-.roster-order-btns { display: flex; align-items: center; gap: 1px; flex-shrink: 0; }
+.roster-order-btns { display: flex; align-items: center; gap: var(--space-hair); flex-shrink: 0; }
 .roster-order-btns-sm { margin-right: var(--space-3xs); }
 .order-btn {
   display: flex;

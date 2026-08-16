@@ -97,7 +97,7 @@
 }
 .levelup-number {
   font: var(--type-hero-name);
-  font-size: 64px;
+  font-size: var(--size-5xl);
   color: var(--class-accent);
 }
 

@@ -131,6 +131,7 @@
   --size-2xl:  24px;
   --size-3xl:  30px;
   --size-4xl:  40px;
+  --size-5xl:  64px;   /* the level-up number, and nothing else */
 
   --weight-regular: 400;
   --weight-medium:  500;
@@ -151,6 +152,7 @@
      Replaces 18 ad-hoc padding/margin/gap values. Migration note: former
      10px snaps to --space-sm (8) or --space-md (12); former 14px snaps to
      --space-md (12) or --space-lg (16). Pick by density, never split. */
+  --space-hair: 1px;   /* grid gaps used AS a hairline rule, not as space */
   --space-3xs:  2px;
   --space-2xs:  4px;
   --space-xs:   6px;

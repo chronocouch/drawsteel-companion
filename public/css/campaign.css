@@ -50,7 +50,7 @@
   border-bottom: 1px solid var(--line-soft);
 }
 .party-bar-empty { font: var(--type-prose-sm); color: var(--ink-faint); }
-.party-bar-stat { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.party-bar-stat { display: flex; flex-direction: column; align-items: center; gap: var(--space-hair); }
 .party-bar-label {
   font: var(--type-ui-caps);
   text-transform: uppercase;
@@ -177,7 +177,7 @@
 }
 .hero-card-meta { font: var(--type-ui-label); color: var(--ink-muted); }
 .hero-card-stats { display: flex; gap: var(--space-md); margin-top: var(--space-2xs); }
-.hero-card-stat { display: flex; flex-direction: column; gap: 1px; }
+.hero-card-stat { display: flex; flex-direction: column; gap: var(--space-hair); }
 /* The original declared font-size and color twice here; this is the winner. */
 .hero-stat-label {
   font: var(--type-ui-caps);

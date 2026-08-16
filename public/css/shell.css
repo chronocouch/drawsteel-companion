@@ -200,3 +200,16 @@
   right: var(--space-xl);
   bottom: var(--space-xl);
 }
+
+/* ═══ SCREEN SYSTEM ════════════════════════════════════════════════════════
+   The last structural rule in main.css. Every top-level view is a .screen;
+   exactly one carries .active at a time. It lived at the very top of the old
+   stylesheet, above the reset's siblings, and nothing else defined it. */
+.screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.screen.active { display: flex; flex-direction: column; }

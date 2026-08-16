@@ -8,6 +8,12 @@
 
 html { -webkit-text-size-adjust: 100%; }
 
+/* The app is a fixed-viewport shell: each .screen scrolls internally (see
+   shell.css), so the document itself never does. main.css carried this on
+   `html, body` and it is the one part of its reset base.css did not
+   already have. */
+html, body { height: 100%; overflow: hidden; }
+
 body {
   background: var(--surface-app);
   color: var(--ink-body);

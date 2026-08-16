@@ -307,3 +307,8 @@
 ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: var(--radius-pill); }
 ::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
 * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+
+/* The bottom FAB sits at 24px; toasts clear it on small screens. */
+@media (max-width: 480px) {
+  .toast-container { bottom: 90px; }
+}

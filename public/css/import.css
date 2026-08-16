@@ -1,0 +1,128 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — FORGE STEEL IMPORT  (migrated from main.css)
+   The review dialog shown when a hero is imported from a Forge Steel JSON
+   export, and the marker that stays on abilities that came in that way.
+   Class names unchanged from the original stylesheet.
+
+   Depends on tokens.css + base.css + components.css + modals.css.
+   Uses NO legacy shim aliases — this section is off the shim.
+   THIS IS THE LAST FILE OF THE MIGRATION. main.css is empty after it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.modal:has(.import-review-modal) { max-width: 620px; }
+
+/* ═══ REVIEW DIALOG ════════════════════════════════════════════════════════ */
+.imp-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-xs);
+  margin: var(--space-md) 0;
+}
+.imp-stat {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-xs) var(--space-md);
+  background: var(--surface-inset);
+  border-radius: var(--radius-sm);
+}
+.imp-stat-label {
+  font: var(--type-ui-caps);
+  font-size: var(--size-3xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.imp-stat-val {
+  font: var(--type-numeric-sm);
+  font-size: var(--size-lg);
+  color: var(--ink-strong);
+}
+
+.imp-section { margin-top: var(--space-md); }
+.imp-section-title {
+  margin-bottom: var(--space-2xs);
+  font: var(--type-ui-caps);
+  font-size: var(--size-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.imp-line { padding: var(--space-3xs) 0; font: var(--type-prose-sm); color: var(--ink-strong); }
+.imp-dim  { font: var(--type-prose-sm); font-size: var(--size-xs); color: var(--ink-muted); }
+
+/* Gaps are things the import could not map — the user has to fill them in
+   before the hero is usable, so this is a warning state with its own
+   heading, not colour alone. */
+.imp-gaps {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--state-warning-bg);
+  border: 1px solid var(--state-warning);
+  border-radius: var(--radius-sm);
+}
+.imp-gaps .imp-section-title { color: var(--state-warning-ink); }
+
+/* "We could not tell which Forge Steel version this came from." */
+.imp-source-unknown {
+  margin-left: var(--space-sm);
+  padding: var(--space-3xs) var(--space-xs);
+  border: 1px solid var(--accent-hairline);
+  border-radius: var(--radius-sm);
+  color: var(--accent-ink);
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-wide);
+}
+
+.import-review-footer {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: flex-end;
+  margin-top: var(--space-lg);
+}
+
+/* ═══ IMPORTED ABILITY MARKER ══════════════════════════════════════════════
+   Was amethyst (#9B59B6 / #b07cc6) — a hue that means "triggered action"
+   everywhere else in the app. "This came from elsewhere" is provenance, not
+   an action type, and the banner spells it out in words, so it is a quiet
+   bronze note rather than a second purple. */
+.imported-banner {
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--accent-wash);
+  border: 1px solid var(--accent-hairline);
+  border-radius: var(--radius-sm);
+  font: var(--type-prose-sm);
+  font-size: var(--size-xs);
+  color: var(--accent-ink);
+}
+
+.imported-card .ability-cost-badge {
+  padding: var(--space-3xs) var(--space-xs);
+  border: 1px solid var(--accent-hairline);
+  border-radius: var(--radius-sm);
+  color: var(--accent-ink);
+  font: var(--type-ui-caps);
+  font-size: var(--size-3xs);
+  letter-spacing: var(--tracking-wide);
+}
+.imported-card .ability-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  margin-top: var(--space-xs);
+}
+.imported-card .ability-tier {
+  font: var(--type-numeric-sm);
+  font-size: var(--size-xs);
+  color: var(--ink-body);
+}
+.imported-card .ability-tier span { margin-left: var(--space-xs); color: var(--ink-strong); }
+.imported-card .ability-card-effect {
+  margin-top: var(--space-xs);
+  font: var(--type-prose-sm);
+  color: var(--ink-body);
+}
+.imported-card .ability-card-line {
+  margin-top: var(--space-2xs);
+  font: var(--type-ui-label);
+  color: var(--ink-muted);
+}
