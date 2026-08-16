@@ -347,6 +347,26 @@
   --difficulty-hard-ink:  var(--bronze-800);
   --difficulty-hard-line: var(--bronze-400);
 
+  /* ── Tactician dual kits — a genuine 2-slot CATEGORICAL pair ────────────
+     The one place in the app where two things sit side by side and must be
+     told apart at a glance, so this is identity, not magnitude: two hues,
+     not two steps of one. It used to be #2980B9 and #5dade2 — the same blue
+     at two lightnesses, which reads as one thing at two strengths. Measured
+     at ΔE 14.3 for normal vision, below the 15 floor.
+
+     Lapis and ochre measure ΔE 21.6 normal / 17.8 protan / 20.9 tritan, and
+     both clear 3:1 on paper. (The validator also flags this pair's chroma as
+     below its floor — that is true of every hue in this palette by design;
+     the book's colours are muted, and matching them is the whole point.)
+     Each kit also carries a "KIT 1" / "KIT 2" badge, so identity is never
+     colour alone. */
+  --kit-1:              var(--lapis-500);
+  --kit-1-ink:          var(--lapis-600);
+  --kit-1-bg:           var(--lapis-100);
+  --kit-2:              var(--ochre-500);
+  --kit-2-ink:          var(--ochre-600);
+  --kit-2-bg:           var(--ochre-100);
+
   /* ── Class accent — set per character at runtime ────────────────────────
      Overridden inline by buildCard(); the fallback is bronze, not blue. */
   --class-accent:       var(--bronze-500);

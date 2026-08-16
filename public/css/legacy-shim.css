@@ -19,7 +19,7 @@
      [ ] director board & runner      [~] campaign / encounter editor
      [x] bestiary & modals            [x] negotiation & montage
      [x] encounter editor & knowledge
-     [ ] level-up flow
+     [ ] level-up flow                [x] class-specific wizard pickers
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -35,14 +35,11 @@
   --text-primary:    var(--ink-body);
   --text-secondary:  var(--ink-muted);
   --text-dim:        var(--ink-faint);
-  --text-gold:       var(--accent-ink);
 
   /* ── Lines ── */
   --border-hairline:  var(--line-hair);
   --border-subtle:    var(--line-soft);
   --border-visible:   var(--line-strong);
-  --border-gold:      var(--accent);
-  --border-warm:      var(--line-accent);
 
   /* ── States ── */
   --color-available:     var(--state-available);
@@ -60,13 +57,6 @@
   --font-condensed:  var(--family-condensed);
   --font-body:       var(--family-condensed);
   --font-mono:       var(--family-mono);
-
-  /* ── Motion ──────────────────────────────────────────────────────────────
-     The old tokens bundled easing into the value ("0.12s ease") and are used
-     as `transition: opacity var(--transition-fast)`. The new duration tokens
-     are bare times, so the easing is re-attached here — otherwise every
-     transition in main.css becomes invalid and silently does nothing. */
-  --transition-fast:   var(--duration-fast) var(--ease-standard);
 
   /* ── Pre-existing dead tokens ────────────────────────────────────────────
      Referenced by main.css but never defined anywhere — bugs that predate

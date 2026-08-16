@@ -578,6 +578,72 @@
 /* .toast lived here too, superseded by modals.css on load order. Deleted —
    the real one, with its container and enter transition, is in modals.css. */
 
+/* ═══ PILL PICKER ══════════════════════════════════════════════════════════
+   Five screens independently grew the same control: a wrapping row of
+   rounded outline buttons, one or more of which can be selected. They had
+   five slightly different paddings, radii and hover colours. This is the
+   one definition; the class names stay as the app emits them.
+
+   .skill-pick-btn is the odd one out and keeps its own selected state — it
+   is a QUOTA picker ("choose 2 of these"), where selected means "counted
+   toward the quota", so it reads as available rather than as accent. */
+.ms-role-pill,
+.wyrmplate-type-btn,
+.former-life-btn,
+.drake-element-btn,
+.skill-pick-btn {
+  padding: var(--space-2xs) var(--space-md);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-muted);
+  font: var(--type-ui-label);
+  letter-spacing: var(--tracking-wide);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+}
+.ms-role-pill:hover,
+.wyrmplate-type-btn:hover,
+.former-life-btn:hover,
+.drake-element-btn:hover,
+.skill-pick-btn:hover {
+  border-color: var(--accent);
+  color: var(--ink-strong);
+}
+.ms-role-pill.active,
+.wyrmplate-type-btn.selected,
+.former-life-btn.selected,
+.drake-element-btn.selected {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.skill-pick-btn.selected {
+  background: var(--state-available-bg);
+  border-color: var(--state-available);
+  color: var(--state-available-ink);
+}
+/* Quota reached: the unselected options are out of play. */
+.skill-pick-btn.at-limit:not(.selected) {
+  opacity: .4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.wyrmplate-types,
+.former-life-grid,
+.drake-element-grid,
+.skill-pick-grid,
+.ms-role-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+
 /* ═══ RESPONSIVE ═══════════════════════════════════════════════════════════ */
 @media (max-width: 720px) {
   /* Two rows, not three. Identity gets its own line; stamina and the
