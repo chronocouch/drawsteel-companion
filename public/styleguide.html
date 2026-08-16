@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="css/director.css">
 <link rel="stylesheet" href="css/campaign.css">
 <link rel="stylesheet" href="css/negotiation-montage.css">
+  <link rel="stylesheet" href="css/bestiary.css">
   <link rel="stylesheet" href="css/modals.css">
 <style>
 /* Styleguide chrome only — not part of the system. */
@@ -600,85 +601,117 @@ table.sg-table { width: 100%; border-collapse: collapse; }
   <!-- ═══════════════ MODALS ═══════════════ -->
   <section class="sg-section">
     <h2>Modals &amp; bestiary</h2>
-    <p class="sg-note">Both modals share one shell. The statblock reuses the same glyph vocabulary as the ability card — attributes as block chips, no bespoke styling.</p>
+    <p class="sg-note">Both dialogs share one shell from <code>modals.css</code> — <code>.modal</code>, its <code>h2</code>, and <code>.modal-close</code>. The interiors below are the app's real markup, not a styleguide approximation; if these drift, the app has drifted. The statblock reuses the same glyph vocabulary as the ability card — attributes as block chips, no bespoke styling.</p>
 
-    <div class="sg-grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));align-items:start">
+    <div class="sg-grid" style="grid-template-columns:repeat(auto-fit,minmax(540px,1fr));align-items:start">
 
       <div class="modal">
-        <div class="modal-head">
-          <div><div class="modal-title">Monster Search</div></div>
-          <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="input-row">
-            <input class="input" placeholder="Search by name…">
-            <label>Lv</label><input class="input input-sm" value="1">
-            <span style="color:var(--ink-faint)">–</span><input class="input input-sm" value="10">
+        <button class="modal-close">&times;</button>
+        <div class="monster-search-modal">
+          <h2>Monster Search</h2>
+          <div class="ms-search-row">
+            <input class="ms-text-input" placeholder="Search by name…">
+            <div class="ms-level-range">
+              <span class="ms-range-label">Lv</span>
+              <input class="ms-level-input" value="1">
+              <span class="ms-range-sep">–</span>
+              <input class="ms-level-input" value="10">
+            </div>
           </div>
-          <div class="chip-set" style="margin-top:var(--space-md)">
-            <button class="chip selected">All</button><button class="chip">Ambusher</button>
-            <button class="chip">Artillery</button><button class="chip">Brute</button>
-            <button class="chip">Controller</button><button class="chip">Defender</button>
-            <button class="chip">Harrier</button><button class="chip">Solo</button>
+          <div class="ms-role-pills">
+            <button class="ms-role-pill active">all</button><button class="ms-role-pill">ambusher</button>
+            <button class="ms-role-pill">artillery</button><button class="ms-role-pill">brute</button>
+            <button class="ms-role-pill">controller</button><button class="ms-role-pill">defender</button>
+            <button class="ms-role-pill">harrier</button><button class="ms-role-pill">solo</button>
           </div>
-          <p class="result-count">80 of 416 monsters</p>
-          <button class="monster-row">
-            <span class="monster-level">Lv 2</span>
-            <span class="monster-name">Abyssal Hyena</span>
-            <span class="monster-role">Minion Brute</span>
-            <span class="monster-numbers"><span><b>EV</b> 4</span><span><b>HP</b> 7</span></span>
-          </button>
-          <button class="monster-row">
-            <span class="monster-level">Lv 6</span>
-            <span class="monster-name">Aeolyxria the Uncanny</span>
-            <span class="monster-role">Elite Controller</span>
-            <span class="monster-numbers"><span><b>EV</b> 32</span><span><b>HP</b> 140</span></span>
-          </button>
-          <button class="monster-row">
-            <span class="monster-level">Lv 1</span>
-            <span class="monster-name">Angulotl Dart</span>
-            <span class="monster-role">Minion Artillery</span>
-            <span class="monster-numbers"><span><b>EV</b> 3</span><span><b>HP</b> 3</span></span>
-          </button>
+          <div class="ms-count-row"><span class="ms-result-count">80 of 416 monsters</span></div>
+          <div class="ms-results">
+            <button class="ms-result-row">
+              <span class="ms-level-badge">Lv 2</span><span class="ms-name">Abyssal Hyena</span>
+              <span class="ms-role-tag">Brute</span><span class="ms-minion-tag">MINION</span>
+              <span class="ms-ev">EV 4</span><span class="ms-stamina">HP 7</span>
+            </button>
+            <button class="ms-result-row">
+              <span class="ms-level-badge">Lv 6</span><span class="ms-name">Aeolyxria the Uncanny</span>
+              <span class="ms-role-tag">Elite Controller</span>
+              <span class="ms-ev">EV 32</span><span class="ms-stamina">HP 140</span>
+            </button>
+            <button class="ms-result-row">
+              <span class="ms-level-badge">Lv 1</span><span class="ms-name">Angulotl Dart</span>
+              <span class="ms-role-tag">Artillery</span><span class="ms-minion-tag">MINION</span>
+              <span class="ms-ev">EV 3</span><span class="ms-stamina">HP 3</span>
+            </button>
+          </div>
         </div>
       </div>
 
       <div class="modal">
-        <div class="modal-head">
-          <div>
-            <div class="modal-title">Angulotl Dart</div>
-            <div class="modal-subtitle">
-              <span class="monster-level">Lv 1</span>
-              <span class="monster-role">Minion Artillery</span>
-              <span class="monster-numbers"><span><b>EV</b> 3 per 4</span></span>
+        <button class="modal-close">&times;</button>
+        <div class="monster-detail-modal">
+        <h2>Angulotl Dart</h2>
+        <div class="ms-count-meta">
+          <span class="ms-level-badge">Lv 1</span>
+          <span class="ms-role-tag">Minion Artillery</span>
+          <span class="ms-ev">EV 3 per 4</span>
+        </div>
+        <div class="mb-stat-grid">
+          <div class="mb-stat"><span class="mb-stat-val">3</span><span class="mb-stat-label">Stamina</span></div>
+          <div class="mb-stat"><span class="mb-stat-val">5</span><span class="mb-stat-label">Speed</span></div>
+          <div class="mb-stat"><span class="mb-stat-val">1S</span><span class="mb-stat-label">Size</span></div>
+          <div class="mb-stat"><span class="mb-stat-val">0</span><span class="mb-stat-label">Stability</span></div>
+          <div class="mb-stat"><span class="mb-stat-val">2</span><span class="mb-stat-label">Free Strike</span></div>
+        </div>
+        <div class="mb-stat-grid">
+          <div class="mb-stat"><span class="glyph" aria-hidden="true">m</span><span class="mb-stat-val">+0</span><span class="mb-stat-label">Might</span></div>
+          <div class="mb-stat"><span class="glyph" aria-hidden="true">a</span><span class="mb-stat-val">+2</span><span class="mb-stat-label">Agility</span></div>
+          <div class="mb-stat"><span class="glyph" aria-hidden="true">r</span><span class="mb-stat-val">+1</span><span class="mb-stat-label">Reason</span></div>
+          <div class="mb-stat"><span class="glyph" aria-hidden="true">i</span><span class="mb-stat-val">+0</span><span class="mb-stat-label">Intuition</span></div>
+          <div class="mb-stat"><span class="glyph" aria-hidden="true">p</span><span class="mb-stat-val">+0</span><span class="mb-stat-label">Presence</span></div>
+        </div>
+        <div class="mb-enc-list">
+          <button class="mb-enc-option"><strong>Add to: Ambush at the Ford</strong><span class="ms-role-tag">3 enemies · EV 18</span></button>
+          <button class="mb-enc-option"><strong>Add to: The Sunken Shrine</strong><span class="ms-role-tag">7 enemies · EV 44</span></button>
+        </div>
+        </div>
+      </div>
+
+      <div class="modal">
+        <button class="modal-close">&times;</button>
+        <div class="ms-count-modal">
+          <h2>Angulotl Dart</h2>
+          <div class="ms-count-meta">
+            <span class="ms-level-badge">Lv 1</span><span class="ms-role-tag">Minion Artillery</span>
+          </div>
+          <div class="ms-count-field">
+            <span class="ms-count-label">How many?</span>
+            <div class="ms-count-controls">
+              <button class="ms-count-btn">−</button>
+              <span class="ms-count-value">6</span>
+              <button class="ms-count-btn">+</button>
             </div>
           </div>
-          <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="statline">
-            <div class="statline-cell"><span class="statline-value">3</span><span class="statline-key">Stamina</span></div>
-            <div class="statline-cell"><span class="statline-value">5</span><span class="statline-key">Speed</span></div>
-            <div class="statline-cell"><span class="statline-value">1S</span><span class="statline-key">Size</span></div>
-            <div class="statline-cell"><span class="statline-value">0</span><span class="statline-key">Stability</span></div>
-            <div class="statline-cell"><span class="statline-value">2</span><span class="statline-key">Free Strike</span></div>
-          </div>
-          <div class="statline">
-            <div class="statline-cell"><span class="stat-glyph">m</span><span class="statline-value">+0</span><span class="statline-key">Might</span></div>
-            <div class="statline-cell"><span class="stat-glyph">a</span><span class="statline-value">+2</span><span class="statline-key">Agility</span></div>
-            <div class="statline-cell"><span class="stat-glyph">r</span><span class="statline-value">+1</span><span class="statline-key">Reason</span></div>
-            <div class="statline-cell"><span class="stat-glyph">i</span><span class="statline-value">+0</span><span class="statline-key">Intuition</span></div>
-            <div class="statline-cell"><span class="stat-glyph">p</span><span class="statline-value">+0</span><span class="statline-key">Presence</span></div>
-          </div>
-          <div class="statblock-section"><h4>Keywords</h4><p>Angulotl, Humanoid</p></div>
-          <div class="statblock-section"><h4>Immunities &amp; Weaknesses</h4><p>poison 2</p></div>
-          <div class="statblock-section"><h4>Faction Malice Features</h4>
-            <ul><li><span class="glyph glyph-malice" aria-hidden="true">d</span> Leapfrog</li><li><span class="glyph glyph-malice" aria-hidden="true">d</span> Resonating Croak</li><li><span class="glyph glyph-malice" aria-hidden="true">d</span> Rainfall</li></ul>
+          <label class="ms-squad-toggle"><input type="checkbox" checked><span class="ms-squad-label">Group as one squad</span></label>
+          <div class="ms-count-ev-preview">Total EV: 5</div>
+          <div class="ms-minion-warning">Minions are bought in squads of four.</div>
+          <div class="ms-count-actions">
+            <button class="btn">&larr; Back</button>
+            <button class="btn btn-primary">Add to Encounter</button>
           </div>
         </div>
-        <div class="modal-foot">
-          <button class="btn">&larr; Bestiary</button>
-          <button class="btn btn-primary">Add to Encounter…</button>
+      </div>
+
+      <div class="modal">
+        <button class="modal-close">&times;</button>
+        <div class="delete-campaign-modal">
+        <h2>Delete Campaign</h2>
+        <div class="delete-warning">
+          This permanently removes the campaign and everything in it:
+          <ul><li>4 encounters</li><li>6 session log entries</li><li>the whole knowledge layer</li></ul>
+        </div>
+        <div class="ms-count-actions">
+          <button class="btn">Cancel</button>
+          <button class="btn btn-danger" id="delete-confirm-btn">Delete Forever</button>
+        </div>
         </div>
       </div>
     </div>

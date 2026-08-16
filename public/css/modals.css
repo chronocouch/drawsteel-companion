@@ -6,12 +6,12 @@
    Depends on tokens.css + base.css + components.css.
    Uses NO legacy shim aliases — this section is off the shim.
 
-   SUPERSEDES, because it loads last: .modal / .modal-close from
-   components-app.css, and .toast / .toast-* / .empty-state from
-   components.css. Those were authored for the styleguide before the app's
-   real markup was known. They should be deleted when the bestiary modal
-   migrates and the styleguide switches to these class names — until then
-   two definitions exist and this one wins.
+   SOLE OWNER of .modal / .modal-close / .toast / .empty-state. Parallel
+   definitions used to sit in components.css and components-app.css,
+   authored for the styleguide before the app's real modal markup was known;
+   this file loaded last and won every time. They were deleted when the
+   bestiary migrated and the styleguide switched to the app's real classes.
+   Do not re-add them there.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ═══ DIALOG SHELL ═════════════════════════════════════════════════════════ */
@@ -238,6 +238,12 @@
   color: var(--ink-muted);
 }
 .empty-state strong { color: var(--ink-strong); }
+.empty-state .divider-mark {
+  display: block;
+  margin-bottom: var(--space-md);
+  color: var(--accent-hairline);
+  font-size: var(--size-xl);
+}
 
 
 /* ═══ PAGE FURNITURE ═══════════════════════════════════════════════════════ */

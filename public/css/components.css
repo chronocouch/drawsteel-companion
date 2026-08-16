@@ -575,19 +575,8 @@
 .panel-body { padding: var(--space-lg); }
 
 
-/* ═══ TOAST ════════════════════════════════════════════════════════════════ */
-.toast {
-  padding: var(--space-md) var(--space-lg);
-  background: var(--surface-reverse);
-  color: var(--ink-on-reverse);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius-xs);
-  box-shadow: var(--elevation-modal);
-  font: var(--type-prose-sm);
-}
-.toast-danger  { border-left-color: var(--state-danger); }
-.toast-success { border-left-color: var(--state-heal); }
-
+/* .toast lived here too, superseded by modals.css on load order. Deleted —
+   the real one, with its container and enter transition, is in modals.css. */
 
 /* ═══ RESPONSIVE ═══════════════════════════════════════════════════════════ */
 @media (max-width: 720px) {
