@@ -392,10 +392,11 @@
   border-bottom: 1px solid var(--line-hair);
 }
 .career-detail-row:last-child { border-bottom: none; }
-/* Scoped deliberately: main.css also styles a bare .career-detail-label
-   inside the career LIST card (a different component that happens to share
-   the name) and loads after this file. Without the parent selector, that
-   rule wins here. Drop the scoping once the career-card section migrates. */
+/* Scoped deliberately, and permanently. Two unrelated components share the
+   class name .career-detail-label: this one, in the step-4 detail panel,
+   and another inside the career LIST card (now in wizard-steps.css). The
+   parent selector is what keeps them apart — specificity, not load order,
+   so neither file's position matters. Do not un-scope this. */
 .career-detail-rows .career-detail-label {
   flex-shrink: 0;
   font: var(--type-ui-caps);
