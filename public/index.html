@@ -13,9 +13,15 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
 
   <!-- ── Design system ────────────────────────────────────────────────
-       Order matters: tokens define the vocabulary, base and components
-       consume it, the shim maps legacy names onto it, main.css is what
-       is left to migrate. Never load main.css before the others. -->
+       Order matters. tokens.css defines the vocabulary and must load
+       first; base and components consume it; the per-screen files below
+       may override components, so they load after it. modals.css is last
+       because it owns the dialog shell every screen borrows.
+
+       There is no main.css and no shim — the migration is finished. If you
+       are adding a screen, add a file here rather than growing an existing
+       one, and keep it reading from the semantic tokens only.
+       `python3 scripts/check-design-system.py` enforces that. -->
   <link rel="stylesheet" href="css/tokens.css?v=5" />
   <link rel="stylesheet" href="css/base.css?v=3" />
   <link rel="stylesheet" href="css/components.css?v=4" />
@@ -37,8 +43,6 @@
   <link rel="stylesheet" href="css/import.css?v=1" />
   <link rel="stylesheet" href="css/modals.css?v=3" />
 
-
-  <!-- Un-migrated styles -->
 </head>
 <body>
 
