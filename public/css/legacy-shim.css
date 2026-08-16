@@ -19,7 +19,7 @@
      [ ] director board & runner      [~] campaign / encounter editor
      [x] bestiary & modals            [x] negotiation & montage
      [x] encounter editor & knowledge
-     [ ] level-up flow                [x] class-specific wizard pickers
+     [x] level-up flow                [x] class-specific wizard pickers
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -27,7 +27,6 @@
   /* ── Surfaces ── */
   --bg-base:        var(--surface-app);
   --bg-card:        var(--surface-page);
-  --bg-card-hover:  var(--surface-raised);
   --bg-surface:     var(--surface-bar);
   --bg-elevated:    var(--surface-page);
 
@@ -43,7 +42,6 @@
 
   /* ── States ── */
   --color-available:     var(--state-available);
-  --color-available-bg:  var(--state-available-bg);
   --color-danger:        var(--state-danger);
   --color-gold:          var(--accent);
 
@@ -57,13 +55,4 @@
   --font-condensed:  var(--family-condensed);
   --font-body:       var(--family-condensed);
   --font-mono:       var(--family-mono);
-
-  /* ── Pre-existing dead tokens ────────────────────────────────────────────
-     Referenced by main.css but never defined anywhere — bugs that predate
-     the migration, surfaced by the linter's resolve check. --border-color
-     and --card-bg are used WITHOUT a fallback, so every rule containing them
-     was invalid and dropped: that is why the runner, negotiation and montage
-     panels have had no border and no background. */
-  --border-color:  var(--line-soft);
-  --card-bg:       var(--surface-page);
 }

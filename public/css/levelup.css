@@ -1,0 +1,373 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — LEVELLING UP  (migrated from main.css)
+   The level badge on the sheet, the XP bar on campaign hero cards, the
+   two level-up modals, and the multi-step level-up flow. Class names
+   unchanged from the original stylesheet.
+
+   Depends on tokens.css + base.css + components.css + modals.css.
+   Uses NO legacy shim aliases — this section is off the shim.
+
+   NOTE: main.css declared .levelup-modal TWICE, ~600 lines apart — once as
+   `text-align: center` for the single-hero modal and once as a flex column
+   for the party modal. The second silently won for both. They are merged
+   here into one rule that works for both callers.
+
+   COLOUR: levelling up is the app's one moment of celebration, so this is
+   the one screen where the accent is used for delight rather than for
+   navigation. Stat increases take the available hue because "this number
+   went up" is a state, and each one prints its arrow and new value too.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ LEVEL BADGE (sheet header) ═══════════════════════════════════════════ */
+.class-summary-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.level-badge {
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid var(--class-accent);
+  border-radius: var(--radius-sm);
+  color: var(--class-accent);
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-caps);
+}
+.level-max {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.char-victories {
+  font: var(--type-ui-label);
+  color: var(--victory-mark);
+}
+
+/* ═══ XP BAR (campaign hero cards) ═════════════════════════════════════════ */
+.hero-xp-bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+/* Was an rgba white wash — invisible on paper. */
+.hero-xp-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+.hero-xp-bar-fill {
+  height: 100%;
+  min-width: 2px;
+  border-radius: var(--radius-xs);
+  background: var(--class-accent);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+.hero-xp-bar-label {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font: var(--type-ui-label);
+  font-size: var(--size-3xs);
+  color: var(--ink-muted);
+}
+
+/* ═══ THE LEVEL-UP MODAL ═══════════════════════════════════════════════════ */
+.levelup-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  text-align: center;
+}
+
+.levelup-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: var(--space-lg);
+  border-bottom: 2px solid var(--class-accent);
+}
+.levelup-subtitle {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+.levelup-number {
+  font: var(--type-hero-name);
+  font-size: 64px;
+  color: var(--class-accent);
+}
+
+/* .modal-close is absolutely positioned at top 12px / right 12px and is
+   36px square, so it occupies the first ~48px of the dialog's top-right.
+   Every other modal opens with left-aligned h2 text that clears it; this
+   banner is full-width centred text and ran straight under it. */
+.levelup-celebration-banner {
+  margin-top: var(--space-2xl);
+  padding: var(--space-sm);
+  background: var(--accent-wash);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font: var(--type-section);
+  font-size: var(--size-lg);
+  letter-spacing: var(--tracking-caps);
+  color: var(--accent-ink);
+}
+
+.levelup-modal-title {
+  margin: 0;
+  text-align: center;
+  font: var(--type-section);
+  color: var(--ink-strong);
+}
+
+.levelup-changes {
+  margin-bottom: var(--space-md);
+  background: var(--surface-page);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  text-align: left;
+}
+.levelup-change-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--line-hair);
+}
+.levelup-change-row:last-child { border-bottom: none; }
+.levelup-change-label { font: var(--type-prose-sm); color: var(--ink-body); }
+.levelup-change-val   { font: var(--type-numeric-sm); color: var(--ink-strong); }
+
+/* "This went up" is a state, and the row also prints the arrow and the new
+   value, so the hue is never doing the work alone. */
+.levelup-val-up,
+.lvlup-val-up { color: var(--state-available-ink); }
+
+.levelup-chars { margin-bottom: var(--space-lg); text-align: left; }
+.levelup-chars-title {
+  margin-bottom: var(--space-xs);
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.levelup-stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2xs) 0;
+  font: var(--type-prose-sm);
+  color: var(--ink-muted);
+}
+/* character.js emits this label on every characteristic row and it had no
+   rule, so the labels sat at the row's dimmed colour whether the stat
+   changed or not. */
+.levelup-stat-label { font: var(--type-ui-label); }
+.levelup-stat-val   { font: var(--type-numeric-sm); }
+.levelup-stat-changed { color: var(--ink-strong); }
+.levelup-stat-changed .levelup-stat-val { color: var(--state-available-ink); }
+
+/* ── Party level-up list ─────────────────────────────────────────────────── */
+.levelup-hero-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.levelup-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+.levelup-hero-name {
+  font: var(--type-inline-label);
+  font-size: var(--size-sm);
+  color: var(--ink-strong);
+}
+.levelup-level-change {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font: var(--type-ui-label);
+  font-size: var(--size-sm);
+}
+.levelup-old-level { color: var(--ink-muted); }
+.levelup-arrow     { color: var(--accent); }
+.levelup-new-level {
+  font-size: var(--size-md);
+  font-weight: var(--weight-bold);
+  color: var(--accent-ink);
+}
+
+/* ═══ POST-ENCOUNTER SESSION NOTE ══════════════════════════════════════════ */
+.session-note-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+.session-note-footer {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+  margin-top: var(--space-2xs);
+}
+
+/* ═══ MULTI-STEP LEVEL-UP FLOW ═════════════════════════════════════════════ */
+.lvlup-flow { min-height: 200px; }
+
+.lvlup-section-label,
+.lvlup-perk-group-label {
+  margin: var(--space-md) 0 var(--space-2xs);
+  font: var(--type-ui-caps);
+  font-size: var(--size-3xs);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.lvlup-step-hint {
+  margin: var(--space-2xs) 0 var(--space-md);
+  font: var(--type-prose-sm);
+  color: var(--ink-body);
+}
+
+.lvlup-auto-text {
+  margin: var(--space-md) 0;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--surface-inset);
+  border-left: 3px solid var(--accent-hairline);
+  border-radius: var(--radius-sm);
+  font: var(--type-prose);
+  color: var(--ink-body);
+}
+
+.lvlup-choices-ahead {
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+.lvlup-choices-label {
+  margin-bottom: var(--space-xs);
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.lvlup-choice-item {
+  padding: var(--space-3xs) 0;
+  font: var(--type-prose-sm);
+  color: var(--ink-strong);
+}
+
+.lvlup-nav {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+.lvlup-nav .btn { flex: 1; }
+
+/* ── Ability pool & perk list ────────────────────────────────────────────── */
+.lvlup-ability-pool {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: var(--space-3xs);
+}
+
+.lvlup-perk-list {
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: var(--space-3xs);
+}
+.lvlup-perk-group { margin-bottom: var(--space-md); }
+.lvlup-perk-group-label {
+  padding: var(--space-xs) 0 var(--space-3xs);
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: var(--space-2xs);
+}
+
+.lvlup-perk-row {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+}
+.lvlup-perk-row:hover {
+  background: var(--surface-raised);
+  border-color: var(--line-soft);
+}
+/* Same quota vocabulary as the class skill picker — selected means
+   "counted toward what you get at this level". */
+.lvlup-perk-row.selected {
+  background: var(--state-available-bg);
+  border-color: var(--state-available);
+}
+.lvlup-perk-row.at-limit { opacity: .4; cursor: not-allowed; }
+
+.lvlup-perk-name {
+  margin-bottom: var(--space-3xs);
+  font: var(--type-inline-label);
+  font-size: var(--size-sm);
+  color: var(--ink-strong);
+}
+.lvlup-perk-desc {
+  font: var(--type-prose-sm);
+  font-size: var(--size-2xs);
+  color: var(--ink-body);
+}
+
+/* ── Confirm screen ──────────────────────────────────────────────────────── */
+.lvlup-confirm-list {
+  margin: var(--space-sm) 0;
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.lvlup-confirm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--line-hair);
+  font: var(--type-prose-sm);
+}
+.lvlup-confirm-row:last-child { border-bottom: none; }
+.lvlup-confirm-label {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.lvlup-confirm-val {
+  text-align: right;
+  font-weight: var(--weight-semi);
+  color: var(--ink-strong);
+}
+
+/* ═══ CAMPAIGN HEADER ACTIONS ══════════════════════════════════════════════ */
+.campaign-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
