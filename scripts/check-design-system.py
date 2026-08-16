@@ -59,6 +59,20 @@ PAIRINGS = [
     ("--econ-strike-ink",     "--econ-strike-bg",      4.5),
     ("--accent",              "--surface-page",        3.0),
     ("--line-soft",           "--surface-page",        1.3),
+
+    # Negotiation interest — a 5-step ordinal ramp. Each pip prints its own
+    # number ON its fill, so every step needs AA in its own right; this is
+    # what forces the ink to flip to paper at step 3.
+    ("--interest-1-ink",      "--interest-1",          4.5),
+    ("--interest-2-ink",      "--interest-2",          4.5),
+    ("--interest-3-ink",      "--interest-3",          4.5),
+    ("--interest-4-ink",      "--interest-4",          4.5),
+    ("--interest-5-ink",      "--interest-5",          4.5),
+    ("--interest-empty-ink",  "--interest-empty",      4.5),
+    # Montage challenge difficulty — the same idea, three steps.
+    ("--difficulty-easy-ink", "--difficulty-easy-bg",  4.5),
+    ("--difficulty-mid-ink",  "--difficulty-mid-bg",   4.5),
+    ("--difficulty-hard-ink", "--difficulty-hard-bg",  4.5),
 ]
 
 # Set at runtime via element.style.setProperty(), never in a stylesheet:
@@ -66,6 +80,13 @@ PAIRINGS = [
 #   --class-color   character.js (character-list card spine)
 #   --pick-color    wizard picker identity spine
 RUNTIME_TOKENS = {"--class-accent", "--class-color", "--pick-color"}
+
+# Component-local custom properties. Not theme tokens: a modifier class sets
+# one and the component's base rule reads it with a fallback, so the variant
+# survives regardless of source order. They live in the component stylesheet
+# on purpose and must NOT be added to tokens.css.
+#   --pip-fill / --pip-ink   negotiation-montage.css, the interest ramp
+COMPONENT_LOCAL = {"--pip-fill", "--pip-ink"}
 
 ALLOWED_SPACING = {0, 2, 4, 6, 8, 12, 16, 20, 24, 32, 48}
 ALLOWED_RADIUS = {0, 2, 3, 4, 999}
@@ -144,7 +165,7 @@ def main():
     for path in sorted(ROOT.glob(CSS_GLOB)):
         body = re.sub(r"/\*.*?\*/", "", path.read_text(), flags=re.S)
         for ref in sorted(set(re.findall(r"var\((--[\w-]+)", body))):
-            if ref in vocabulary or ref in RUNTIME_TOKENS:
+            if ref in vocabulary or ref in RUNTIME_TOKENS or ref in COMPONENT_LOCAL:
                 continue
             # a fallback makes it survivable, but still worth naming
             has_fallback = re.search(r"var\(" + re.escape(ref) + r"\s*,", body)

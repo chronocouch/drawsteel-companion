@@ -89,6 +89,7 @@
 
   /* ── Bronze ramp ────────────────────────────────────────────────────────
      Anchored on the sampled accent. The book's only accent colour. */
+  --bronze-800: #463823;   /* added for the 5-step interest ramp's dark end */
   --bronze-700: #5E4C33;
   --bronze-600: #6E5A3D;
   --bronze-500: #866D4B;   /* sampled: side tabs, links, rules */
@@ -286,6 +287,46 @@
   --victory-mark:       var(--bronze-500);
   --victory-mark-off:   var(--paper-400);
   --malice:             var(--black);
+
+  /* ── Negotiation interest — a 5-step ORDINAL ramp ───────────────────────
+     Interest is ONE quantity measured 1→5, so it gets ONE hue getting
+     darker, not five unrelated colours. The old scale ran red → orange →
+     gold → teal → gold: a rainbow (which encodes magnitude as identity),
+     and it borrowed the "available" and "gold" status colours for steps 4
+     and 5, so a full-interest pip was indistinguishable from a live
+     resource badge.
+
+     Steps validated as an ordinal ramp against the paper surface: lightness
+     monotone, every adjacent ΔL ≥ 0.06, light end 2.27:1 vs #FFFEF6.
+     Each -ink is the pip's own number ON that fill — all ≥ 4.5:1, which is
+     why the ink flips to paper at step 3. */
+  --interest-1:         var(--bronze-300);
+  --interest-2:         var(--bronze-400);
+  --interest-3:         var(--bronze-500);
+  --interest-4:         var(--bronze-700);
+  --interest-5:         var(--bronze-800);
+  --interest-1-ink:     var(--ink-900);
+  --interest-2-ink:     var(--ink-900);
+  --interest-3-ink:     var(--paper-000);
+  --interest-4-ink:     var(--paper-000);
+  --interest-5-ink:     var(--paper-000);
+  --interest-empty:     var(--surface-sunken);
+  --interest-empty-ink: var(--ink-muted);
+
+  /* ── Montage challenge difficulty — a 3-step ORDINAL ramp ───────────────
+     Same reasoning, one third the length. Difficulty is a property of the
+     challenge, not a state of the app, so it does NOT get the danger/
+     warning status hues — it gets weight. Every pill carries its word
+     ("EASY"/"MEDIUM"/"HARD"), so identity is never colour-alone. */
+  --difficulty-easy-bg:   var(--bronze-050);
+  --difficulty-easy-ink:  var(--bronze-600);
+  --difficulty-easy-line: var(--bronze-200);
+  --difficulty-mid-bg:    var(--bronze-100);
+  --difficulty-mid-ink:   var(--bronze-700);
+  --difficulty-mid-line:  var(--bronze-300);
+  --difficulty-hard-bg:   var(--bronze-200);
+  --difficulty-hard-ink:  var(--bronze-800);
+  --difficulty-hard-line: var(--bronze-400);
 
   /* ── Class accent — set per character at runtime ────────────────────────
      Overridden inline by buildCard(); the fallback is bronze, not blue. */

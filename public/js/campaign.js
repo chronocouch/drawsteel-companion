@@ -786,7 +786,7 @@ function renderHeroRoster(campaign) {
   }
 
   container.innerHTML = heroes.map((hero, idx) => {
-    const accent  = CLASS_COLORS[hero.class]?.accent || '#2980B9';
+    const accent  = CLASS_COLORS[hero.class]?.accent || '#866D4B';
     const xpProg  = computeXPProgress(hero);
     const isXPMode = campaign.advancementMode === 'xp';
     return `
@@ -964,7 +964,11 @@ function round1Malice(heroes) {
 
 const DIFFICULTY_COLOR = {
   trivial: 'var(--text-dim)', easy: 'var(--color-available)',
-  standard: 'var(--color-gold)', hard: '#e67e22', extreme: 'var(--color-danger)',
+  standard: 'var(--color-gold)', hard: 'var(--state-warning)', extreme: 'var(--color-danger)',
+  // TODO(encounter-editor migration): this whole map is a rainbow standing in
+  // for a 5-step ordinal scale — same defect the interest meter had. Rebuild it
+  // on a single-hue ramp when the encounter editor + budget bar migrate.
+
 };
 
 const GOAL_TYPES = [
@@ -1030,7 +1034,7 @@ function buildNegotiationConfigHTML(enc) {
           <label class="enc-label">Starting Interest</label>
           <div class="neg-interest-selector" id="neg-interest-selector">
             ${[1,2,3,4,5].map(n => `
-              <button class="neg-interest-pip ${n <= interest ? 'neg-pip-filled neg-pip-filled-${n}' : ''}"
+              <button class="neg-interest-pip ${n <= interest ? `neg-pip-filled neg-pip-filled-${n}` : ''}"
                 data-value="${n}" title="${interestLabel(n)}">${n <= interest ? '◆' : '◇'}</button>
             `).join('')}
           </div>
@@ -1835,7 +1839,7 @@ async function openHeroDetail(campaign, heroIdx) {
   const hero = campaign.heroes[heroIdx];
   if (!hero) return;
 
-  const accent   = CLASS_COLORS[hero.class]?.accent || '#2980B9';
+  const accent   = CLASS_COLORS[hero.class]?.accent || '#866D4B';
   const level    = hero.level || 1;
   const xp       = hero.xp || 0;
   const nextXP   = LEVEL_XP_THRESHOLDS[level + 1] ?? null;
@@ -1850,7 +1854,7 @@ async function openHeroDetail(campaign, heroIdx) {
       if (charSnap.exists) {
         const c = charSnap.data();
         const hpPct   = c.maxHP > 0 ? Math.round((c.currentHP / c.maxHP) * 100) : 0;
-        const hpColor = hpPct > 60 ? 'var(--color-heal)' : hpPct > 25 ? '#f39c12' : 'var(--color-danger)';
+        const hpColor = hpPct > 60 ? 'var(--stamina-fill)' : hpPct > 25 ? 'var(--stamina-winded)' : 'var(--stamina-dying)';
         liveHTML = `
           <div class="hero-detail-live">
             <div class="hero-detail-live-label">◆ Live Character</div>

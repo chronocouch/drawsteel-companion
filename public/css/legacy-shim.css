@@ -17,7 +17,7 @@
      [x] character sheet              [x] loading / sign-in
      [x] character list               [x] combat profile / stats
      [ ] director board & runner      [ ] campaign / encounter editor
-     [ ] bestiary & modals            [ ] negotiation & montage
+     [ ] bestiary & modals            [x] negotiation & montage
      [ ] level-up flow
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -29,13 +29,11 @@
   --bg-card-hover:  var(--surface-raised);
   --bg-surface:     var(--surface-bar);
   --bg-elevated:    var(--surface-page);
-  --bg-callout:     var(--surface-raised);
 
   /* ── Ink ── */
   --text-primary:    var(--ink-body);
   --text-secondary:  var(--ink-muted);
   --text-dim:        var(--ink-faint);
-  --text-inverse:    var(--ink-on-reverse);
   --text-gold:       var(--accent-ink);
 
   /* ── Lines ── */
@@ -49,7 +47,6 @@
   --color-available:     var(--state-available);
   --color-available-bg:  var(--state-available-bg);
   --color-danger:        var(--state-danger);
-  --color-danger-bg:     var(--state-danger-bg);
   --color-heal:          var(--state-heal);
   --color-gold:          var(--accent);
   --color-purple:        var(--econ-triggered);
@@ -57,7 +54,6 @@
   /* ── Radius ── */
   --radius-sm:  var(--radius-xs);
   --radius-md:  var(--radius-sm);
-  --radius-lg:  var(--radius-md);
 
   /* ── Type families ── */
   --font-display:    var(--family-serif);

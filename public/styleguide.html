@@ -16,7 +16,8 @@
 <link rel="stylesheet" href="css/runner.css">
 <link rel="stylesheet" href="css/director.css">
 <link rel="stylesheet" href="css/campaign.css">
-<link rel="stylesheet" href="css/modals.css">
+<link rel="stylesheet" href="css/negotiation-montage.css">
+  <link rel="stylesheet" href="css/modals.css">
 <style>
 /* Styleguide chrome only — not part of the system. */
 .sg { max-width: var(--content-max); margin: 0 auto; padding: var(--space-4xl) var(--space-xl); }
@@ -79,6 +80,17 @@ table.sg-table { width: 100%; border-collapse: collapse; }
     <div class="ramp" id="ramp-bronze"></div>
     <h3 class="sg-sub">State hues</h3>
     <div class="ramp" id="ramp-state"></div>
+
+    <h3 class="sg-sub">Interest — the one ordinal scale</h3>
+    <p class="sg-note">Negotiation interest is a single quantity measured 1&nbsp;→&nbsp;5, so it is one hue getting darker, not five hues. It replaced a red&nbsp;→&nbsp;orange&nbsp;→&nbsp;gold&nbsp;→&nbsp;teal&nbsp;→&nbsp;gold rainbow that encoded magnitude as if it were identity and borrowed two live status colours for its top two steps. Every step prints its own number, so the ink flips to paper at step&nbsp;3 to hold AA. Any future ordinal scale — encounter difficulty, montage challenge tier — uses this shape, not a rainbow.</p>
+    <div class="ramp" id="ramp-interest"></div>
+    <div class="neg-runner-pips" style="margin-top:12px">
+      <div class="neg-runner-pip neg-runner-pip-filled neg-pip-filled-1">1</div>
+      <div class="neg-runner-pip neg-runner-pip-filled neg-pip-filled-2">2</div>
+      <div class="neg-runner-pip neg-runner-pip-filled neg-pip-filled-3">3</div>
+      <div class="neg-runner-pip neg-runner-pip-filled neg-pip-filled-4">4</div>
+      <div class="neg-runner-pip">5</div>
+    </div>
 
     <h3 class="sg-sub">Verified pairings</h3>
     <p class="sg-note">Computed live from the loaded stylesheet. These are the same pairings the linter enforces — if one goes red here, it is already failing CI.</p>
@@ -706,7 +718,8 @@ table.sg-table { width: 100%; border-collapse: collapse; }
   const ramps = {
     'ramp-paper':  ['--paper-000','--paper-050','--paper-100','--paper-200','--paper-300','--paper-400','--paper-500'],
     'ramp-ink':    ['--ink-300','--ink-400','--ink-500','--ink-600','--ink-700','--ink-800','--ink-900'],
-    'ramp-bronze': ['--bronze-050','--bronze-100','--bronze-200','--bronze-300','--bronze-400','--bronze-500','--bronze-600','--bronze-700'],
+    'ramp-bronze': ['--bronze-050','--bronze-100','--bronze-200','--bronze-300','--bronze-400','--bronze-500','--bronze-600','--bronze-700','--bronze-800'],
+    'ramp-interest': ['--interest-1','--interest-2','--interest-3','--interest-4','--interest-5'],
     'ramp-state':  ['--oxblood-500','--verdigris-500','--lapis-500','--amethyst-500','--ochre-500','--moss-500','--black']
   };
   for (const id in ramps) {

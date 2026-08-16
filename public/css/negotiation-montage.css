@@ -1,0 +1,708 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAW STEEL COMPANION — NEGOTIATION & MONTAGE  (migrated from main.css)
+   The two non-combat encounter types: the Interest/Patience negotiation and
+   the multi-round Montage Test. Covers the encounter-editor config panels,
+   both runner layouts, and the negotiation end modal.
+   Class names unchanged from the original stylesheet.
+
+   Depends on tokens.css + base.css + components.css + runner.css.
+   Uses NO legacy shim aliases — this section is off the shim.
+
+   COLOUR NOTE — the interest meter is an ORDINAL SCALE, not five series.
+   It is drawn as one bronze hue getting darker (see --interest-* in
+   tokens.css). All five steps used to be set inline by session.js; they are
+   class-driven here so the encoding lives in one place and the linter can
+   see it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ K1 · NEGOTIATION CONFIG PANEL (encounter editor) ═════════════════════ */
+.neg-config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding-bottom: var(--space-lg);
+}
+
+.neg-interest-selector {
+  display: flex;
+  gap: var(--space-2xs);
+  margin-top: var(--space-2xs);
+}
+
+.neg-interest-pip {
+  background: var(--pip-fill, var(--interest-empty));
+  border: 1px solid var(--pip-fill, var(--line-soft));
+  border-radius: var(--radius-md);
+  color: var(--pip-ink, var(--interest-empty-ink));
+  cursor: pointer;
+  font: var(--type-numeric-sm);
+  font-size: var(--size-lg);
+  padding: var(--space-2xs) var(--space-sm);
+  transition: background var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+}
+.neg-interest-pip:hover {
+  border-color: var(--accent);
+  color: var(--ink-strong);
+}
+
+/* The ordinal ramp. Shared by the editor's small selector and the runner's
+   big pips — same encoding, two sizes.
+
+   The step classes set CUSTOM PROPERTIES rather than background/color
+   directly. Both pip rules then read --pip-fill/--pip-ink with the empty
+   state as the fallback, so the ramp cannot be lost to source order the way
+   it would be if these were plain declarations of equal specificity. */
+.neg-pip-filled-1 { --pip-fill: var(--interest-1); --pip-ink: var(--interest-1-ink); }
+.neg-pip-filled-2 { --pip-fill: var(--interest-2); --pip-ink: var(--interest-2-ink); }
+.neg-pip-filled-3 { --pip-fill: var(--interest-3); --pip-ink: var(--interest-3-ink); }
+.neg-pip-filled-4 { --pip-fill: var(--interest-4); --pip-ink: var(--interest-4-ink); }
+.neg-pip-filled-5 { --pip-fill: var(--interest-5); --pip-ink: var(--interest-5-ink); }
+
+.neg-interest-label-text {
+  font: var(--type-ui-label);
+  color: var(--ink-muted);
+  margin-top: var(--space-3xs);
+  letter-spacing: var(--tracking-wide);
+}
+
+.neg-list-hint {
+  font: var(--type-ui-label);
+  font-weight: var(--weight-regular);
+  color: var(--ink-muted);
+  letter-spacing: var(--tracking-wide);
+}
+
+.neg-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+.neg-list-item {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.neg-list-item .wizard-text-input {
+  flex: 1;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--size-sm);
+}
+
+.neg-list-remove {
+  background: transparent;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: var(--size-md);
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-md);
+  transition: color var(--duration-fast) var(--ease-standard);
+  flex-shrink: 0;
+}
+.neg-list-remove:hover { color: var(--state-danger-ink); }
+
+/* ═══ K2 · NEGOTIATION RUNNER ══════════════════════════════════════════════ */
+.runner-panel-neg-ref,
+.runner-panel-neg-tracker,
+.runner-panel-neg-heroes {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--space-md);
+  gap: var(--space-md);
+}
+
+.runner-panel-neg-ref     { flex: 1.2; border-right: 1px solid var(--line-soft); }
+.runner-panel-neg-tracker { flex: 1;   border-right: 1px solid var(--line-soft);
+                            align-items: center; justify-content: center; }
+.runner-panel-neg-heroes  { flex: 0.8; }
+
+/* ── Left panel — NPC reference ──────────────────────────────────────────── */
+.neg-runner-npc-name {
+  font: var(--type-section);
+  color: var(--ink-strong);
+  letter-spacing: var(--tracking-tight);
+}
+
+.neg-runner-npc-desc {
+  font: var(--type-prose-sm);
+  color: var(--ink-body);
+  margin: 0;
+}
+
+.neg-runner-section { margin-top: var(--space-sm); }
+
+.neg-runner-section-title {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-caps);
+  padding: var(--space-3xs) var(--space-xs);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-xs);
+  display: inline-block;
+  color: var(--ink-muted);
+}
+/* Motivations and pitfalls ARE a good/bad pair, so the status hues are the
+   right vocabulary here — and each one ships with its word, never colour
+   alone. */
+.neg-section-motivation {
+  background: var(--state-available-bg);
+  color: var(--state-available-ink);
+}
+.neg-section-pitfall {
+  background: var(--state-danger-bg);
+  color: var(--state-danger-ink);
+}
+
+.neg-runner-list {
+  margin: 0;
+  padding-left: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.neg-runner-list li {
+  font: var(--type-prose-sm);
+  color: var(--ink-body);
+}
+
+.neg-runner-list-pitfall li { color: var(--state-danger-ink); }
+
+.neg-outcome-row {
+  font: var(--type-prose-sm);
+  color: var(--ink-body);
+  padding: var(--space-2xs) 0;
+}
+.neg-outcome-label {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-wide);
+  margin-right: var(--space-2xs);
+}
+.neg-outcome-success .neg-outcome-label { color: var(--accent-ink); }
+.neg-outcome-failure .neg-outcome-label { color: var(--state-danger-ink); }
+
+/* ── Centre panel — the interest tracker ─────────────────────────────────── */
+.neg-runner-interest-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg) 0;
+}
+
+.neg-runner-pips {
+  display: flex;
+  gap: var(--space-sm);   /* the 2px+ surface gap the ramp needs to read as steps */
+}
+
+.neg-runner-pip {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--pip-fill, var(--line-soft));
+  background: var(--pip-fill, var(--interest-empty));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: var(--type-numeric-sm);
+  font-size: var(--size-lg);
+  color: var(--pip-ink, var(--interest-empty-ink));
+  transition: background var(--duration-base) var(--ease-standard),
+              border-color var(--duration-base) var(--ease-standard),
+              color var(--duration-base) var(--ease-standard),
+              transform var(--duration-fast) var(--ease-standard);
+}
+/* The step classes above carry fill + ink; this only carries the lift. */
+.neg-runner-pip-filled { transform: scale(1.08); }
+
+/* Interest's LABEL and NUMBER wear ink, not the ramp — the ramp lives on the
+   pips beside them. Colouring 48px type with step 1 (a 2.3:1 tint) would be
+   unreadable, and colouring it with step 5 would say "danger" in a hue that
+   means "lots". */
+.neg-runner-interest-text {
+  font: var(--type-ui-label);
+  font-size: var(--size-lg);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-strong);
+}
+
+.neg-runner-interest-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.neg-interest-change-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-pill);
+  font-size: var(--size-2xl);
+  font-weight: var(--weight-regular);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--line-soft);
+  background: var(--surface-page);
+  color: var(--ink-strong);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+}
+.neg-interest-change-btn:hover:not([disabled]) {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+}
+.neg-interest-change-btn[disabled] { opacity: .35; cursor: not-allowed; }
+
+.neg-runner-interest-value {
+  font: var(--type-numeric);
+  font-size: var(--size-4xl);
+  min-width: 56px;
+  text-align: center;
+  color: var(--ink-strong);
+}
+
+.neg-runner-patience-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-lg);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
+  min-width: 160px;
+}
+
+.neg-runner-patience-label {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+}
+
+/* Patience IS a state — it runs out and then the scene ends — so the status
+   hues apply, and the hint line underneath always says so in words. */
+.neg-runner-patience-value {
+  font: var(--type-numeric);
+  font-size: var(--size-4xl);
+  color: var(--ink-strong);
+}
+.neg-patience-low      { color: var(--state-warning-ink); }
+.neg-patience-critical { color: var(--state-danger-ink); }
+
+.neg-runner-patience-hint {
+  font: var(--type-ui-label);
+  color: var(--ink-muted);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* ── Right panel — heroes ────────────────────────────────────────────────── */
+.neg-runner-hero-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.neg-runner-hero-row {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-raised);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--class-accent);
+}
+
+.neg-runner-hero-name {
+  font: var(--type-keyword);
+  color: var(--ink-strong);
+}
+
+.neg-runner-hero-class {
+  font: var(--type-ui-label);
+  color: var(--ink-muted);
+  letter-spacing: var(--tracking-wide);
+}
+
+.neg-runner-bottom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  justify-content: center;
+}
+
+.neg-runner-round-label {
+  font: var(--type-ui-label);
+  color: var(--ink-muted);
+  letter-spacing: var(--tracking-caps);
+  margin-right: var(--space-sm);
+}
+
+/* ═══ K2 · NEGOTIATION END MODAL ═══════════════════════════════════════════ */
+.neg-end-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  text-align: center;
+}
+
+.neg-end-icon {
+  font-size: var(--size-4xl);
+  line-height: var(--leading-tight);
+  color: var(--ink-strong);
+}
+
+.neg-end-title {
+  font: var(--type-section);
+  font-size: var(--size-2xl);
+  letter-spacing: var(--tracking-tight);
+  margin: 0;
+  color: var(--ink-strong);
+}
+
+/* Outcome is a genuine good/bad result, so it takes the status hues — and
+   the title spells the outcome out either way. */
+.neg-end-won      .neg-end-icon,
+.neg-end-won      .neg-end-title { color: var(--state-available-ink); }
+.neg-end-lost     .neg-end-icon,
+.neg-end-lost     .neg-end-title { color: var(--state-danger-ink); }
+.neg-end-timeout  .neg-end-icon,
+.neg-end-timeout  .neg-end-title { color: var(--state-warning-ink); }
+
+.neg-end-desc {
+  font: var(--type-prose);
+  color: var(--ink-body);
+  margin: 0;
+}
+
+.neg-end-outcome-text {
+  font: var(--type-flavor);
+  font-size: var(--size-sm);
+  color: var(--ink-body);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-inset);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--line-accent);
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.neg-end-victory-row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  background: var(--accent-wash);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.neg-end-victory-label {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-wide);
+  color: var(--accent-ink);
+}
+
+.neg-end-victory-value {
+  font: var(--type-numeric-sm);
+  font-size: var(--size-lg);
+  color: var(--accent-ink);
+}
+
+/* ═══ K3 · MONTAGE BUILDER (encounter editor) ══════════════════════════════ */
+.montage-config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.montage-challenge-item {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-xs);
+}
+
+.montage-challenge-item-row {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.montage-ch-name { flex: 1; }
+.montage-ch-tier { width: 88px; flex-shrink: 0; }
+
+/* ═══ K3 · MONTAGE RUNNER ══════════════════════════════════════════════════ */
+.runner-panel-montage-ref      { flex: 0 0 240px; overflow-y: auto; }
+.runner-panel-montage-heroes   { flex: 1;         overflow-y: auto; }
+.runner-panel-montage-progress { flex: 0 0 200px; overflow-y: auto; }
+
+.montage-runner-desc {
+  font: var(--type-flavor);
+  font-size: var(--size-sm);
+  color: var(--ink-body);
+  margin: 0 0 var(--space-md);
+}
+
+.montage-challenge-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.montage-runner-challenge {
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--surface-raised);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--line-accent);
+}
+
+.montage-runner-ch-name {
+  font: var(--type-keyword);
+  color: var(--ink-strong);
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.montage-runner-ch-tier {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-3xs) var(--space-xs);
+  border-radius: var(--radius-sm);
+}
+
+/* One hue, three weights — see --difficulty-* in tokens.css. */
+.montage-tier-easy   { background: var(--difficulty-easy-bg); color: var(--difficulty-easy-ink); border: 1px solid var(--difficulty-easy-line); }
+.montage-tier-medium { background: var(--difficulty-mid-bg);  color: var(--difficulty-mid-ink);  border: 1px solid var(--difficulty-mid-line); }
+.montage-tier-hard   { background: var(--difficulty-hard-bg); color: var(--difficulty-hard-ink); border: 1px solid var(--difficulty-hard-line); }
+
+.montage-runner-ch-desc {
+  font: var(--type-prose-sm);
+  font-size: var(--size-xs);
+  color: var(--ink-body);
+  margin-top: var(--space-3xs);
+}
+
+.montage-outcomes-section {
+  margin-top: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.montage-outcome-row {
+  font: var(--type-prose-sm);
+  font-size: var(--size-xs);
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-md);
+}
+.montage-outcome-success { color: var(--state-available-ink); background: var(--state-available-bg); }
+.montage-outcome-failure { color: var(--state-danger-ink);    background: var(--state-danger-bg); }
+
+/* ── Centre panel — per-hero test recorder ───────────────────────────────── */
+.montage-hero-tests {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.montage-hero-row {
+  padding: var(--space-md);
+  background: var(--surface-raised);
+  border-left: 3px solid var(--class-accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.montage-hero-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.montage-hero-name {
+  font: var(--type-inline-label);
+  font-size: var(--size-sm);
+  color: var(--ink-strong);
+}
+
+.montage-hero-class {
+  font: var(--type-ui-label);
+  color: var(--ink-muted);
+  letter-spacing: var(--tracking-wide);
+}
+
+.montage-result-btns {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.montage-result-btn {
+  font: var(--type-ui-label);
+  letter-spacing: var(--tracking-wide);
+  font-weight: var(--weight-bold);
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-soft);
+  background: var(--surface-page);
+  color: var(--ink-body);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+}
+.montage-result-btn:hover {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--ink-strong);
+}
+
+/* The three results ARE good / partial / bad, so they take the status hues
+   — and each button already carries its icon AND its word. */
+.montage-result-success.montage-result-active { background: var(--state-available); border-color: var(--state-available); color: var(--ink-on-accent); }
+.montage-result-partial.montage-result-active { background: var(--state-warning);   border-color: var(--state-warning);   color: var(--ink-strong); }
+.montage-result-failure.montage-result-active { background: var(--state-danger);    border-color: var(--state-danger);    color: var(--ink-on-accent); }
+
+.montage-hero-result-label {
+  font: var(--type-ui-label);
+  letter-spacing: var(--tracking-wide);
+  margin-top: var(--space-xs);
+  color: var(--ink-muted);
+}
+.montage-result-label-success { color: var(--state-available-ink); }
+.montage-result-label-partial { color: var(--state-warning-ink); }
+.montage-result-label-failure { color: var(--state-danger-ink); }
+
+/* ── Right panel — progress ──────────────────────────────────────────────── */
+.montage-progress-block {
+  text-align: center;
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--line-hair);
+  margin-bottom: var(--space-md);
+}
+
+.montage-progress-label {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.montage-progress-fraction {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-3xs);
+  margin-bottom: var(--space-sm);
+}
+
+.montage-progress-current {
+  font: var(--type-numeric);
+  font-size: var(--size-3xl);
+  color: var(--ink-strong);
+}
+.montage-progress-met { color: var(--accent-ink); }
+
+.montage-progress-sep    { font-size: var(--size-xl); color: var(--ink-faint); }
+.montage-progress-needed { font-size: var(--size-xl); color: var(--ink-muted); }
+
+.montage-progress-bar-track {
+  height: 6px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin: 0 auto var(--space-2xs);
+}
+
+/* The bar is one measure filling up, so it is one colour that does not
+   change meaning as it grows — it only turns bronze-solid once the target
+   is met, which is a threshold, not a scale. */
+.montage-progress-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  transition: width var(--duration-slow) var(--ease-out),
+              background var(--duration-base) var(--ease-standard);
+}
+.montage-progress-met .montage-progress-bar-fill,
+.montage-progress-bar-fill.montage-progress-met { background: var(--accent-ink); }
+
+.montage-progress-pct {
+  font: var(--type-ui-label);
+  color: var(--ink-muted);
+}
+
+.montage-rounds-block {
+  text-align: center;
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--line-hair);
+  margin-bottom: var(--space-md);
+}
+
+.montage-rounds-label {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+  margin-bottom: var(--space-2xs);
+}
+
+/* Rounds remaining is a countdown — same state vocabulary as patience. */
+.montage-rounds-value {
+  font: var(--type-numeric);
+  font-size: var(--size-4xl);
+  color: var(--ink-strong);
+}
+.montage-rounds-low      { color: var(--state-warning-ink); }
+.montage-rounds-critical { color: var(--state-danger-ink); }
+
+.montage-rounds-hint {
+  font: var(--type-ui-label);
+  color: var(--ink-muted);
+  margin-top: var(--space-2xs);
+}
+
+.montage-this-round-block { padding-top: var(--space-2xs); }
+
+.montage-this-round-label {
+  font: var(--type-ui-caps);
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.montage-round-hero-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3xs) 0;
+  border-bottom: 1px solid var(--line-hair);
+}
+
+.montage-round-hero-name {
+  font: var(--type-prose-sm);
+  font-size: var(--size-xs);
+  color: var(--ink-body);
+}
+
+.montage-round-hero-result {
+  font: var(--type-ui-label);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--ink-faint);
+}

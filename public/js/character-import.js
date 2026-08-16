@@ -140,7 +140,7 @@ async function commitImport() {
       ...character,
       importedAt: firebase.firestore.FieldValue.serverTimestamp(),
       // classAccentColor keeps the sheet theming consistent with wizard heroes
-      classAccentColor: (CLASS_COLORS[character.class]?.accent) || '#2980B9',
+      classAccentColor: (CLASS_COLORS[character.class]?.accent) || '#866D4B',
       wizardStep: 11, // imported heroes are complete for sheet purposes
     };
 

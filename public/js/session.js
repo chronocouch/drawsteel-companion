@@ -1142,8 +1142,10 @@ function renderNegotiationRunner(sessionData) {
   const roundEl = document.getElementById('runner-round');
   if (roundEl) roundEl.textContent = `Round ${round}`;
 
-  const INTEREST_COLORS = ['', '#c0392b', '#e67e22', '#d4ac0d', 'var(--color-available)', 'var(--color-gold)'];
-  const patienceColor = patience <= 1 ? 'var(--color-danger)' : patience <= 2 ? '#e67e22' : 'var(--color-available)';
+  // Interest is an ORDINAL scale, drawn by .neg-pip-filled-1..5 in
+  // negotiation-montage.css. Do not set pip colour from here.
+  const patienceClass = patience <= 1 ? 'neg-patience-critical'
+                      : patience <= 2 ? 'neg-patience-low' : '';
 
   // Replace body with negotiation layout
   const body = document.querySelector('#encounter-runner-screen .runner-body');
@@ -1192,19 +1194,18 @@ function renderNegotiationRunner(sessionData) {
         <div class="neg-runner-interest-block">
           <div class="neg-runner-pips">
             ${[1,2,3,4,5].map(n => `
-              <div class="neg-runner-pip ${n <= interest ? 'neg-runner-pip-filled' : ''}"
-                style="${n <= interest ? `background:${INTEREST_COLORS[n]};border-color:${INTEREST_COLORS[n]}` : ''}">
+              <div class="neg-runner-pip ${n <= interest ? `neg-runner-pip-filled neg-pip-filled-${n}` : ''}">
                 ${n}
               </div>
             `).join('')}
           </div>
-          <div class="neg-runner-interest-text" style="color:${INTEREST_COLORS[interest]}">
-            ${negInterestLabel(interest).toUpperCase()}
+          <div class="neg-runner-interest-text">
+            ${negInterestLabel(interest)}
           </div>
           <div class="neg-runner-interest-controls">
             <button class="btn btn-large neg-interest-change-btn" id="neg-minus-btn"
               ${interest <= 1 ? 'disabled' : ''}>−</button>
-            <span class="neg-runner-interest-value" style="color:${INTEREST_COLORS[interest]}">${interest}</span>
+            <span class="neg-runner-interest-value">${interest}</span>
             <button class="btn btn-large neg-interest-change-btn" id="neg-plus-btn"
               ${interest >= 5 ? 'disabled' : ''}>+</button>
           </div>
@@ -1212,7 +1213,7 @@ function renderNegotiationRunner(sessionData) {
 
         <div class="neg-runner-patience-block">
           <div class="neg-runner-patience-label">PATIENCE REMAINING</div>
-          <div class="neg-runner-patience-value" style="color:${patienceColor}">${patience}</div>
+          <div class="neg-runner-patience-value ${patienceClass}">${patience}</div>
           <div class="neg-runner-patience-hint">${patience === 0 ? 'Patience exhausted!' : patience === 1 ? 'Last round!' : `rounds left`}</div>
         </div>
       </div>
@@ -1322,7 +1323,7 @@ function showNegotiationEndModal(outcome, sessionData) {
     success: {
       title:   'Negotiation Succeeded!',
       icon:    '◆',
-      color:   'var(--color-gold)',
+      cls:     'neg-end-won',
       desc:    `${npcName} has been won over. Interest reached 5.`,
       outcome: neg.successOutcome || '',
       vicCount: 1,
@@ -1330,7 +1331,7 @@ function showNegotiationEndModal(outcome, sessionData) {
     failure: {
       title:   'Negotiation Failed',
       icon:    '✕',
-      color:   'var(--color-danger)',
+      cls:     'neg-end-lost',
       desc:    `${npcName} has turned hostile. Interest fell to 1.`,
       outcome: neg.failureOutcome || '',
       vicCount: 0,
@@ -1338,7 +1339,7 @@ function showNegotiationEndModal(outcome, sessionData) {
     patience: {
       title:   'Patience Exhausted',
       icon:    '⧗',
-      color:   '#e67e22',
+      cls:     'neg-end-timeout',
       desc:    `${npcName} has ended the negotiation. Patience ran out.`,
       outcome: neg.failureOutcome || '',
       vicCount: 0,
@@ -1348,9 +1349,9 @@ function showNegotiationEndModal(outcome, sessionData) {
   const cfg = OUTCOME_CONFIG[outcome] || OUTCOME_CONFIG.failure;
 
   showModal(`
-    <div class="neg-end-modal">
-      <div class="neg-end-icon" style="color:${cfg.color}">${cfg.icon}</div>
-      <h2 class="neg-end-title" style="color:${cfg.color}">${cfg.title}</h2>
+    <div class="neg-end-modal ${cfg.cls}">
+      <div class="neg-end-icon">${cfg.icon}</div>
+      <h2 class="neg-end-title">${cfg.title}</h2>
       <p class="neg-end-desc">${cfg.desc}</p>
       ${cfg.outcome ? `<p class="neg-end-outcome-text">${cfg.outcome}</p>` : ''}
 
@@ -1404,19 +1405,21 @@ function renderMontageRunner(sessionData) {
   const heroResults = m.heroResults  || heroes.map(() => null);
   const challenges  = m.challenges   || [];
   const pct      = Math.min(100, Math.round((total / needed) * 100));
-  const barColor = total >= needed ? 'var(--color-gold)'
-    : pct >= 60 ? 'var(--color-available)' : '#866D4B';
+  // The bar is one measure filling one track: one colour, plus a threshold
+  // class once the goal is met. Not a scale — see negotiation-montage.css.
+  const progressClass = total >= needed ? 'montage-progress-met' : '';
   const roundsLeft = limit - round + 1;
-  const roundColor = roundsLeft <= 1 ? 'var(--color-danger)' : roundsLeft <= 2 ? '#e67e22' : 'var(--color-available)';
+  const roundClass = roundsLeft <= 1 ? 'montage-rounds-critical'
+                   : roundsLeft <= 2 ? 'montage-rounds-low' : '';
 
   // Update round header
   const roundEl = document.getElementById('runner-round');
   if (roundEl) roundEl.textContent = `Round ${round}`;
 
   const RESULT_CFG = {
-    success: { label: 'Success',   pts: 2, color: 'var(--color-available)', icon: '◆' },
-    partial: { label: 'Partial',   pts: 1, color: '#e67e22',                icon: '◈' },
-    failure: { label: 'Failure',   pts: 0, color: 'var(--color-danger)',    icon: '✕' },
+    success: { label: 'Success', pts: 2, icon: '◆' },
+    partial: { label: 'Partial', pts: 1, icon: '◈' },
+    failure: { label: 'Failure', pts: 0, icon: '✕' },
   };
 
   const body = document.querySelector('#encounter-runner-screen .runner-body');
@@ -1466,14 +1469,13 @@ function renderMontageRunner(sessionData) {
                 </div>
                 <div class="montage-result-btns">
                   ${Object.entries(RESULT_CFG).map(([key, cfg]) => `
-                    <button class="montage-result-btn ${result === key ? 'montage-result-active' : ''}"
-                      data-hero-idx="${i}" data-result="${key}"
-                      style="${result === key ? `background:${cfg.color};border-color:${cfg.color};color:#fff` : ''}">
+                    <button class="montage-result-btn montage-result-${key} ${result === key ? 'montage-result-active' : ''}"
+                      data-hero-idx="${i}" data-result="${key}">
                       ${cfg.icon} ${cfg.label}
                     </button>
                   `).join('')}
                 </div>
-                ${resCfg ? `<div class="montage-hero-result-label" style="color:${resCfg.color}">${resCfg.icon} ${resCfg.label} (+${resCfg.pts})</div>` : '<div class="montage-hero-result-label" style="color:var(--text-dim)">No result yet</div>'}
+                ${resCfg ? `<div class="montage-hero-result-label montage-result-label-${result}">${resCfg.icon} ${resCfg.label} (+${resCfg.pts})</div>` : '<div class="montage-hero-result-label">No result yet</div>'}
               </div>
             `;
           }).join('') || '<p class="panel-empty">No heroes.</p>'}
@@ -1486,22 +1488,22 @@ function renderMontageRunner(sessionData) {
           <span class="runner-panel-title">PROGRESS</span>
         </div>
 
-        <div class="montage-progress-block">
+        <div class="montage-progress-block ${progressClass}">
           <div class="montage-progress-label">SUCCESSES</div>
           <div class="montage-progress-fraction">
-            <span class="montage-progress-current" style="color:${barColor}">${total}</span>
+            <span class="montage-progress-current">${total}</span>
             <span class="montage-progress-sep">/</span>
             <span class="montage-progress-needed">${needed}</span>
           </div>
           <div class="montage-progress-bar-track">
-            <div class="montage-progress-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+            <div class="montage-progress-bar-fill" style="width:${pct}%"></div>
           </div>
           <div class="montage-progress-pct">${pct}%</div>
         </div>
 
         <div class="montage-rounds-block">
           <div class="montage-rounds-label">ROUNDS REMAINING</div>
-          <div class="montage-rounds-value" style="color:${roundColor}">${roundsLeft}</div>
+          <div class="montage-rounds-value ${roundClass}">${roundsLeft}</div>
           <div class="montage-rounds-hint">${roundsLeft <= 0 ? 'Time is up!' : roundsLeft === 1 ? 'Final round!' : `of ${limit} total`}</div>
         </div>
 
@@ -1513,7 +1515,7 @@ function renderMontageRunner(sessionData) {
             return `
               <div class="montage-round-hero-row">
                 <span class="montage-round-hero-name">${h.displayName}</span>
-                <span class="montage-round-hero-result" style="color:${cfg ? cfg.color : 'var(--text-dim)'}">
+                <span class="montage-round-hero-result ${r ? `montage-result-label-${r}` : ''}">
                   ${cfg ? `${cfg.icon} +${cfg.pts}` : '—'}
                 </span>
               </div>
@@ -1627,7 +1629,7 @@ function showMontageEndModal(outcome, sessionData) {
     success: {
       title:    'Montage Complete!',
       icon:     '◆',
-      color:    'var(--color-gold)',
+      cls:      'neg-end-won',
       desc:     `The heroes succeeded! ${total} successes — goal of ${needed} reached.`,
       outcome:  m.successOutcome || '',
       vicCount: 1,
@@ -1635,7 +1637,7 @@ function showMontageEndModal(outcome, sessionData) {
     failure: {
       title:    'Time Ran Out',
       icon:     '⧗',
-      color:    'var(--color-danger)',
+      cls:      'neg-end-lost',
       desc:     `The heroes fell short. Only ${total} of ${needed} successes were achieved.`,
       outcome:  m.failureOutcome || '',
       vicCount: 0,
@@ -1645,9 +1647,9 @@ function showMontageEndModal(outcome, sessionData) {
   const cfg = OUTCOME_CONFIG[outcome] || OUTCOME_CONFIG.failure;
 
   showModal(`
-    <div class="neg-end-modal">
-      <div class="neg-end-icon" style="color:${cfg.color}">${cfg.icon}</div>
-      <h2 class="neg-end-title" style="color:${cfg.color}">${cfg.title}</h2>
+    <div class="neg-end-modal ${cfg.cls}">
+      <div class="neg-end-icon">${cfg.icon}</div>
+      <h2 class="neg-end-title">${cfg.title}</h2>
       <p class="neg-end-desc">${cfg.desc}</p>
       ${cfg.outcome ? `<p class="neg-end-outcome-text">${cfg.outcome}</p>` : ''}
 

@@ -475,7 +475,7 @@ function isSpent(ability) {
 function buildCard(ability, char, currentResource) {
   const affordable = (ability.cost ?? 0) <= currentResource;
   const spent = isSpent(ability);
-  const meta = CLASS_COLORS[char.class] || { accent: '#2980B9' };
+  const meta = CLASS_COLORS[char.class] || { accent: '#866D4B' };
 
   const card = document.createElement('div');
   card.className = `ability-card ${spent ? 'spent' : affordable ? 'affordable' : 'unaffordable'}`;
@@ -719,7 +719,7 @@ function updateCardAffordability(newResource) {
   const char = AppState.currentCharacter;
   if (!char) return;
 
-  const meta = CLASS_COLORS[char.class] || { accent: '#2980B9' };
+  const meta = CLASS_COLORS[char.class] || { accent: '#866D4B' };
   const accentColor = meta.accent;
 
   document.querySelectorAll('.ability-card').forEach(card => {
