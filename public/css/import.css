@@ -126,3 +126,43 @@
   font: var(--type-ui-label);
   color: var(--ink-muted);
 }
+
+/* ═══ IMPORTED ABILITY CARD HEAD ═══════════════════════════════════════════
+   The imported card reuses .ability-card's shell but builds its own header
+   with its own class names, none of which had a rule — so an imported
+   ability's name rendered at body size with its cost badge jammed against
+   it. These are emitted only by the import path, so they live here rather
+   than in sheet.css. */
+.ability-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-2xs);
+}
+.ability-card-name {
+  font: var(--type-ability-name);
+  color: var(--ink-strong);
+}
+.ability-card-meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-2xs);
+}
+.ability-type-badge {
+  padding: var(--space-3xs) var(--space-xs);
+  background: var(--surface-inset);
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  font: var(--type-ui-caps);
+  font-size: var(--size-3xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+.ability-keywords {
+  font: var(--type-keyword);
+  font-size: var(--size-xs);
+  color: var(--ink-muted);
+}

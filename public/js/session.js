@@ -1846,10 +1846,10 @@ function showRunnerHeroEditModal(hero) {
   showModal(`
     <div class="runner-hero-edit-modal">
       <h2>${hero.displayName}</h2>
-      <div class="enc-field-row" style="gap:16px;margin-top:8px">
+      <div class="enc-field-row">
         <div class="enc-field">
           <label class="enc-label">Stamina</label>
-          <div style="display:flex;align-items:center;gap:6px">
+          <div class="enc-field-stepper">
             <input type="number" id="runner-hp-in" class="wizard-text-input"
               value="${hero.currentHP}" min="0" max="${hero.maxHP || 9999}" style="width:80px" />
             <span style="color:var(--text-dim);font-size:13px">/ ${hero.maxHP}</span>
@@ -1857,7 +1857,7 @@ function showRunnerHeroEditModal(hero) {
         </div>
         <div class="enc-field">
           <label class="enc-label">${hero.heroicResource?.name || 'Resource'}</label>
-          <div style="display:flex;align-items:center;gap:6px">
+          <div class="enc-field-stepper">
             <input type="number" id="runner-res-in" class="wizard-text-input"
               value="${hero.heroicResource?.current ?? 0}" min="0" max="${hero.heroicResource?.max ?? 99}" style="width:80px" />
             <span style="color:var(--text-dim);font-size:13px">/ ${hero.heroicResource?.max ?? 10}</span>

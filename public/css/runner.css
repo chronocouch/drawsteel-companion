@@ -437,3 +437,19 @@
 .outcome-content { display: flex; flex-direction: column; gap: var(--space-3xs); }
 .outcome-label-text { font: var(--type-ability-name); font-size: var(--size-md); color: var(--ink-strong); }
 .outcome-desc-text { font: var(--type-prose-sm); color: var(--ink-muted); }
+
+/* ═══ HERO QUICK-EDIT ══════════════════════════════════════════════════════
+   Opened from a hero card mid-combat to fix stamina or resources. The
+   wrapper had no rule, and session.js carried its layout as inline styles;
+   both are handled here now. */
+.runner-hero-edit-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.runner-hero-edit-modal .enc-field-row { gap: var(--space-lg); margin-top: var(--space-sm); }
+.runner-hero-edit-modal .enc-field-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}

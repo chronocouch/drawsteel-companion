@@ -25,14 +25,16 @@ Everything else is printed as a note.
 
 Add a name to HOOKS when you have confirmed it is a handle, not a bug.
 
-KNOWN BACKLOG at the time this script was written — all pre-existing, none
-introduced by the design-system migration, all confirmed absent from the
-original stylesheet too:
+The backlog this script found when it was written is now cleared. Every
+entry was a real gap -- markup the app has always emitted with no rule
+behind it, absent from the original stylesheet too:
     .ability-card-header  .ability-card-name  .ability-type-badge
-    .career-detail-panel  .enc-npc-card       .hp-modal-value
-    .levelup-stat-label   .runner-hero-edit-modal
-This script exits non-zero until they are dealt with. That is deliberate:
-they are real gaps, not noise.
+    .ability-card-meta    .ability-keywords   .career-detail-panel
+    .enc-npc-card         .hp-modal-value     .levelup-stat-label
+    .ms-minion-warning    .runner-hero-edit-modal
+    .wizard-field         .wizard-label
+Keep it at zero. A new name appearing here means someone shipped markup
+without styling it.
 """
 
 import re
@@ -51,6 +53,11 @@ HOOKS = {
     "kn-entity-modal", "kn-note-vault-btn", "kn-note-deltx-btn",
     # campaign.js column handles; .enc-editor-col carries the styling
     "enc-editor-left", "enc-editor-center",
+    # modifiers whose base class carries everything: .companion-badge is
+    # the whole style, and only -role differs from it
+    "companion-badge-type", "companion-badge-size",
+    # wrappers whose children carry the layout
+    "hero-detail-xp-section",
     # spans inside a styled parent that positions them
     "enc-meta-stat", "montage-ch-desc", "montage-ch-remove", "neg-list-input",
     "confirm-modal-text", "hp-modal-controls", "char-resource",

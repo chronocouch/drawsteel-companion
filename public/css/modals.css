@@ -312,3 +312,12 @@
 @media (max-width: 480px) {
   .toast-container { bottom: 90px; }
 }
+
+/* The current-HP figure inside .hp-modal-current. Its siblings (-sep, -max,
+   -label) were all styled and this one was not, so the number a player is
+   actually reading sat at the same weight as the "/ 24" after it. */
+.hp-modal-value {
+  font: var(--type-numeric);
+  font-size: var(--size-4xl);
+  color: var(--ink-strong);
+}
