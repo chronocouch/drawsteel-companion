@@ -266,15 +266,85 @@ const BASIC_ACTIONS = [
   },
 ];
 
+// ── Assemble a character's deck ───────────────────────────────────────────────
+
+/**
+ * Resolves the full set of ability cards a character shows on their sheet:
+ * class abilities (level-filtered, wizard-selected), virtual ancestry traits,
+ * virtual kit signatures, and the universal basic actions. Returns
+ * { kind, abilities, hadNone }. This is the single source of truth for a
+ * character's deck — both the on-screen sheet (loadAbilityCards) and the
+ * print-cards feature consume it, so the two never drift apart.
+ *
+ *   kind 'imported' → abilities are self-contained Forge Steel definitions
+ *   kind 'class'    → abilities are native compendium/virtual/basic cards
+ */
+async function assembleCharacterAbilities(char) {
+  // Forge Steel imports carry self-contained ability definitions (§9.6) — they
+  // are not compendium-backed, so return them as-is rather than resolving
+  // Forge Steel IDs against /abilities.
+  if (char.imported && Array.isArray(char.importedAbilities)) {
+    return { kind: 'imported', abilities: char.importedAbilities, hadNone: false };
+  }
+
+  if (!char.class) {
+    return { kind: 'class', abilities: [...BASIC_ACTIONS], hadNone: false };
+  }
+
+  const snapshot = await db.collection('abilities')
+    .where('class', '==', char.class)
+    .get();
+
+  const abilities = [];
+  snapshot.forEach(doc => abilities.push({ id: doc.id, ...doc.data() }));
+  const hadNone = abilities.length === 0;
+
+  // Hide abilities above the character's current level
+  const charLevel = char.level ?? 1;
+  const levelFiltered = abilities.filter(a => !a.level || a.level <= charLevel);
+
+  // If the character has selected abilities (via wizard), show only those.
+  // Fall back to all level-appropriate abilities for characters created before this feature.
+  const selected = char.abilityIds?.length
+    ? levelFiltered.filter(a => char.abilityIds.includes(a.id))
+    : levelFiltered;
+
+  // Inject virtual ancestry abilities (active traits only)
+  const ancestryAbilities = getAncestryAbilities(char);
+  for (const v of ancestryAbilities) {
+    if (!selected.some(a => a.id === v.id)) selected.push(v);
+  }
+
+  // Always inject kit signature ability/abilities as virtual cards built from
+  // KIT_STATS — never depend on Firestore for kit sig display. Remove any
+  // Firestore ability with the same name first (backward compat with chars
+  // that had a real ability ID written by the old A2 lookup).
+  function injectKitVirtual(kitName) {
+    if (!kitName) return;
+    const virtual = getKitVirtualAbility({ ...char, kit: kitName });
+    if (!virtual) return;
+    const kName = virtual.name.toLowerCase();
+    const dupIdx = selected.findIndex(a => !a.isVirtual && a.name?.toLowerCase() === kName);
+    if (dupIdx >= 0) selected.splice(dupIdx, 1);
+    // Avoid double-injecting if both kits share the same sig name (edge case)
+    if (!selected.some(a => a.isVirtual && a.name?.toLowerCase() === kName)) {
+      selected.push(virtual);
+    }
+  }
+  injectKitVirtual(char.kit);
+  // Tactician Field Arsenal: inject second kit sig if present
+  if (char.kit2) injectKitVirtual(char.kit2);
+
+  return { kind: 'class', abilities: [...selected, ...BASIC_ACTIONS], hadNone };
+}
+
 // ── Load ability cards ────────────────────────────────────────────────────────
 
 async function loadAbilityCards(char) {
   const container = document.getElementById('ability-cards-container');
   container.innerHTML = '<p class="loading-text">Loading abilities...</p>';
 
-  // Forge Steel imports carry self-contained ability definitions (§9.6) — they
-  // are not compendium-backed, so render them directly rather than resolving
-  // Forge Steel IDs against /abilities.
+  // Forge Steel imports render read-only, with their own card markup.
   if (char.imported && Array.isArray(char.importedAbilities)) {
     renderImportedAbilityCards(char, container);
     return;
@@ -287,57 +357,16 @@ async function loadAbilityCards(char) {
   }
 
   try {
-    const snapshot = await db.collection('abilities')
-      .where('class', '==', char.class)
-      .get();
+    const { abilities, hadNone } = await assembleCharacterAbilities(char);
 
-    const abilities = [];
-    snapshot.forEach(doc => abilities.push({ id: doc.id, ...doc.data() }));
-
-    if (abilities.length === 0) {
-      // Show basics with a note that class abilities need seeding
+    if (hadNone) {
+      // Show basics with a note that class abilities need seeding.
+      // renderAbilityCards preserves this .empty-text message.
       container.innerHTML = '<p class="empty-text" style="margin-bottom:8px">No class abilities found. Run the seed script.</p>';
     }
 
-    // Hide abilities above the character's current level
-    const charLevel = char.level ?? 1;
-    const levelFiltered = abilities.filter(a => !a.level || a.level <= charLevel);
-
-    // If the character has selected abilities (via wizard), show only those.
-    // Fall back to all level-appropriate abilities for characters created before this feature.
-    const selected = char.abilityIds?.length
-      ? levelFiltered.filter(a => char.abilityIds.includes(a.id))
-      : levelFiltered;
-
-    // Inject virtual ancestry abilities (active traits only)
-    const ancestryAbilities = getAncestryAbilities(char);
-    for (const v of ancestryAbilities) {
-      if (!selected.some(a => a.id === v.id)) selected.push(v);
-    }
-
-    // Always inject kit signature ability/abilities as virtual cards built from
-    // KIT_STATS — never depend on Firestore for kit sig display. Remove any
-    // Firestore ability with the same name first (backward compat with chars
-    // that had a real ability ID written by the old A2 lookup).
-    function injectKitVirtual(kitName) {
-      if (!kitName) return;
-      const virtual = getKitVirtualAbility({ ...char, kit: kitName });
-      if (!virtual) return;
-      const kName = virtual.name.toLowerCase();
-      const dupIdx = selected.findIndex(a => !a.isVirtual && a.name?.toLowerCase() === kName);
-      if (dupIdx >= 0) selected.splice(dupIdx, 1);
-      // Avoid double-injecting if both kits share the same sig name (edge case)
-      if (!selected.some(a => a.isVirtual && a.name?.toLowerCase() === kName)) {
-        selected.push(virtual);
-      }
-    }
-    injectKitVirtual(char.kit);
-    // Tactician Field Arsenal: inject second kit sig if present
-    if (char.kit2) injectKitVirtual(char.kit2);
-
-    const toShow = [...selected, ...BASIC_ACTIONS];
-    renderFilterBar(toShow);
-    renderAbilityCards(toShow, char);
+    renderFilterBar(abilities);
+    renderAbilityCards(abilities, char);
   } catch (e) {
     console.error('Error loading abilities:', e);
     container.innerHTML = '<p class="error-text">Error loading abilities.</p>';
@@ -910,6 +939,7 @@ window.updateCardAffordability = updateCardAffordability;
 window.cardState = cardState;
 window.getAncestryAbilities = getAncestryAbilities;
 window.getKitVirtualAbility = getKitVirtualAbility;
+window.assembleCharacterAbilities = assembleCharacterAbilities;
 
 
 // ── Ability detail surface ───────────────────────────────────────────────────
