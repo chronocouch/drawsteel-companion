@@ -26,10 +26,17 @@ public/js/firebase-config.js
 .DS_Store
 Thumbs.db
 
-# Editor
+# Editor / IDE
 .vscode/
 .idea/
+.cursor/
 *.swp
+*.swo
+*~
+
+# Logs
+npm-debug.log*
+yarn-error.log*
 
 # Reference material — sourcebook PDFs, glyph fonts, design inputs.
 # Large and copyright MCDM; never commit these.

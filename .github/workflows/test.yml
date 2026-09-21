@@ -1,0 +1,21 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # The suites are pure Node — they require the source files directly and
+      # use the built-in vm/fs modules, so there is nothing to install.
+      - name: Run all test suites
+        run: |
+          node scripts/test-encounter-math.js
+          node scripts/test-vault.js
+          node scripts/test-ds-hero.js
+          node scripts/test-wizard-consistency.js
+          node scripts/test-campaign-model.js

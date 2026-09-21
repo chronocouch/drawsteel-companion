@@ -1,0 +1,27 @@
+name: Deploy to Firebase Hosting
+
+# Auto-deploys the static frontend (public/) on every push to main.
+# Cloud Functions and Firestore rules stay MANUAL — deploy those yourself with
+# `firebase deploy --only functions,firestore` when they change.
+#
+# Requires a FIREBASE_TOKEN repository secret:
+#   npx firebase-tools login:ci      → copy the token
+#   GitHub repo → Settings → Secrets and variables → Actions → New secret
+#   Name: FIREBASE_TOKEN   Value: <the token>
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy hosting
+        run: npx firebase-tools@latest deploy --only hosting --project drawsteel-companion --token "$FIREBASE_TOKEN"
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
